@@ -1,0 +1,24 @@
+.productCard {
+    transition: box-shadow .3s ease-out;
+    overflow: hidden;
+}
+
+.productCard .textPart {
+    transition: transform .3s ease-out;
+}
+
+.productCard img {
+    transition: transform .5s ease-out;
+}
+
+.productCard:hover .textPart {
+    transform: translateY(-1rem);
+}
+
+.productCard:hover img {
+    transform: scale(1.1);
+}
+
+.productCard:hover {
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
