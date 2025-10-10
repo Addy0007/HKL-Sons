@@ -1,5 +1,15 @@
 import React from "react";
-import { Button, Typography, Grid, Link } from "@mui/material";
+import {
+  Grid,
+  Typography,
+  Button,
+  Link,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Box,
+} from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 const Footer = () => {
   const sections = [
@@ -22,91 +32,152 @@ const Footer = () => {
   ];
 
   return (
-    <Grid
-      container
-      direction="column"
+    <Box
+      component="footer"
       sx={{
-        bgcolor: "black",
+        bgcolor: "#0d0d0d",
         color: "white",
-        py: 4,
-        width: "100vw",
-        overflowX: "hidden",
+        width: "100%",
+        mt: 8,
+        pt: 5,
+        pb: 3,
       }}
     >
-      {/* === Top Footer Links === */}
+      {/* ==== Desktop / Tablet Footer ==== */}
       <Grid
         container
+        spacing={2}
         sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          px: 0,
-          margin: 0,
+          display: { xs: "none", sm: "grid" },
+          gridTemplateColumns: {
+            sm: "repeat(2, 1fr)",
+            md: "repeat(4, 1fr)",
+          },
+          maxWidth: "1200px",
+          mx: "auto",
+          px: 3,
+          mb: 4,
         }}
       >
         {sections.map((section, idx) => (
-          <Grid
-            item
-            key={idx}
-            xs={12}
-            sm={6}
-            md={3}
-            sx={{
-              flexBasis: { xs: "100%", sm: "50%", md: "25%" },
-              flexGrow: 1,
-              textAlign: { xs: "center", md: "left" },
-            }}
-          >
+          <Box key={idx}>
             <Typography
               variant="h6"
-              sx={{ pb: 2, fontWeight: 600, pl: { md: 4, xs: 0 } }}
+              sx={{
+                fontSize: "1rem",
+                fontWeight: 700,
+                mb: 2,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+              }}
             >
               {section.title}
             </Typography>
-
             {section.items.map((item, i) => (
               <Button
                 key={i}
                 disableRipple
-                disableElevation
                 sx={{
+                  color: "rgba(255,255,255,0.75)",
                   display: "block",
-                  color: "white",
                   textTransform: "none",
                   justifyContent: "flex-start",
                   p: 0,
-                  pl: { md: 4, xs: 0 },
                   mb: 1,
-                  "&:hover": { color: "gray", background: "transparent" },
+                  fontSize: "0.95rem",
+                  "&:hover": { color: "#fff" },
                 }}
               >
                 {item}
               </Button>
             ))}
-          </Grid>
+          </Box>
         ))}
       </Grid>
 
-      {/* === Bottom Bar === */}
-      <Grid
-        item
-        xs={12}
+      {/* ==== Mobile Footer (Accordion style) ==== */}
+      <Box
         sx={{
-          textAlign: "center",
-          mt: 5,
-          pt: 2,
-          borderTop: "1px solid rgba(255,255,255,0.2)",
+          display: { xs: "block", sm: "none" },
+          px: 2,
+          mb: 3,
         }}
       >
-        <Typography variant="body2" component="p" align="center" sx={{ mb: 0.5 }}>
-          © 2025 HKL SONS ESTD 1902. All rights reserved.
-        </Typography>
+        {sections.map((section, idx) => (
+          <Accordion
+            key={idx}
+            sx={{
+              background: "transparent",
+              color: "white",
+              boxShadow: "none",
+              borderBottom: "1px solid rgba(255,255,255,0.15)",
+            }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon sx={{ color: "white" }} />}
+              sx={{ p: 0 }}
+            >
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: 600, fontSize: "0.95rem" }}
+              >
+                {section.title}
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ pl: 1 }}>
+              {section.items.map((item, i) => (
+                <Typography
+                  key={i}
+                  sx={{
+                    color: "rgba(255,255,255,0.75)",
+                    fontSize: "0.9rem",
+                    mb: 1,
+                  }}
+                >
+                  {item}
+                </Typography>
+              ))}
+            </AccordionDetails>
+          </Accordion>
+        ))}
+      </Box>
 
-        <Typography variant="body2" component="p" align="center" sx={{ mb: 0.5 }}>
+      {/* ==== Divider ==== */}
+      <Box
+        sx={{
+          borderTop: "1px solid rgba(255,255,255,0.15)",
+          width: "90%",
+          mx: "auto",
+          my: 3,
+        }}
+      />
+
+      {/* ==== Bottom Info ==== */}
+      <Box
+        sx={{
+          textAlign: "center",
+          maxWidth: "1200px",
+          mx: "auto",
+          px: 2,
+        }}
+      >
+        <Typography
+          variant="body2"
+          sx={{ color: "rgba(255,255,255,0.85)", mb: 0.5 }}
+        >
+          © 2025 <strong>HKL SONS ESTD 1902</strong>. All rights reserved.
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{ color: "rgba(255,255,255,0.8)", mb: 0.5 }}
+        >
           Made with ❤️ by Me.
         </Typography>
-
-        <Typography variant="body2" component="p" align="center">
-          Icons made by{" "}
+        <Typography
+          variant="body2"
+          sx={{ color: "rgba(255,255,255,0.8)" }}
+        >
+          Icons by{" "}
           <Link
             href="https://www.freepik.com"
             color="inherit"
@@ -124,11 +195,11 @@ const Footer = () => {
             target="_blank"
             rel="noopener noreferrer"
           >
-            www.flaticon.com
+            Flaticon
           </Link>
         </Typography>
-      </Grid>
-    </Grid>
+      </Box>
+    </Box>
   );
 };
 

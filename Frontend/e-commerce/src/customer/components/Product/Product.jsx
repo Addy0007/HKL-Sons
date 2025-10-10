@@ -36,7 +36,6 @@ export default function Product() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Parse search params from URL
   const params = new URLSearchParams(location.search);
   const getArrayParam = (key) =>
     params.get(key) ? params.get(key).split(',') : [];
@@ -255,7 +254,6 @@ export default function Product() {
         </h1>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Mobile Filters Button */}
           <button
             onClick={() => setMobileFiltersOpen(true)}
             className="lg:hidden flex items-center gap-1 border border-gray-300 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50"
@@ -264,7 +262,6 @@ export default function Product() {
             <span className="text-sm">Filters</span>
           </button>
 
-          {/* Sort Dropdown */}
           <Menu as="div" className="relative">
             <MenuButton className="flex items-center gap-1 text-gray-700 hover:text-gray-900 border px-3 py-2 rounded-md shadow-sm text-sm">
               Sort by
@@ -294,52 +291,15 @@ export default function Product() {
         </div>
       </div>
 
-      {/* Mobile Filters Modal */}
-      <Dialog
-        open={mobileFiltersOpen}
-        onClose={() => setMobileFiltersOpen(false)}
-        className="relative z-40 lg:hidden"
-      >
-        <DialogBackdrop className="fixed inset-0 bg-black bg-opacity-25" />
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-full">
-            <DialogPanel className="w-full bg-white max-h-[90vh] overflow-y-auto rounded-t-lg">
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-gray-900">Filters</h2>
-                <button
-                  onClick={() => setMobileFiltersOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XMarkIcon className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="px-4 py-4">
-                <FilterPanel />
-              </div>
-              <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-4">
-                <button
-                  onClick={() => setMobileFiltersOpen(false)}
-                  className="w-full bg-indigo-600 text-white py-2 rounded-md font-semibold hover:bg-indigo-700"
-                >
-                  Apply Filters
-                </button>
-              </div>
-            </DialogPanel>
-          </div>
-        </div>
-      </Dialog>
-
       {/* Filters + Products */}
       <section className="pt-10 pb-24 px-4 sm:px-6">
         <div className="grid grid-cols-1 gap-x-10 gap-y-10 lg:grid-cols-4">
-          {/* Sidebar Filters - Desktop Only */}
           <div className="hidden lg:block pr-6">
             <FilterPanel />
           </div>
 
-          {/* Product Grid (fixed responsive layout) */}
           <div className="lg:col-span-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
               {paginatedProducts.length > 0 ? (
                 paginatedProducts.map((item, index) => (
                   <ProductCard
@@ -353,13 +313,12 @@ export default function Product() {
                   />
                 ))
               ) : (
-                <p className="text-gray-500 text-lg w-full text-center py-12">
+                <p className="text-gray-500 text-lg w-full text-center py-12 col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
                   No products found.
                 </p>
               )}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center mt-10 gap-4 flex-wrap">
                 <button
