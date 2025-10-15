@@ -4,6 +4,8 @@ import Navigation from "./customer/components/Navigation";
 import HomePage from "./customer/components/Pages/HomePage/HomePage";
 import Product from "./customer/components/Product/Product";
 import ProductDetails from "./customer/components/ProductDetails/ProductDetails";
+import Cart from "./customer/components/Cart/Cart";
+import Checkout from "./customer/components/Checkout/Checkout";
 
 function App() {
   return (
@@ -16,6 +18,8 @@ function App() {
           <Route path="/" element={<HomePage />} /> 
           <Route path="/products" element={<Product />} />
           <Route path="/productDetails" element={<ProductDetails />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
         </Routes>
       </main>
 
