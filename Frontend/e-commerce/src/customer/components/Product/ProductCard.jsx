@@ -1,5 +1,5 @@
-import React from 'react';
 import "./ProductCard.css";
+import { useNavigate } from 'react-router-dom';
 
 const ProductCard = ({
   imageUrl,
@@ -9,8 +9,9 @@ const ProductCard = ({
   discountedPrice = 0,
   discountPercent = 0,
 }) => {
+  const navigate=useNavigate();
   return (
-    <div className="productCard w-full h-full bg-white rounded-lg shadow-sm overflow-hidden transition-all cursor-pointer hover:scale-[1.03]">
+    <div onClick={()=>navigate(`/product/${5}`)} className="productCard w-full h-full bg-white rounded-lg shadow-sm overflow-hidden transition-all cursor-pointer hover:scale-[1.03]">
       <div className="aspect-[3/4] w-full overflow-hidden">
         <img
           className="h-full w-full object-cover object-center"

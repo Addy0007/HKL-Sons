@@ -40,7 +40,7 @@ export default function Product() {
   const getArrayParam = (key) =>
     params.get(key) ? params.get(key).split(',') : [];
 
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [setMobileFiltersOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState(params.get('sort') || 'default');
   const [filters, setFilters] = useState({
     availability: params.get('availability') || '',

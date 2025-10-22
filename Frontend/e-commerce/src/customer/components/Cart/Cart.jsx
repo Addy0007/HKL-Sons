@@ -1,8 +1,10 @@
 import React from "react";
 import CartItem from "./CartItem";
+import { useNavigate } from "react-router-dom";
 
 const Cart = () => {
   // Dummy price data (later this will come from backend or context)
+
   const priceDetails = {
     items: 3,
     subtotal: 897,
@@ -11,7 +13,10 @@ const Cart = () => {
   };
 
   const totalAmount = priceDetails.subtotal - priceDetails.discount + priceDetails.delivery;
-
+  const navigate=useNavigate();
+  const handleCheckout=()=>{
+    navigate('/checkout?step=2');
+  }
   return (
     <div className="bg-gray-50 min-h-screen py-10 px-4 sm:px-6 lg:px-10">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -59,7 +64,7 @@ const Cart = () => {
 
           <button
             className="mt-6 w-full bg-emerald-700 text-white font-medium py-3 rounded-md hover:bg-emerald-800 transition shadow-sm hover:shadow-md"
-            onClick={() => alert("Proceeding to checkout...")}
+            onClick={handleCheckout}
           >
             Proceed to Checkout
           </button>

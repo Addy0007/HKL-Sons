@@ -1,6 +1,5 @@
-'use client'
-
-import { Fragment, useState } from 'react'
+import { Fragment, useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Dialog,
   DialogBackdrop,
@@ -14,8 +13,13 @@ import {
   TabList,
   TabPanel,
   TabPanels,
+  Menu,
+  MenuButton,
+  MenuItems,
+  MenuItem,
 } from '@headlessui/react'
 import { Bars3Icon, MagnifyingGlassIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/24/outline'
+
 
 const navigation = {
   categories: [
@@ -41,38 +45,38 @@ const navigation = {
           id: 'clothing',
           name: 'Clothing',
           items: [
-            { name: 'Tops', href: '#' },
-            { name: 'Dresses', href: '#' },
-            { name: 'Pants', href: '#' },
-            { name: 'Denim', href: '#' },
-            { name: 'Sweaters', href: '#' },
-            { name: 'T-Shirts', href: '#' },
-            { name: 'Jackets', href: '#' },
-            { name: 'Activewear', href: '#' },
-            { name: 'Browse All', href: '#' },
+            { name: 'Tops', id: 'tops' },
+            { name: 'Dresses', id: 'dresses' },
+            { name: 'Pants', id: 'pants' },
+            { name: 'Denim', id: 'denim' },
+            { name: 'Sweaters', id: 'sweaters' },
+            { name: 'T-Shirts', id: 't-shirts' },
+            { name: 'Jackets', id: 'jackets' },
+            { name: 'Activewear', id: 'activewear' },
+            { name: 'Browse All', id: 'browse-all' },
           ],
         },
         {
           id: 'accessories',
           name: 'Accessories',
           items: [
-            { name: 'Watches', href: '#' },
-            { name: 'Wallets', href: '#' },
-            { name: 'Bags', href: '#' },
-            { name: 'Sunglasses', href: '#' },
-            { name: 'Hats', href: '#' },
-            { name: 'Belts', href: '#' },
+            { name: 'Watches', id: 'watches' },
+            { name: 'Wallets', id: 'wallets' },
+            { name: 'Bags', id: 'bags' },
+            { name: 'Sunglasses', id: 'sunglasses' },
+            { name: 'Hats', id: 'hats' },
+            { name: 'Belts', id: 'belts' },
           ],
         },
         {
           id: 'brands',
           name: 'Brands',
           items: [
-            { name: 'Full Nelson', href: '#' },
-            { name: 'My Way', href: '#' },
-            { name: 'Re-Arranged', href: '#' },
-            { name: 'Counterfeit', href: '#' },
-            { name: 'Significant Other', href: '#' },
+            { name: 'Full Nelson', id: 'full-nelson' },
+            { name: 'My Way', id: 'my-way' },
+            { name: 'Re-Arranged', id: 're-arranged' },
+            { name: 'Counterfeit', id: 'counterfeit' },
+            { name: 'Significant Other', id: 'significant-other' },
           ],
         },
       ],
@@ -101,34 +105,34 @@ const navigation = {
           id: 'clothing',
           name: 'Clothing',
           items: [
-            { name: 'Tops', href: '#' },
-            { name: 'Pants', href: '#' },
-            { name: 'Sweaters', href: '#' },
-            { name: 'T-Shirts', href: '#' },
-            { name: 'Jackets', href: '#' },
-            { name: 'Activewear', href: '#' },
-            { name: 'Browse All', href: '#' },
+            { name: 'Tops', id: 'tops' },
+            { name: 'Pants', id: 'pants' },
+            { name: 'Sweaters', id: 'sweaters' },
+            { name: 'T-Shirts', id: 't-shirts' },
+            { name: 'Jackets', id: 'jackets' },
+            { name: 'Activewear', id: 'activewear' },
+            { name: 'Browse All', id: 'browse-all' },
           ],
         },
         {
           id: 'accessories',
           name: 'Accessories',
           items: [
-            { name: 'Watches', href: '#' },
-            { name: 'Wallets', href: '#' },
-            { name: 'Bags', href: '#' },
-            { name: 'Sunglasses', href: '#' },
-            { name: 'Hats', href: '#' },
+            { name: 'Watches', id: 'watches' },
+            { name: 'Wallets', id: 'wallets' },
+            { name: 'Bags', id: 'bags' },
+            { name: 'Sunglasses', id: 'sunglasses' },
+            { name: 'Hats', id: 'hats' },
           ],
         },
         {
           id: 'brands',
           name: 'Brands',
           items: [
-            { name: 'Re-Arranged', href: '#' },
-            { name: 'Counterfeit', href: '#' },
-            { name: 'Full Nelson', href: '#' },
-            { name: 'My Way', href: '#' },
+            { name: 'Re-Arranged', id: 're-arranged' },
+            { name: 'Counterfeit', id: 'counterfeit' },
+            { name: 'Full Nelson', id: 'full-nelson' },
+            { name: 'My Way', id: 'my-way' },
           ],
         },
       ],
@@ -142,6 +146,52 @@ const navigation = {
 
 export default function Navigation() {
   const [open, setOpen] = useState(false)
+  const [user, setUser] = useState(null)
+  const navigate = useNavigate()
+
+  // Load user from session on mount and listen for changes
+  useEffect(() => {
+    const loadUser = () => {
+      const savedUser = sessionStorage.getItem('user')
+      if (savedUser) {
+        setUser(JSON.parse(savedUser))
+      } else {
+        setUser(null)
+      }
+    }
+    
+    // Load user initially
+    loadUser()
+    
+    // Listen for storage changes (when user signs in/out)
+    window.addEventListener('storage', loadUser)
+    
+    // Custom event for same-tab updates
+    window.addEventListener('userChanged', loadUser)
+    
+    return () => {
+      window.removeEventListener('storage', loadUser)
+      window.removeEventListener('userChanged', loadUser)
+    }
+  }, [])
+
+  // Function to handle navigation to product listing page
+  const handleCategoryClick = (categoryId, sectionId, itemId) => {
+    const url = `/${categoryId}/${sectionId}/${itemId}`
+    navigate(url)
+    setOpen(false) // Close mobile menu if open
+  }
+
+  const handleSignOut = () => {
+    setUser(null)
+    sessionStorage.removeItem('user')
+    window.dispatchEvent(new Event('userChanged'))
+    navigate('/')
+  }
+
+  const getInitial = (email) => {
+    return email ? email.charAt(0).toUpperCase() : '?'
+  }
 
   return (
     <div style={{ backgroundColor: ' #FFFEC2 ' }}>
@@ -226,9 +276,9 @@ export default function Navigation() {
                         >
                           {section.items.map((item) => (
                             <li key={item.name} className="flow-root">
-                              <a 
-                                href={item.href} 
-                                className="-m-2 block p-2 text-gray-600 transition-colors"
+                              <button
+                                onClick={() => handleCategoryClick(category.id, section.id, item.id)}
+                                className="-m-2 block p-2 text-gray-600 transition-colors w-full text-left"
                                 style={{
                                   ':hover': { color: '#3D8D7A' }
                                 }}
@@ -236,7 +286,7 @@ export default function Navigation() {
                                 onMouseLeave={(e) => e.target.style.color = '#6B7280'}
                               >
                                 {item.name}
-                              </a>
+                              </button>
                             </li>
                           ))}
                         </ul>
@@ -263,26 +313,72 @@ export default function Navigation() {
             </div>
 
             <div className="space-y-6 border-t border-gray-200 px-4 py-6">
-              <div className="flow-root">
-                <a 
-                  href="#" 
-                  className="-m-2 block p-2 font-medium text-gray-900 transition-colors"
-                  onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
-                  onMouseLeave={(e) => e.target.style.color = '#111827'}
-                >
-                  Sign in
-                </a>
-              </div>
-              <div className="flow-root">
-                <a 
-                  href="#" 
-                  className="-m-2 block p-2 font-medium text-gray-900 transition-colors"
-                  onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
-                  onMouseLeave={(e) => e.target.style.color = '#111827'}
-                >
-                  Create account
-                </a>
-              </div>
+              {user ? (
+                <>
+                  <div className="flow-root">
+                    <button 
+                      onClick={() => {
+                        navigate('/profile')
+                        setOpen(false)
+                      }}
+                      className="-m-2 block p-2 font-medium text-gray-900 transition-colors w-full text-left"
+                      onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
+                      onMouseLeave={(e) => e.target.style.color = '#111827'}
+                    >
+                      Profile
+                    </button>
+                  </div>
+                  <div className="flow-root">
+                    <button 
+                      onClick={() => {
+                        navigate('/orders')
+                        setOpen(false)
+                      }}
+                      className="-m-2 block p-2 font-medium text-gray-900 transition-colors w-full text-left"
+                      onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
+                      onMouseLeave={(e) => e.target.style.color = '#111827'}
+                    >
+                      My Orders
+                    </button>
+                  </div>
+                  <div className="flow-root">
+                    <button 
+                      onClick={handleSignOut}
+                      className="-m-2 block p-2 font-medium text-gray-900 transition-colors w-full text-left"
+                      onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
+                      onMouseLeave={(e) => e.target.style.color = '#111827'}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flow-root">
+                    <button 
+                      onClick={() => {
+                        navigate('/signin')
+                        setOpen(false)
+                      }}
+                      className="-m-2 block p-2 font-medium text-gray-900 transition-colors w-full text-left"
+                      onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
+                      onMouseLeave={(e) => e.target.style.color = '#111827'}
+                    >
+                      Sign in
+                    </button>
+                  </div>
+                  <div className="flow-root">
+                    <a 
+                      href="#" 
+                      className="-m-2 block p-2 font-medium text-gray-900 transition-colors"
+                      onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
+                      onMouseLeave={(e) => e.target.style.color = '#111827'}
+                    >
+                      Create account
+                    </a>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="border-t border-gray-200 px-4 py-6">
@@ -325,14 +421,14 @@ export default function Navigation() {
 
               {/* Logo */}
               <div className="ml-4 flex lg:ml-0">
-                <a href="#">
+                <button onClick={() => navigate('/')}>
                   <span className="sr-only">HKL Sons</span>
                   <img
                     alt=""
                     src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=teal&shade=700"
                     className="h-8 w-auto"
                   />
-                </a>
+                </button>
               </div>
 
               {/* Flyout menus */}
@@ -370,7 +466,6 @@ export default function Navigation() {
                         className="absolute inset-x-0 top-full z-20 w-full text-sm text-gray-500 transition data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
                         style={{ backgroundColor: ' #FFFEC2  ' }}
                       >
-                        {/* Presentational element used to render the bottom shadow */}
                         <div aria-hidden="true" className="absolute inset-0 top-1/2 shadow-sm" style={{ backgroundColor: ' #FFFEC2  ' }} />
                         <div className="relative" style={{ backgroundColor: '  #FFFEC2  ' }}>
                           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -407,14 +502,14 @@ export default function Navigation() {
                                     >
                                       {section.items.map((item) => (
                                         <li key={item.name} className="flex">
-                                          <a 
-                                            href={item.href} 
+                                          <button
+                                            onClick={() => handleCategoryClick(category.id, section.id, item.id)}
                                             className="text-gray-600 transition-colors"
                                             onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
                                             onMouseLeave={(e) => e.target.style.color = '#6B7280'}
                                           >
                                             {item.name}
-                                          </a>
+                                          </button>
                                         </li>
                                       ))}
                                     </ul>
@@ -443,23 +538,76 @@ export default function Navigation() {
 
               <div className="ml-auto flex items-center">
                 <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:space-x-6">
-                  <a 
-                    href="#" 
-                    className="text-sm font-medium text-gray-700 transition-colors"
-                    onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
-                    onMouseLeave={(e) => e.target.style.color = '#374151'}
-                  >
-                    Sign in
-                  </a>
-                  <span aria-hidden="true" className="h-6 w-px bg-gray-200" />
-                  <a 
-                    href="#" 
-                    className="text-sm font-medium text-gray-700 transition-colors"
-                    onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
-                    onMouseLeave={(e) => e.target.style.color = '#374151'}
-                  >
-                    Create account
-                  </a>
+                  {user ? (
+                    <Menu as="div" className="relative">
+                      <MenuButton className="flex items-center">
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-medium text-sm transition-transform hover:scale-110"
+                          style={{ backgroundColor: '#3D8D7A' }}
+                        >
+                          {getInitial(user.email)}
+                        </div>
+                      </MenuButton>
+                      <MenuItems className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
+                        <MenuItem>
+                          {({ active }) => (
+                            <button
+                              onClick={() => navigate('/profile')}
+                              className={`${
+                                active ? 'bg-gray-100' : ''
+                              } block w-full px-4 py-2 text-left text-sm text-gray-700`}
+                            >
+                              Profile
+                            </button>
+                          )}
+                        </MenuItem>
+                        <MenuItem>
+                          {({ active }) => (
+                            <button
+                              onClick={() => navigate('/account/order')}
+                              className={`${
+                                active ? 'bg-gray-100' : ''
+                              } block w-full px-4 py-2 text-left text-sm text-gray-700`}
+                            >
+                              My Orders
+                            </button>
+                          )}
+                        </MenuItem>
+                        <MenuItem>
+                          {({ active }) => (
+                            <button
+                              onClick={handleSignOut}
+                              className={`${
+                                active ? 'bg-gray-100' : ''
+                              } block w-full px-4 py-2 text-left text-sm text-gray-700`}
+                            >
+                              Logout
+                            </button>
+                          )}
+                        </MenuItem>
+                      </MenuItems>
+                    </Menu>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={() => navigate('/signin')}
+                        className="text-sm font-medium text-gray-700 transition-colors"
+                        onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
+                        onMouseLeave={(e) => e.target.style.color = '#374151'}
+                      >
+                        Sign in
+                      </button>
+                      <span aria-hidden="true" className="h-6 w-px bg-gray-200" />
+                      <a 
+                        href="#" 
+                        className="text-sm font-medium text-gray-700 transition-colors"
+                        onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
+                        onMouseLeave={(e) => e.target.style.color = '#374151'}
+                      >
+                        Create account
+                      </a>
+                    </>
+                  )}
                 </div>
 
                 <div className="hidden lg:ml-8 lg:flex">
@@ -494,7 +642,7 @@ export default function Navigation() {
 
                 {/* Cart */}
                 <div className="ml-4 flow-root lg:ml-6">
-                  <a href="#" className="group -m-2 flex items-center p-2">
+                  <button onClick={() => navigate('/cart')} className="group -m-2 flex items-center p-2">
                     <ShoppingBagIcon
                       aria-hidden="true"
                       className="size-6 shrink-0 text-gray-400 transition-colors"
@@ -509,7 +657,7 @@ export default function Navigation() {
                       0
                     </span>
                     <span className="sr-only">items in cart, view bag</span>
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>

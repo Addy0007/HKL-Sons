@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom' // ADD THIS IMPORT
 import { Star } from 'lucide-react'
 import ProductReviewSection from './ProductReviewSection'
 
@@ -53,10 +54,12 @@ function classNames(...classes) {
 export default function ProductDetails() {
   const [selectedImage, setSelectedImage] = useState(0)
   const [selectedSize, setSelectedSize] = useState('S')
+  const navigate = useNavigate(); // MOVED THIS LINE TO CORRECT POSITION
 
-  const handleAddToCart = (e) => {
-    e.preventDefault()
-    alert(`Added to cart: ${product.name}, Size: ${selectedSize}`)
+  const handleAddToCart = () => {
+    // You can store the product data in state management (Redux/Context) here
+    // For now, just navigate to cart
+    navigate('/cart');
   }
 
   return (
@@ -206,7 +209,7 @@ export default function ProductDetails() {
             </div>
 
             {/* Add to Cart */}
-            <button
+            <button 
               onClick={handleAddToCart}
               className="mt-8 w-full sm:w-2/3 bg-emerald-700 text-white font-semibold py-2.5 rounded-md hover:bg-emerald-800 transition-colors shadow-sm hover:shadow-md"
             >
