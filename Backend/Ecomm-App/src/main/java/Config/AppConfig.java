@@ -1,6 +1,6 @@
 package Config;
 
-import com.ecomm.EcommApp.Config.JwtValidator; // ✅ correct import
+
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
