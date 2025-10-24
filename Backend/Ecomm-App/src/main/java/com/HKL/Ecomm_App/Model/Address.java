@@ -1,4 +1,4 @@
-package Model;
+package com.HKL.Ecomm_App.Model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;

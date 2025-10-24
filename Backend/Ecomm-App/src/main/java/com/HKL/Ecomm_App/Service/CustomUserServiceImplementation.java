@@ -1,7 +1,7 @@
-package Service;
+package com.HKL.Ecomm_App.Service;
 
-import Model.User;
-import Repository.UserRepository;
+import com.HKL.Ecomm_App.Model.User;
+import com.HKL.Ecomm_App.Repository.UserRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

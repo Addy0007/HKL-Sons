@@ -1,4 +1,4 @@
-package Config;
+package com.HKL.Ecomm_App.Config;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -13,7 +13,7 @@ import java.util.Date;
 @Service
 public class JwtProvider {
 
-    private static final long EXPIRATION_TIME = 86400000L;
+    private static final long EXPIRATION_TIME = 86400000L; // 24 hours
     private static final String SECRET_KEY = JwtConstant.SECRET_KEY;
 
     private final SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET_KEY));
@@ -22,14 +22,33 @@ public class JwtProvider {
         String email = auth.getName();
 
         return Jwts.builder()
+                .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .claim("email", email)
                 .signWith(key)
                 .compact();
     }
-    public String getEmailFromToken(String jwt){
-        jwt=jwt.substring(7);
+
+    /**
+     * Convenience when you want to generate token directly from an email (e.g., after signup).
+     */
+    public String generateTokenFromEmail(String email) {
+        return Jwts.builder()
+                .setSubject(email)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .claim("email", email)
+                .signWith(key)
+                .compact();
+    }
+
+    public String getEmailFromToken(String jwt) {
+        if (jwt == null || !jwt.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("Invalid JWT token format");
+        }
+        jwt = jwt.substring(7);
+
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()

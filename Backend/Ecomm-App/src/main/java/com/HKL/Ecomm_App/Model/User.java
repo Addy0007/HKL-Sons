@@ -1,4 +1,4 @@
-package Model;
+package com.HKL.Ecomm_App.Model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -10,6 +10,7 @@ import java.util.List;
 
 @Entity
 @Data
+@Table(name = "users")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

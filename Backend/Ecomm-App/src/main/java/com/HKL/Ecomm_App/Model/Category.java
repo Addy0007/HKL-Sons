@@ -1,4 +1,4 @@
-package Model;
+package com.HKL.Ecomm_App.Model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;

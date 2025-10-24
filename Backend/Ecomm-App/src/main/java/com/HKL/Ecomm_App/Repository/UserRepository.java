@@ -1,6 +1,6 @@
-package Repository;
+package com.HKL.Ecomm_App.Repository;
 
-import Model.User;
+import com.HKL.Ecomm_App.Model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

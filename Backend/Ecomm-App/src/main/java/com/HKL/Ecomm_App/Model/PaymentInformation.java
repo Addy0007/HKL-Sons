@@ -1,11 +1,13 @@
-package Model;
+package com.HKL.Ecomm_App.Model;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import lombok.Data;
 
 import java.time.LocalDate;
 
 @Data
+@Embeddable
 public class PaymentInformation {
 
     @Column(name="cardholder_name")

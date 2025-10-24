@@ -1,4 +1,4 @@
-package Exception;
+package com.HKL.Ecomm_App.Exception;
 
 public class UserException extends Exception{
 

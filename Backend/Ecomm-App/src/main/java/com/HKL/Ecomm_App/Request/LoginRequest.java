@@ -1,4 +1,4 @@
-package Request;
+package com.HKL.Ecomm_App.Request;
 
 import lombok.Data;
 

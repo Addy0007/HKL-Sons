@@ -1,4 +1,4 @@
-package Model;
+package com.HKL.Ecomm_App.Model;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,10 +28,10 @@ public class Product {
     @Column(name="image_url")
     private String imageUrl;
 
-    @Embedded
     @ElementCollection
-    @Column(name="sizes")
+    @CollectionTable(name = "product_sizes", joinColumns = @JoinColumn(name = "product_id"))
     private Set<Size> sizes = new HashSet<>();
+
     
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Rating> ratings = new ArrayList<>();
