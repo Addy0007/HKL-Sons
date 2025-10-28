@@ -32,13 +32,11 @@ public class AppConfig {
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )
-                // Add JWT filter
                 .addFilterBefore(new JwtValidator(), BasicAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // Allow CORS from your frontend (React / Angular)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

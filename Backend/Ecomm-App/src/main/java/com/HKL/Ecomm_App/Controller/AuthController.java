@@ -45,8 +45,8 @@ public class AuthController {
         String firstName = user.getFirstName();
         String lastName = user.getLastName();
 
-        User isEmailExist = userRepository.findByEmail(email);
-        if (isEmailExist != null) {
+        User ifEmailExist = userRepository.findByEmail(email);
+        if (ifEmailExist != null) {
             throw new UserException("Email is Already Used with Another Account");
         }
 

@@ -26,7 +26,6 @@ public class JwtValidator extends OncePerRequestFilter {
     private final SecretKey key;
 
     public JwtValidator() {
-        // Use Base64 decode to produce the same key bytes as JwtProvider
         this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(JwtConstant.SECRET_KEY));
     }
 
