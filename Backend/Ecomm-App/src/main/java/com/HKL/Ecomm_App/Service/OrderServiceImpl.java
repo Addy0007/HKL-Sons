@@ -61,4 +61,14 @@ public class OrderServiceImpl implements OrderService{
     public Order cancelledOrder(Long orderId) throws OrderException {
         return null;
     }
+
+    @Override
+    public List<Order> getAllOrders() {
+        return List.of();
+    }
+
+    @Override
+    public List<Order> userOrderHistory(Long id) {
+        return List.of();
+    }
 }
