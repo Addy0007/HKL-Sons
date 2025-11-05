@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom'; // ADD THIS IMPORT
+import { Routes, Route } from 'react-router-dom';
 import HomePage from '../customer/components/Pages/HomePage/HomePage';
 import Navigation from '../customer/components/Navigation';
 import Footer from '../customer/components/Footer/Footer';
@@ -19,11 +19,13 @@ const CustomerRoutes = () => {
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<HomePage />} /> 
+          <Route path="/login" element={<SignIn />} /> {/* ✅ FIXED */}
+          <Route path="/signup" element={<SignIn />} /> {/* ✅ FIXED */}
+          <Route path="/signin" element={<SignIn />} /> {/* Keep this too if needed */}
           <Route path="/cart" element={<Cart />} />
           <Route path="/products" element={<Product />} />
           <Route path="/productDetails" element={<ProductDetails />} />
           <Route path="/checkout" element={<Checkout />} />
-          <Route path="/signin" element={<SignIn />} />
           <Route path="/account/order" element={<Order />} />
           <Route path="/account/order/:orderId" element={<OrderDetails />} />
           <Route path="/:lavelOne/:lavelTwo/:lavelThree" element={<Product />} />

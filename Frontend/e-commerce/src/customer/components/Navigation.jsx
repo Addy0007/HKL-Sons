@@ -1,5 +1,7 @@
-import { Fragment, useState, useEffect } from 'react'
+import { Fragment, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
+import { logout } from '../../State/Auth/Action'
 import {
   Dialog,
   DialogBackdrop,
@@ -19,7 +21,6 @@ import {
   MenuItem,
 } from '@headlessui/react'
 import { Bars3Icon, MagnifyingGlassIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/24/outline'
-
 
 const navigation = {
   categories: [
@@ -88,16 +89,14 @@ const navigation = {
         {
           name: 'New Arrivals',
           href: '#',
-          imageSrc:
-            'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-04-detail-product-shot-01.jpg',
+          imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-04-detail-product-shot-01.jpg',
           imageAlt: 'Drawstring top with elastic loop closure and textured interior padding.',
         },
         {
           name: 'Artwork Tees',
           href: '#',
           imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/category-page-02-image-card-06.jpg',
-          imageAlt:
-            'Three shirts in gray, white, and blue arranged on table with same line drawing of hands and shapes overlapping on front of shirt.',
+          imageAlt: 'Three shirts in gray, white, and blue arranged on table with same line drawing of hands and shapes overlapping on front of shirt.',
         },
       ],
       sections: [
@@ -146,55 +145,49 @@ const navigation = {
 
 export default function Navigation() {
   const [open, setOpen] = useState(false)
-  const [user, setUser] = useState(null)
   const navigate = useNavigate()
-
-  // Load user from session on mount and listen for changes
-  useEffect(() => {
-    const loadUser = () => {
-      const savedUser = sessionStorage.getItem('user')
-      if (savedUser) {
-        setUser(JSON.parse(savedUser))
-      } else {
-        setUser(null)
-      }
-    }
-    
-    // Load user initially
-    loadUser()
-    
-    // Listen for storage changes (when user signs in/out)
-    window.addEventListener('storage', loadUser)
-    
-    // Custom event for same-tab updates
-    window.addEventListener('userChanged', loadUser)
-    
-    return () => {
-      window.removeEventListener('storage', loadUser)
-      window.removeEventListener('userChanged', loadUser)
-    }
-  }, [])
+  const dispatch = useDispatch()
+  
+  // Get user from Redux store
+  const { user, jwt } = useSelector((state) => state.auth)
 
   // Function to handle navigation to product listing page
   const handleCategoryClick = (categoryId, sectionId, itemId) => {
     const url = `/${categoryId}/${sectionId}/${itemId}`
     navigate(url)
-    setOpen(false) // Close mobile menu if open
+    setOpen(false)
   }
 
   const handleSignOut = () => {
-    setUser(null)
-    sessionStorage.removeItem('user')
-    window.dispatchEvent(new Event('userChanged'))
+    dispatch(logout())
     navigate('/')
   }
 
-  const getInitial = (email) => {
-    return email ? email.charAt(0).toUpperCase() : '?'
+  const getInitial = (user) => {
+    if (user?.firstName) {
+      return user.firstName.charAt(0).toUpperCase()
+    }
+    if (user?.email) {
+      return user.email.charAt(0).toUpperCase()
+    }
+    return 'U'
+  }
+
+  const getUserName = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`
+    }
+    if (user?.firstName) {
+      return user.firstName
+    }
+    if (user?.email) {
+      return user.email.split('@')[0]
+    }
+    return 'User'
   }
 
   return (
-    <div style={{ backgroundColor: ' #FFFEC2 ' }}>
+    <div style={{ backgroundColor: '#FFFEC2' }}>
       {/* Mobile menu */}
       <Dialog open={open} onClose={setOpen} className="relative z-40 lg:hidden">
         <DialogBackdrop
@@ -225,9 +218,7 @@ export default function Navigation() {
                   {navigation.categories.map((category) => (
                     <Tab
                       key={category.name}
-                      style={{
-                        borderBottomColor: 'transparent',
-                      }}
+                      style={{ borderBottomColor: 'transparent' }}
                       className="flex-1 border-b-2 px-1 py-4 text-base font-medium whitespace-nowrap text-gray-900 data-selected:text-gray-900"
                     >
                       <span
@@ -279,9 +270,6 @@ export default function Navigation() {
                               <button
                                 onClick={() => handleCategoryClick(category.id, section.id, item.id)}
                                 className="-m-2 block p-2 text-gray-600 transition-colors w-full text-left"
-                                style={{
-                                  ':hover': { color: '#3D8D7A' }
-                                }}
                                 onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
                                 onMouseLeave={(e) => e.target.style.color = '#6B7280'}
                               >
@@ -313,8 +301,12 @@ export default function Navigation() {
             </div>
 
             <div className="space-y-6 border-t border-gray-200 px-4 py-6">
-              {user ? (
+              {jwt || user ? (
                 <>
+                  <div className="flow-root px-4 py-2 bg-gray-50 rounded-lg">
+                    <p className="text-sm font-medium text-gray-900">{getUserName()}</p>
+                    <p className="text-xs text-gray-500">{user?.email}</p>
+                  </div>
                   <div className="flow-root">
                     <button 
                       onClick={() => {
@@ -331,7 +323,7 @@ export default function Navigation() {
                   <div className="flow-root">
                     <button 
                       onClick={() => {
-                        navigate('/orders')
+                        navigate('/account/order')
                         setOpen(false)
                       }}
                       className="-m-2 block p-2 font-medium text-gray-900 transition-colors w-full text-left"
@@ -344,9 +336,7 @@ export default function Navigation() {
                   <div className="flow-root">
                     <button 
                       onClick={handleSignOut}
-                      className="-m-2 block p-2 font-medium text-gray-900 transition-colors w-full text-left"
-                      onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
-                      onMouseLeave={(e) => e.target.style.color = '#111827'}
+                      className="-m-2 block p-2 font-medium text-red-600 transition-colors w-full text-left hover:text-red-700"
                     >
                       Logout
                     </button>
@@ -357,7 +347,7 @@ export default function Navigation() {
                   <div className="flow-root">
                     <button 
                       onClick={() => {
-                        navigate('/signin')
+                        navigate('/login')
                         setOpen(false)
                       }}
                       className="-m-2 block p-2 font-medium text-gray-900 transition-colors w-full text-left"
@@ -368,14 +358,17 @@ export default function Navigation() {
                     </button>
                   </div>
                   <div className="flow-root">
-                    <a 
-                      href="#" 
-                      className="-m-2 block p-2 font-medium text-gray-900 transition-colors"
+                    <button 
+                      onClick={() => {
+                        navigate('/signup')
+                        setOpen(false)
+                      }}
+                      className="-m-2 block p-2 font-medium text-gray-900 transition-colors w-full text-left"
                       onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
                       onMouseLeave={(e) => e.target.style.color = '#111827'}
                     >
                       Create account
-                    </a>
+                    </button>
                   </div>
                 </>
               )}
@@ -450,24 +443,17 @@ export default function Navigation() {
                           <span
                             aria-hidden="true"
                             className="absolute inset-x-0 -bottom-px z-30 h-0.5 transition duration-200 ease-out"
-                            style={{ 
-                              backgroundColor: 'transparent',
-                            }}
-                            onMouseEnter={(e) => {
-                              if (e.target.closest('[data-open]')) {
-                                e.target.style.backgroundColor = '#3D8D7A';
-                              }
-                            }}
+                            style={{ backgroundColor: 'transparent' }}
                           />
                         </PopoverButton>
                       </div>
                       <PopoverPanel
                         transition
                         className="absolute inset-x-0 top-full z-20 w-full text-sm text-gray-500 transition data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
-                        style={{ backgroundColor: ' #FFFEC2  ' }}
+                        style={{ backgroundColor: '#FFFEC2' }}
                       >
-                        <div aria-hidden="true" className="absolute inset-0 top-1/2 shadow-sm" style={{ backgroundColor: ' #FFFEC2  ' }} />
-                        <div className="relative" style={{ backgroundColor: '  #FFFEC2  ' }}>
+                        <div aria-hidden="true" className="absolute inset-0 top-1/2 shadow-sm" style={{ backgroundColor: '#FFFEC2' }} />
+                        <div className="relative" style={{ backgroundColor: '#FFFEC2' }}>
                           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                             <div className="grid grid-cols-2 gap-x-8 gap-y-10 py-16">
                               <div className="col-start-2 grid grid-cols-2 gap-x-8">
@@ -538,59 +524,70 @@ export default function Navigation() {
 
               <div className="ml-auto flex items-center">
                 <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:space-x-6">
-                  {user ? (
+                  {jwt || user ? (
                     <Menu as="div" className="relative">
-                      <MenuButton className="flex items-center">
+                      <MenuButton className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
                         <div 
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-medium text-sm transition-transform hover:scale-110"
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md transition-transform hover:scale-105"
                           style={{ backgroundColor: '#3D8D7A' }}
                         >
-                          {getInitial(user.email)}
+                          {getInitial(user)}
                         </div>
+                        <span className="text-sm font-medium text-gray-700 hidden xl:block">
+                          {getUserName()}
+                        </span>
                       </MenuButton>
-                      <MenuItems className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
-                        <MenuItem>
-                          {({ active }) => (
-                            <button
-                              onClick={() => navigate('/profile')}
-                              className={`${
-                                active ? 'bg-gray-100' : ''
-                              } block w-full px-4 py-2 text-left text-sm text-gray-700`}
-                            >
-                              Profile
-                            </button>
-                          )}
-                        </MenuItem>
-                        <MenuItem>
-                          {({ active }) => (
-                            <button
-                              onClick={() => navigate('/account/order')}
-                              className={`${
-                                active ? 'bg-gray-100' : ''
-                              } block w-full px-4 py-2 text-left text-sm text-gray-700`}
-                            >
-                              My Orders
-                            </button>
-                          )}
-                        </MenuItem>
-                        <MenuItem>
-                          {({ active }) => (
-                            <button
-                              onClick={handleSignOut}
-                              className={`${
-                                active ? 'bg-gray-100' : ''
-                              } block w-full px-4 py-2 text-left text-sm text-gray-700`}
-                            >
-                              Logout
-                            </button>
-                          )}
-                        </MenuItem>
+                      <MenuItems className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black/5 focus:outline-none divide-y divide-gray-100">
+                        <div className="px-4 py-3">
+                          <p className="text-sm font-medium text-gray-900">{getUserName()}</p>
+                          <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                        </div>
+                        <div className="py-1">
+                          <MenuItem>
+                            {({ focus }) => (
+                              <button
+                                onClick={() => navigate('/profile')}
+                                className={`${
+                                  focus ? 'bg-gray-50' : ''
+                                } block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors`}
+                              >
+                                My Profile
+                              </button>
+                            )}
+                          </MenuItem>
+                          <MenuItem>
+                            {({ focus }) => (
+                              <button
+                                onClick={() => navigate('/account/order')}
+                                className={`${
+                                  focus ? 'bg-gray-50' : ''
+                                } block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors`}
+                              >
+                                My Orders
+                              </button>
+                            )}
+                          </MenuItem>
+                        </div>
+                        <div className="py-1">
+                          <MenuItem>
+                            {({ focus }) => (
+                              <button
+                                onClick={handleSignOut}
+                                className={`${
+                                  focus ? 'bg-red-50' : ''
+                                } block w-full px-4 py-2 text-left text-sm text-red-600 font-medium transition-colors`}
+                              >
+                                Sign Out
+                              </button>
+                            )}
+                          </MenuItem>
+                        </div>
                       </MenuItems>
                     </Menu>
                   ) : (
                     <>
                       <button 
-                        onClick={() => navigate('/signin')}
+                        onClick={() => navigate('/login')}
                         className="text-sm font-medium text-gray-700 transition-colors"
                         onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
                         onMouseLeave={(e) => e.target.style.color = '#374151'}
@@ -598,14 +595,14 @@ export default function Navigation() {
                         Sign in
                       </button>
                       <span aria-hidden="true" className="h-6 w-px bg-gray-200" />
-                      <a 
-                        href="#" 
+                      <button 
+                        onClick={() => navigate('/signup')}
                         className="text-sm font-medium text-gray-700 transition-colors"
                         onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
                         onMouseLeave={(e) => e.target.style.color = '#374151'}
                       >
                         Create account
-                      </a>
+                      </button>
                     </>
                   )}
                 </div>
@@ -645,15 +642,9 @@ export default function Navigation() {
                   <button onClick={() => navigate('/cart')} className="group -m-2 flex items-center p-2">
                     <ShoppingBagIcon
                       aria-hidden="true"
-                      className="size-6 shrink-0 text-gray-400 transition-colors"
-                      onMouseEnter={(e) => e.currentTarget.style.color = '#3D8D7A'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
+                      className="size-6 shrink-0 text-gray-400 transition-colors group-hover:text-gray-600"
                     />
-                    <span 
-                      className="ml-2 text-sm font-medium text-gray-700 transition-colors"
-                      onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
-                      onMouseLeave={(e) => e.target.style.color = '#374151'}
-                    >
+                    <span className="ml-2 text-sm font-medium text-gray-700 group-hover:text-gray-800">
                       0
                     </span>
                     <span className="sr-only">items in cart, view bag</span>
