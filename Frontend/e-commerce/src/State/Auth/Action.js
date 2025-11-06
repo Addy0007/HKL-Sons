@@ -1,89 +1,72 @@
-import axios from "axios";
-import { API_BASE_URL } from "../../Config/apiConfig";
+import { api } from "../../Config/apiConfig"; // ✅ Use shared axios instance
 import {
-    REGISTER_REQUEST,
-    REGISTER_SUCCESS,
-    REGISTER_FAILURE,
-    LOGIN_REQUEST,
-    LOGIN_SUCCESS,
-    LOGIN_FAILURE,
-    GET_USER_REQUEST,
-    GET_USER_SUCCESS,
-    GET_USER_FAILURE,
-    LOGOUT,
-  } from "./ActionType"; // ✅ Correct path (same folder)
-  
-
-
-
-// ===================== ACTION CREATORS =====================
-
-// REGISTER actions
-const registerRequest = () => ({ type: REGISTER_REQUEST });
-const registerSuccess = (user) => ({ type: REGISTER_SUCCESS, payload: user });
-const registerFailure = (error) => ({ type: REGISTER_FAILURE, payload: error });
-
-// LOGIN actions
-const loginRequest = () => ({ type: LOGIN_REQUEST });
-const loginSuccess = (user) => ({ type: LOGIN_SUCCESS, payload: user });
-const loginFailure = (error) => ({ type: LOGIN_FAILURE, payload: error });
-
-// GET USER actions
-const getUserRequest = () => ({ type: GET_USER_REQUEST });
-const getUserSuccess = (user) => ({ type: GET_USER_SUCCESS, payload: user });
-const getUserFailure = (error) => ({ type: GET_USER_FAILURE, payload: error });
-
-// LOGOUT action
-export const logout = () => (dispatch)=>{dispatch({ type: LOGOUT,payload:null })};
-
-// ===================== THUNK ACTIONS =====================
+  REGISTER_REQUEST,
+  REGISTER_SUCCESS,
+  REGISTER_FAILURE,
+  LOGIN_REQUEST,
+  LOGIN_SUCCESS,
+  LOGIN_FAILURE,
+  GET_USER_REQUEST,
+  GET_USER_SUCCESS,
+  GET_USER_FAILURE,
+  LOGOUT,
+} from "./ActionType";
 
 // REGISTER
 export const register = (userData) => async (dispatch) => {
-  dispatch(registerRequest());
+  dispatch({ type: REGISTER_REQUEST });
+
   try {
-    const response = await axios.post(`${API_BASE_URL}auth/signup`, userData);
-    const user = response.data;
+    const { data } = await api.post("/auth/signup", userData);
 
-    if (user.jwt) {
-      localStorage.setItem("jwt", user.jwt);
-    }
+    // ✅ Save JWT
+    localStorage.setItem("jwtToken", data.jwt);
 
-    dispatch(registerSuccess(user));
+    dispatch({ type: REGISTER_SUCCESS, payload: data });
   } catch (error) {
-    dispatch(registerFailure(error.message));
+    dispatch({
+      type: REGISTER_FAILURE,
+      payload: error.response?.data?.message || error.message,
+    });
   }
 };
 
 // LOGIN
 export const login = (credentials) => async (dispatch) => {
-  dispatch(loginRequest());
+  dispatch({ type: LOGIN_REQUEST });
+
   try {
-    const response = await axios.post(`${API_BASE_URL}auth/signin`, credentials);
-    const user = response.data;
+    const { data } = await api.post("/auth/signin", credentials);
 
-    if (user.jwt) {
-      localStorage.setItem("jwt", user.jwt);
-    }
+    // ✅ Save JWT
+    localStorage.setItem("jwtToken", data.jwt);
 
-    dispatch(loginSuccess(user));
+    dispatch({ type: LOGIN_SUCCESS, payload: data });
   } catch (error) {
-    dispatch(loginFailure(error.message));
+    dispatch({
+      type: LOGIN_FAILURE,
+      payload: error.response?.data?.message || error.message,
+    });
   }
 };
 
-// GET USER (for fetching logged-in user details)
+// GET USER DETAILS
 export const getUser = () => async (dispatch) => {
-  dispatch(getUserRequest());
+  dispatch({ type: GET_USER_REQUEST });
+
   try {
-    const jwt = localStorage.getItem("jwt");
-    const response = await axios.get(`${API_BASE_URL}/api/users/profile`, {
-      headers: {
-        Authorization: `Bearer ${jwt}`,
-      },
-    });
-    dispatch(getUserSuccess(response.data));
+    const { data } = await api.get("/api/users/profile");
+    dispatch({ type: GET_USER_SUCCESS, payload: data });
   } catch (error) {
-    dispatch(getUserFailure(error.message));
+    dispatch({
+      type: GET_USER_FAILURE,
+      payload: error.response?.data?.message || error.message,
+    });
   }
+};
+
+// LOGOUT
+export const logout = () => (dispatch) => {
+  localStorage.removeItem("jwtToken");
+  dispatch({ type: LOGOUT });
 };

@@ -8,7 +8,12 @@ import {
 } from "./ActionType";
 
 const initialState = {
-  products: [],
+  products: {
+    content: [],
+    totalPages: 0,
+    totalElements: 0,
+    number: 0,
+  },
   product: null,
   loading: false,
   error: null,
@@ -21,7 +26,19 @@ export const customerProductsReducer = (state = initialState, action) => {
       return { ...state, loading: true, error: null };
 
     case FIND_PRODUCTS_SUCCESS:
-      return { ...state, loading: false, products: action.payload.content || [] };
+      // ✅ Handle nested page object from backend
+      { const responseData = action.payload;
+      
+      return {
+        ...state,
+        loading: false,
+        products: {
+          content: responseData.content || [],
+          totalPages: responseData.page?.totalPages || responseData.totalPages || 0,
+          totalElements: responseData.page?.totalElements || responseData.totalElements || 0,
+          number: responseData.page?.number ?? responseData.number ?? 0,
+        },
+      }; }
 
     case FIND_PRODUCT_BY_ID_SUCCESS:
       return { ...state, loading: false, product: action.payload };

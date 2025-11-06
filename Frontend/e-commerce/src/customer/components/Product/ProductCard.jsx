@@ -1,23 +1,33 @@
 import "./ProductCard.css";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
-const ProductCard = ({
-  imageUrl,
-  brand = "Unknown Brand",
-  title = "Product",
-  price = 0,
-  discountedPrice = 0,
-  discountPercent = 0,
-}) => {
-  const navigate=useNavigate();
+const ProductCard = ({ product }) => {
+  const navigate = useNavigate();
+
+  if (!product) return null; // Prevent breaking UI
+
+  const {
+    id,
+    imageUrl,
+    brand = "Unknown Brand",
+    title = "Product",
+    price = 0,
+    discountedPrice = 0,
+    discountPercent = 0,
+  } = product;
+
   return (
-    <div onClick={()=>navigate(`/product/${5}`)} className="productCard w-full h-full bg-white rounded-lg shadow-sm overflow-hidden transition-all cursor-pointer hover:scale-[1.03]">
+    <div
+      onClick={() => navigate(`/product/${id}`)}
+      className="productCard w-full h-full bg-white rounded-lg shadow-sm overflow-hidden transition-all cursor-pointer hover:scale-[1.03]"
+    >
       <div className="aspect-[3/4] w-full overflow-hidden">
         <img
           className="h-full w-full object-cover object-center"
           src={imageUrl}
           alt={title}
-          onError={(e) => (e.target.src = 'https://via.placeholder.com/300')}
+          onError={(e) => (e.target.src = "https://via.placeholder.com/300")}
+          loading="lazy"
         />
       </div>
 
@@ -28,7 +38,9 @@ const ProductCard = ({
         <div className="flex items-center space-x-2 mt-2">
           <p className="font-semibold text-gray-900">₹{discountedPrice}</p>
           <p className="line-through opacity-50 text-sm">₹{price}</p>
-          <p className="text-green-600 font-semibold text-xs">{discountPercent}% OFF</p>
+          <p className="text-green-600 font-semibold text-xs">
+            {discountPercent}% OFF
+          </p>
         </div>
       </div>
     </div>
