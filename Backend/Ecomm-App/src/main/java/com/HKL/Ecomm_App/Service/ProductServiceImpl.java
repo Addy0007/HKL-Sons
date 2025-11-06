@@ -3,15 +3,13 @@ package com.HKL.Ecomm_App.Service;
 import com.HKL.Ecomm_App.Exception.ProductException;
 import com.HKL.Ecomm_App.Model.Category;
 import com.HKL.Ecomm_App.Model.Product;
+import com.HKL.Ecomm_App.Model.Size;
 import com.HKL.Ecomm_App.Repository.CategoryRepository;
 import com.HKL.Ecomm_App.Repository.ProductRepository;
 import com.HKL.Ecomm_App.Request.CreateProductRequest;
 import com.HKL.Ecomm_App.Request.UpdateProductRequest;
 import jakarta.transaction.Transactional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -88,8 +86,6 @@ public class ProductServiceImpl implements ProductService {
         return "Product deleted successfully";
     }
 
-
-
     @Transactional
     public Product updateProduct(Long productId, UpdateProductRequest req) throws ProductException {
         Product product = findProductById(productId);
@@ -125,7 +121,6 @@ public class ProductServiceImpl implements ProductService {
         return productRepository.save(product);
     }
 
-
     @Override
     public Product findProductById(Long id) throws ProductException {
         return productRepository.findById(id)
@@ -138,35 +133,123 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<Product> getAllProducts(String category, List<String> colours, List<String> sizes,
+    @Transactional(Transactional.TxType.SUPPORTS)
+    public Page<Product> getAllProducts(String category, List<String> colors, List<String> sizes,
                                         Integer minPrice, Integer maxPrice, Integer minDiscount,
                                         String sort, String stock, Integer pageNumber, Integer pageSize) {
 
-        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        System.out.println("========== FILTER DEBUG ==========");
+        System.out.println("Category: " + category);
+        System.out.println("Colors: " + colors);
+        System.out.println("Sizes: " + sizes);
+        System.out.println("Price Range: " + minPrice + " - " + maxPrice);
+        System.out.println("Min Discount: " + minDiscount);
+        System.out.println("Sort: " + sort);
+        System.out.println("Stock: " + stock);
+        System.out.println("Page: " + pageNumber + ", Size: " + pageSize);
 
-        List<Product> products = productRepository.filterProducts(category, minPrice, maxPrice, minDiscount, sort);
-        if (colours != null && !colours.isEmpty()) {
-            products = products.stream()
-                    .filter(p -> colours.stream().anyMatch(c -> c.equalsIgnoreCase(p.getColor())))
-                    .collect(Collectors.toList());
-        }
+        // Sorting setup
+        Sort sortBy = switch (sort == null ? "" : sort) {
+            case "price_high" -> Sort.by(Sort.Direction.DESC, "discountedPrice");
+            case "price_low"  -> Sort.by(Sort.Direction.ASC, "discountedPrice");
+            case "discount"   -> Sort.by(Sort.Direction.DESC, "discountPercent");
+            default           -> Sort.by(Sort.Direction.DESC, "createdAt");
+        };
 
-        if (stock != null) {
-            if (stock.equalsIgnoreCase("in_stock")) {
-                products = products.stream().filter(p -> p.getQuantity() > 0).collect(Collectors.toList());
-            } else if (stock.equalsIgnoreCase("out_of_stock")) {
-                products = products.stream().filter(p -> p.getQuantity() < 1).collect(Collectors.toList());
-            }
-        }
+        // ✅ Fetch all products from database with basic filters
+        List<Product> allProducts = productRepository.filterProductsPage(
+                (category == null || category.isBlank()) ? null : category.toLowerCase(),
+                minPrice,
+                maxPrice,
+                minDiscount,
+                sortBy
+        );
 
-        int startIndex = (int) pageable.getOffset();
-        if (startIndex >= products.size()) {
-            return new PageImpl<>(List.of(), pageable, products.size());
-        }
+        System.out.println("✅ Products fetched from DB: " + allProducts.size());
 
-        int endIndex = Math.min(startIndex + pageable.getPageSize(), products.size());
-        List<Product> pageContent = products.subList(startIndex, endIndex);
+        // Normalize filters - handle null/empty cases properly
+        List<String> normalizedColors = (colors == null || colors.isEmpty())
+                ? List.of()
+                : colors.stream()
+                .filter(c -> c != null && !c.isBlank())
+                .map(String::toLowerCase)
+                .toList();
 
-        return new PageImpl<>(pageContent, pageable, products.size());
+        List<String> normalizedSizes = (sizes == null || sizes.isEmpty())
+                ? List.of()
+                : sizes.stream()
+                .filter(sz -> sz != null && !sz.isBlank())
+                .map(String::toLowerCase)
+                .toList();
+
+        System.out.println("Normalized Colors: " + normalizedColors);
+        System.out.println("Normalized Sizes: " + normalizedSizes);
+
+        // ✅ Apply filtering in Java
+        List<Product> filtered = allProducts.stream()
+                // Color filter
+                .filter(p -> {
+                    if (normalizedColors.isEmpty()) return true;
+                    if (p.getColor() == null) return false;
+                    boolean matches = normalizedColors.contains(p.getColor().toLowerCase());
+                    if (!matches) {
+                        System.out.println("Filtered out " + p.getTitle() + " - color: " + p.getColor());
+                    }
+                    return matches;
+                })
+                // Size filter
+                .filter(p -> {
+                    if (normalizedSizes.isEmpty()) return true;
+                    if (p.getSizes() == null || p.getSizes().isEmpty()) return false;
+
+                    boolean hasMatchingSize = p.getSizes().stream().anyMatch(sz -> {
+                        if (sz.getName() == null) return false;
+                        String sizeName = sz.getName().toLowerCase();
+                        return normalizedSizes.contains(sizeName) && sz.getQuantity() > 0;
+                    });
+
+                    if (!hasMatchingSize) {
+                        System.out.println("Filtered out " + p.getTitle() + " - sizes: " +
+                                p.getSizes().stream().map(Size::getName).toList());
+                    }
+                    return hasMatchingSize;
+                })
+                // Stock filter
+                .filter(p -> {
+                    if (stock == null || stock.isBlank()) return true;
+
+                    boolean productHasStock = p.getQuantity() > 0 ||
+                            (p.getSizes() != null && p.getSizes().stream().anyMatch(sz -> sz.getQuantity() > 0));
+
+                    boolean shouldInclude = stock.equalsIgnoreCase("in_stock") ? productHasStock : !productHasStock;
+
+                    if (!shouldInclude) {
+                        System.out.println("Filtered out " + p.getTitle() + " - stock filter");
+                    }
+                    return shouldInclude;
+                })
+                .sorted((a, b) -> switch (sort == null ? "" : sort) {
+                    case "price_low" -> Integer.compare(a.getDiscountedPrice(), b.getDiscountedPrice());
+                    case "price_high" -> Integer.compare(b.getDiscountedPrice(), a.getDiscountedPrice());
+                    case "discount" -> Integer.compare(b.getDiscountPercent(), a.getDiscountPercent());
+                    default -> b.getCreatedAt().compareTo(a.getCreatedAt());
+                })
+                .toList();
+
+        System.out.println("✅ After filtering: " + filtered.size());
+
+        // ✅ Manual Pagination
+        int start = pageNumber * pageSize;
+        int end = Math.min(start + pageSize, filtered.size());
+
+        // Ensure start index doesn't exceed list size
+        start = Math.min(start, filtered.size());
+
+        List<Product> paginated = filtered.subList(start, end);
+
+        System.out.println("✅ Page " + (pageNumber + 1) + ": showing " + paginated.size() + " products");
+        System.out.println("===================================");
+
+        return new PageImpl<>(paginated, PageRequest.of(pageNumber, pageSize, sortBy), filtered.size());
     }
 }
