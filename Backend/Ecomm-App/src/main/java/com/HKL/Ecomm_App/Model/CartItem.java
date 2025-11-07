@@ -1,6 +1,7 @@
 package com.HKL.Ecomm_App.Model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,8 +22,9 @@ public class CartItem {
     @JoinColumn(name = "cart_id")
     private Cart cart;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "product_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Product product;
 
     private String size;

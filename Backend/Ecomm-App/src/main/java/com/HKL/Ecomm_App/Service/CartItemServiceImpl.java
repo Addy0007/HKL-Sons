@@ -7,8 +7,8 @@ import com.HKL.Ecomm_App.Model.CartItem;
 import com.HKL.Ecomm_App.Model.Product;
 import com.HKL.Ecomm_App.Repository.CartItemRepository;
 import com.HKL.Ecomm_App.Repository.CartRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CartItemServiceImpl implements CartItemService {
@@ -26,21 +26,29 @@ public class CartItemServiceImpl implements CartItemService {
     }
 
     @Override
+    @Transactional
     public CartItem createCartItem(CartItem cartItem) {
-        cartItem.setQuantity(1);
         calculateItemPrices(cartItem);
-        return cartItemRepository.save(cartItem);
+        CartItem saved = cartItemRepository.save(cartItem);
+        System.out.println("✅ CartItem created with ID: " + saved.getId());
+        return saved;
     }
 
     @Override
+    @Transactional
     public CartItem updateCartItem(Long userId, Long id, CartItem cartItem)
             throws CartItemException, UserException {
 
         CartItem item = findCartItemById(id);
 
-        if (!item.getUserId().equals(userId)) {
+        if (!item.getUserId()
+                .equals(userId)) {
             throw new UserException("Unauthorized update request for cart item");
         }
+     //   if (cartItem.getQuantity() <= 0) {
+     //       cartItemRepository.delete(item);
+      //      return null;
+       // }
 
         item.setQuantity(cartItem.getQuantity());
         calculateItemPrices(item);
@@ -49,17 +57,22 @@ public class CartItemServiceImpl implements CartItemService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public CartItem isCartItemExist(Cart cart, Product product, String size, Long userId) {
-        return cartItemRepository.isCartItemExist(cart, product, size, userId);
+        CartItem item = cartItemRepository.isCartItemExist(cart, product, size, userId);
+        System.out.println("🔍 Checking if cart item exists: " + (item != null ? "YES (ID: " + item.getId() + ")" : "NO"));
+        return item;
     }
 
     @Override
+    @Transactional
     public void removeCartItem(Long userId, Long cartItemId)
             throws CartItemException, UserException {
 
         CartItem cartItem = findCartItemById(cartItemId);
 
-        if (!cartItem.getUserId().equals(userId)) {
+        if (!cartItem.getUserId()
+                .equals(userId)) {
             throw new UserException("Cannot remove another user's cart item");
         }
 
@@ -67,7 +80,7 @@ public class CartItemServiceImpl implements CartItemService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public CartItem findCartItemById(Long cartItemId) throws CartItemException {
         return cartItemRepository.findById(cartItemId)
                 .orElseThrow(() ->
@@ -75,7 +88,9 @@ public class CartItemServiceImpl implements CartItemService {
     }
 
     private void calculateItemPrices(CartItem item) {
-        item.setPrice(item.getProduct().getPrice() * item.getQuantity());
-        item.setDiscountedPrice(item.getProduct().getDiscountedPrice() * item.getQuantity());
+        item.setPrice(item.getProduct()
+                .getPrice() * item.getQuantity());
+        item.setDiscountedPrice(item.getProduct()
+                .getDiscountedPrice() * item.getQuantity());
     }
 }

@@ -44,7 +44,8 @@ public class AppConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()  // Public endpoints (signup/login)
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger access
-                        .requestMatchers("/api/**").authenticated() // Protected routes
+                        .requestMatchers("/api/products/**").permitAll() // ✅ ADDED: Make all product endpoints public
+                        .requestMatchers("/api/**").authenticated() // Protected routes (cart, orders, etc.)
                         .anyRequest().permitAll()
                 )
 

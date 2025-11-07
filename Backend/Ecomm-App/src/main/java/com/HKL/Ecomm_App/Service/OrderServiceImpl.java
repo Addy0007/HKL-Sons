@@ -1,6 +1,7 @@
 package com.HKL.Ecomm_App.Service;
 
 import com.HKL.Ecomm_App.Exception.OrderException;
+import com.HKL.Ecomm_App.Exception.UserException;
 import com.HKL.Ecomm_App.Model.*;
 import com.HKL.Ecomm_App.Repository.*;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,7 @@ public class OrderServiceImpl implements OrderService{
     }
 
     @Override
-    public Order createOrder(User user, Address shippingAddress){
+    public Order createOrder(User user, Address shippingAddress) throws UserException {
         shippingAddress.setUser(user);
         Address address=addressRepository.save(shippingAddress);
         user.getAddress().add(address);
