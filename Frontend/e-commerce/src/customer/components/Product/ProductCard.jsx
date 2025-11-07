@@ -16,9 +16,22 @@ const ProductCard = ({ product }) => {
     discountPercent = 0,
   } = product;
 
+  // ✅ Add click handler with logging
+  const handleClick = () => {
+    console.log("🛍️ Clicked product:", { id, title, brand }); // Debug log
+    
+    if (!id) {
+      console.error("❌ Product ID is missing!", product);
+      return;
+    }
+    
+    console.log("📍 Navigating to:", `/product/${id}`);
+    navigate(`/product/${id}`);
+  };
+
   return (
     <div
-      onClick={() => navigate(`/product/${id}`)}
+      onClick={handleClick} // ✅ Use the handler instead
       className="productCard w-full h-full bg-white rounded-lg shadow-sm overflow-hidden transition-all cursor-pointer hover:scale-[1.03]"
     >
       <div className="aspect-[3/4] w-full overflow-hidden">

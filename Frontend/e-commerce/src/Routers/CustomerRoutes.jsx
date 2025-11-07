@@ -31,6 +31,7 @@ const CustomerRoutes = () => {
           <Route path="/account/order/:orderId" element={<OrderDetails />} />
           <Route path="/:levelOne/:levelTwo/:levelThree" element={<ProductList />} />
           <Route path="/product/:productId" element={<ProductDetails />} />
+
         </Routes>
       </main>
 

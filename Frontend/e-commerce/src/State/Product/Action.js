@@ -15,8 +15,8 @@ export const findProducts = (reqData) => async (dispatch) => {
   try {
     console.log("🚀 API Request params:", {
       category: reqData.category,
-      color: reqData.colors,
-      size: reqData.sizes,
+      colors: reqData.colors,
+      sizes: reqData.sizes,
       minPrice: reqData.minPrice,
       maxPrice: reqData.maxPrice,
       minDiscount: reqData.minDiscount,
@@ -29,8 +29,8 @@ export const findProducts = (reqData) => async (dispatch) => {
     const { data } = await api.get(`/api/products`, {
       params: {
         category: reqData.category,
-        color: reqData.colors, // ✅ backend uses "colour"
-        size: reqData.sizes,    // ✅ backend uses "size"
+        color: reqData.colors,     // ✅ Send as "color" to match backend @RequestParam name
+        size: reqData.sizes,       // ✅ Send as "size" to match backend @RequestParam name
         minPrice: reqData.minPrice,
         maxPrice: reqData.maxPrice,
         minDiscount: reqData.minDiscount,
@@ -51,7 +51,6 @@ export const findProducts = (reqData) => async (dispatch) => {
     dispatch({ type: FIND_PRODUCTS_FAILURE, payload: error.message });
   }
 };
-
 
 // Get Single Product
 export const findProductById = (productId) => async (dispatch) => {

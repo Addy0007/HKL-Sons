@@ -1,0 +1,23 @@
+.cart-item {
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.cart-item-enter {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.cart-item-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cart-item-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cart-item-exit-active {
+  opacity: 0;
+  transform: translateY(-12px);
+}
