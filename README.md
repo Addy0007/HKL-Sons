@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <i>A full-featured e-commerce platform supporting product browsing, cart & order management, authentication, and admin control.</i>
+  <i>A secure, full-featured e-commerce platform with JWT authentication, role-based access control, and comprehensive product management.</i>
 </p>
 
 ---
@@ -82,9 +82,9 @@ HKL-Sons/
 
 ### Prerequisites
 - Java 17 or higher
-- Node.js & npm
-- PostgreSQL
-- Maven
+- Node.js & npm (v16+)
+- PostgreSQL (v12+)
+- Maven (v3.6+)
 
 ### 1️⃣ Clone the Repository
 ```bash
@@ -95,31 +95,111 @@ cd HKL-Sons
 ### 2️⃣ Database Setup
 Create a PostgreSQL database:
 ```sql
-CREATE DATABASE yourDb;
+CREATE DATABASE hklsons;
 ```
 
-### 3️⃣ Backend Setup (Spring Boot)
+### 3️⃣ Backend Configuration
+
+**⚠️ IMPORTANT: Never commit sensitive credentials to version control**
+
+#### Create Environment Configuration
+
+**Option A: Using Environment Variables (Recommended)**
+
+Create a `.env` file in the `backend/` directory:
+```bash
+# Database Configuration
+DB_URL=jdbc:postgresql://localhost:5432/hklsons
+DB_USERNAME=your_db_username
+DB_PASSWORD=your_db_password
+
+# JWT Configuration
+JWT_SECRET=your_jwt_secret_key_minimum_256_bits
+JWT_EXPIRATION=86400000
+
+# Server Configuration
+SERVER_PORT=8080
+```
+
+**⚠️ Add `.env` to your `.gitignore` file:**
+```bash
+echo ".env" >> .gitignore
+```
+
+**Option B: Using application.properties**
+
+Update `backend/src/main/resources/application.properties`:
+```properties
+# Database Configuration
+spring.datasource.url=${DB_URL}
+spring.datasource.username=${DB_USERNAME}
+spring.datasource.password=${DB_PASSWORD}
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA/Hibernate Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# JWT Configuration
+jwt.secret=${JWT_SECRET}
+jwt.expiration=${JWT_EXPIRATION:86400000}
+
+# Server Configuration
+server.port=${SERVER_PORT:8080}
+```
+
+#### Generate Secure JWT Secret
+
+Use one of these methods to generate a secure JWT secret:
+
+**Method 1: Using OpenSSL (Linux/Mac)**
+```bash
+openssl rand -base64 64
+```
+
+**Method 2: Using Java**
+```java
+import java.security.SecureRandom;
+import java.util.Base64;
+
+public class SecretGenerator {
+    public static void main(String[] args) {
+        SecureRandom random = new SecureRandom();
+        byte[] bytes = new byte[64];
+        random.nextBytes(bytes);
+        String secret = Base64.getEncoder().encodeToString(bytes);
+        System.out.println(secret);
+    }
+}
+```
+
+**Method 3: Using Online Tool (Development Only)**
+- Visit: https://www.allkeysgenerator.com/Random/Security-Encryption-Key-Generator.aspx
+- Select 256-bit or 512-bit encryption key
+
+### 4️⃣ Run the Backend
 ```bash
 cd backend
-# Update application.properties with your database credentials
 mvn clean install
 mvn spring-boot:run
 ```
 
-**Configure `application.properties`:**
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/yourDB
-spring.datasource.username=YOUR_USERNAME
-spring.datasource.password=YOUR_PASSWORD
-spring.jpa.hibernate.ddl-auto=update
-
-jwt.secret=YOUR_SECRET_KEY
-jwt.expiration=86400000
-```
-
 Backend will run on: `http://localhost:8080`
 
-### 4️⃣ Frontend Setup (React)
+### 5️⃣ Frontend Configuration
+
+Create a `.env` file in the `frontend/` directory:
+```bash
+REACT_APP_API_URL=http://localhost:8080/api
+```
+
+**⚠️ Add to `.gitignore`:**
+```bash
+echo ".env" >> .gitignore
+```
+
+### 6️⃣ Run the Frontend
 ```bash
 cd frontend
 npm install
@@ -127,6 +207,48 @@ npm start
 ```
 
 Frontend will run on: `http://localhost:3000`
+
+---
+
+## 🔒 Security Best Practices
+
+### ✅ What This Project Implements:
+- ✔️ JWT-based authentication
+- ✔️ Password encryption using BCrypt
+- ✔️ Role-based access control (RBAC)
+- ✔️ Protected API endpoints
+- ✔️ CORS configuration
+- ✔️ Input validation
+
+### 🚨 For Production Deployment:
+
+1. **Environment Variables**
+   - Never hardcode credentials
+   - Use cloud secret managers (AWS Secrets Manager, Azure Key Vault, etc.)
+
+2. **Database Security**
+   - Use connection pooling
+   - Enable SSL/TLS for database connections
+   - Implement database access restrictions by IP
+
+3. **API Security**
+   - Enable HTTPS only
+   - Implement rate limiting
+   - Add API request validation
+   - Set up CORS properly for production domains
+
+4. **JWT Security**
+   - Use strong secrets (minimum 256 bits)
+   - Implement token refresh mechanism
+   - Set appropriate expiration times
+   - Store tokens securely (HttpOnly cookies)
+
+5. **Additional Measures**
+   - Regular dependency updates
+   - Security headers (Helmet.js for Node/Express if applicable)
+   - SQL injection prevention (handled by JPA/Hibernate)
+   - XSS protection
+   - CSRF tokens for state-changing operations
 
 ---
 
@@ -138,9 +260,16 @@ Frontend will run on: `http://localhost:3000`
 | POST | `/api/auth/login` | User login | No |
 | GET | `/api/products` | Get all products | No |
 | GET | `/api/products/{id}` | Get product by ID | No |
-| POST | `/api/cart/add` | Add item to cart | Yes |
-| POST | `/api/orders/create` | Create new order | Yes |
-| GET | `/api/admin/users` | Get all users (Admin) | Yes (Admin) |
+| POST | `/api/cart/add` | Add item to cart | Yes (User) |
+| GET | `/api/cart` | Get user cart | Yes (User) |
+| POST | `/api/orders/create` | Create new order | Yes (User) |
+| GET | `/api/orders/user` | Get user orders | Yes (User) |
+| GET | `/api/admin/users` | Get all users | Yes (Admin) |
+| POST | `/api/admin/products` | Create product | Yes (Admin) |
+| PUT | `/api/admin/products/{id}` | Update product | Yes (Admin) |
+| DELETE | `/api/admin/products/{id}` | Delete product | Yes (Admin) |
+
+**Note:** Replace `/api` with your actual base URL in production.
 
 ---
 
@@ -154,14 +283,16 @@ Frontend will run on: `http://localhost:3000`
 - Shopping cart functionality
 - Order placement system
 - Admin dashboard basics
+- Role-based access control
 
 ### Upcoming Features 🔜
 - 💳 Payment Gateway Integration (Razorpay/Stripe)
 - 📊 Advanced Admin Analytics Dashboard
-- 📧 Email Notifications
+- 📧 Email Notifications (Order confirmation, shipping updates)
 - ⭐ Product Reviews & Ratings
 - 🔔 Real-time Order Tracking
 - 🎁 Discount Coupons System
+- 📱 Mobile App (React Native)
 
 ---
 
@@ -175,11 +306,28 @@ Contributions are welcome! Here's how you can help:
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+**Please ensure:**
+- Code follows existing style guidelines
+- All tests pass
+- No sensitive data is committed
+- Environment variables are documented
+
 ---
 
 ## 📝 License
 
 This project is open source and available under the [MIT License](LICENSE).
+
+---
+
+## ⚠️ Disclaimer
+
+This is a learning/portfolio project. For production use:
+- Implement additional security measures
+- Conduct security audits
+- Use proper secret management
+- Follow OWASP security guidelines
+- Ensure compliance with data protection regulations (GDPR, etc.)
 
 ---
 
