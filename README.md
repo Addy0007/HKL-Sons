@@ -95,7 +95,7 @@ cd HKL-Sons
 ### 2️⃣ Database Setup
 Create a PostgreSQL database:
 ```sql
-CREATE DATABASE hklsons;
+CREATE DATABASE yourDb;
 ```
 
 ### 3️⃣ Backend Setup (Spring Boot)
@@ -108,7 +108,7 @@ mvn spring-boot:run
 
 **Configure `application.properties`:**
 ```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/hklsons
+spring.datasource.url=jdbc:postgresql://localhost:5432/yourDB
 spring.datasource.username=YOUR_USERNAME
 spring.datasource.password=YOUR_PASSWORD
 spring.jpa.hibernate.ddl-auto=update
