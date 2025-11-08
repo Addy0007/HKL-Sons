@@ -13,7 +13,7 @@ import java.util.Date;
 @Service
 public class JwtProvider {
 
-    private static final long EXPIRATION_TIME = 86400000L; // 24 hours
+    private static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24 * 7; // 7 days
     private static final String SECRET_KEY = JwtConstant.SECRET_KEY;
 
     private final SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET_KEY));
