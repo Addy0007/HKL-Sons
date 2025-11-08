@@ -1,16 +1,27 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 const Checkout = () => {
-  // Step tracking (saved in localStorage)
-  const [currentStep, setCurrentStep] = useState(
-    parseInt(localStorage.getItem("checkoutStep")) || 1
-  );
+  const navigate = useNavigate();
+  const { user, isLoading } = useSelector((state) => state.auth);
+  
+  // ✅ No more localStorage - use state only
+  const [currentStep, setCurrentStep] = useState(1);
 
+  // ✅ Check authentication on mount
   useEffect(() => {
-    localStorage.setItem("checkoutStep", currentStep);
-  }, [currentStep]);
+    const jwt = localStorage.getItem('jwt');
+    
+    if (!isLoading) {
+      if (!jwt || !user) {
+        // Not logged in - redirect to login
+        navigate('/login', { state: { from: '/checkout' } });
+      }
+    }
+  }, [user, isLoading, navigate]);
 
-  // Mock dropdown data (later fetched from backend)
+  // Mock dropdown data
   const states = ["Madhya Pradesh", "Maharashtra", "Delhi", "Uttar Pradesh"];
   const cities = {
     "Madhya Pradesh": ["Indore", "Bhopal", "Gwalior"],
@@ -19,7 +30,6 @@ const Checkout = () => {
     "Uttar Pradesh": ["Lucknow", "Noida", "Kanpur"],
   };
 
-  // ZIP data (mocked for demo)
   const zipCodes = [
     { code: "452001", city: "Indore", state: "Madhya Pradesh" },
     { code: "462001", city: "Bhopal", state: "Madhya Pradesh" },
@@ -29,34 +39,31 @@ const Checkout = () => {
     { code: "201301", city: "Noida", state: "Uttar Pradesh" },
   ];
 
-  // States
   const [selectedState, setSelectedState] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [pinCode, setPinCode] = useState("");
   const [filteredZips, setFilteredZips] = useState([]);
   const [phone, setPhone] = useState("");
 
-  // Steps
   const steps = [
-    { id: 1, title: "Login" },
-    { id: 2, title: "Delivery Address" },
-    { id: 3, title: "Order Summary" },
-    { id: 4, title: "Payment" },
+    { id: 1, title: "Delivery Address" },
+    { id: 2, title: "Order Summary" },
+    { id: 3, title: "Payment" },
   ];
 
-  // Navigation
   const goNext = () => {
     if (currentStep < steps.length) setCurrentStep((prev) => prev + 1);
   };
+  
   const goBack = () => {
     if (currentStep > 1) setCurrentStep((prev) => prev - 1);
   };
+  
   const resetCheckout = () => {
-    localStorage.removeItem("checkoutStep");
     setCurrentStep(1);
+    navigate('/order-success');
   };
 
-  // ZIP auto-suggestion
   const handleZipChange = (e) => {
     const value = e.target.value;
     setPinCode(value);
@@ -76,45 +83,21 @@ const Checkout = () => {
     setFilteredZips([]);
   };
 
-  // Step Content
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-emerald-800">Step 1: Login</h2>
-            <p className="text-gray-600">
-              Please log in to continue with your checkout. You can also continue as a guest.
-            </p>
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="border border-gray-300 rounded-md p-3 w-full focus:ring-2 focus:ring-emerald-600 outline-none"
-            />
-            <button
-              onClick={goNext}
-              className="bg-emerald-700 text-white py-2 px-6 rounded-md hover:bg-emerald-800 transition"
-            >
-              Continue
-            </button>
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-emerald-800">Step 2: Delivery Address</h2>
+            <h2 className="text-xl font-semibold text-emerald-800">Delivery Address</h2>
             <p className="text-gray-600">Please provide your delivery details below.</p>
 
             <div className="space-y-4 relative">
-              {/* Address Line */}
               <input
                 type="text"
                 placeholder="House / Street / Locality"
                 className="border border-gray-300 rounded-md p-3 w-full focus:ring-2 focus:ring-emerald-600 outline-none"
               />
 
-              {/* State Dropdown */}
               <select
                 value={selectedState}
                 onChange={(e) => {
@@ -129,7 +112,6 @@ const Checkout = () => {
                 ))}
               </select>
 
-              {/* City Dropdown */}
               <select
                 value={selectedCity}
                 onChange={(e) => setSelectedCity(e.target.value)}
@@ -149,7 +131,6 @@ const Checkout = () => {
                   ))}
               </select>
 
-              {/* PIN Code (with suggestions) */}
               <div className="relative">
                 <input
                   type="text"
@@ -174,7 +155,6 @@ const Checkout = () => {
                 )}
               </div>
 
-              {/* Phone Number */}
               <input
                 type="tel"
                 value={phone}
@@ -186,14 +166,7 @@ const Checkout = () => {
               />
             </div>
 
-            {/* Navigation */}
-            <div className="flex justify-between pt-4">
-              <button
-                onClick={goBack}
-                className="text-gray-600 border border-gray-300 py-2 px-5 rounded-md hover:bg-gray-100"
-              >
-                Back
-              </button>
+            <div className="flex justify-end pt-4">
               <button
                 onClick={goNext}
                 className="bg-emerald-700 text-white py-2 px-6 rounded-md hover:bg-emerald-800 transition"
@@ -204,10 +177,10 @@ const Checkout = () => {
           </div>
         );
 
-      case 3:
+      case 2:
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-emerald-800">Step 3: Order Summary</h2>
+            <h2 className="text-xl font-semibold text-emerald-800">Order Summary</h2>
             <p className="text-gray-600">Review your order before making payment.</p>
 
             <div className="border rounded-lg p-4 bg-gray-50">
@@ -233,10 +206,10 @@ const Checkout = () => {
           </div>
         );
 
-      case 4:
+      case 3:
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-emerald-800">Step 4: Payment</h2>
+            <h2 className="text-xl font-semibold text-emerald-800">Payment</h2>
             <p className="text-gray-600">Choose your preferred payment method.</p>
 
             <div className="space-y-3">
@@ -276,10 +249,23 @@ const Checkout = () => {
     }
   };
 
+  // ✅ Show loading while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600">Verifying authentication...</div>
+      </div>
+    );
+  }
+
+  // ✅ Don't render if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-10">
       <div className="max-w-3xl mx-auto bg-white shadow-md rounded-xl p-6 sm:p-8">
-        {/* Stepper Header */}
         <div className="flex justify-between items-center mb-8">
           {steps.map((step) => (
             <div key={step.id} className="flex-1 flex flex-col items-center">
@@ -303,7 +289,6 @@ const Checkout = () => {
           ))}
         </div>
 
-        {/* Step Content */}
         {renderStepContent()}
       </div>
     </div>

@@ -1,7 +1,8 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { logout } from '../../State/Auth/Action'
+import { getUser } from '../../State/Auth/Action'
 import {
   Dialog,
   DialogBackdrop,
@@ -75,8 +76,15 @@ export default function Navigation() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   
-  // Get user from Redux store
-  const { user, jwt } = useSelector((state) => state.auth)
+  // ✅ Get user, jwt, and isLoading from Redux store
+  const { user, jwt, isLoading } = useSelector((state) => state.auth)
+
+  // ✅ Load user on mount if JWT exists but user is null
+  useEffect(() => {
+    if (jwt && !user && !isLoading) {
+      dispatch(getUser(jwt));
+    }
+  }, [jwt, user, isLoading, dispatch]);
 
   // ✅ FIX: Close popover AND navigate
   const handleCategoryClick = (categoryId, sectionId, itemId, close) => {
@@ -236,47 +244,51 @@ export default function Navigation() {
 
             {/* ✅ Mobile Auth Section */}
             <div className="space-y-6 border-t border-gray-200 px-4 py-6">
-              {jwt || user ? (
-                <>
-                  <div className="flow-root px-4 py-2 bg-gray-50 rounded-lg">
-                    <p className="text-sm font-medium text-gray-900">{getUserName()}</p>
-                    <p className="text-xs text-gray-500">{user?.email}</p>
-                  </div>
-                  <div className="flow-root">
-                    <button 
-                      onClick={() => {
-                        navigate('/profile')
-                        setOpen(false)
-                      }}
-                      className="-m-2 block p-2 font-medium text-gray-900 transition-colors w-full text-left"
-                      onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
-                      onMouseLeave={(e) => e.target.style.color = '#111827'}
-                    >
-                      Profile
-                    </button>
-                  </div>
-                  <div className="flow-root">
-                    <button 
-                      onClick={() => {
-                        navigate('/account/order')
-                        setOpen(false)
-                      }}
-                      className="-m-2 block p-2 font-medium text-gray-900 transition-colors w-full text-left"
-                      onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
-                      onMouseLeave={(e) => e.target.style.color = '#111827'}
-                    >
-                      My Orders
-                    </button>
-                  </div>
-                  <div className="flow-root">
-                    <button 
-                      onClick={handleSignOut}
-                      className="-m-2 block p-2 font-medium text-red-600 transition-colors w-full text-left hover:text-red-700"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                </>
+              {jwt ? (
+                isLoading || !user ? (
+                  <div className="px-4 py-2 bg-gray-100 rounded-lg animate-pulse h-12" />
+                ) : (
+                  <>
+                    <div className="flow-root px-4 py-2 bg-gray-50 rounded-lg">
+                      <p className="text-sm font-medium text-gray-900">{getUserName()}</p>
+                      <p className="text-xs text-gray-500">{user?.email}</p>
+                    </div>
+                    <div className="flow-root">
+                      <button 
+                        onClick={() => {
+                          navigate('/profile')
+                          setOpen(false)
+                        }}
+                        className="-m-2 block p-2 font-medium text-gray-900 transition-colors w-full text-left"
+                        onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
+                        onMouseLeave={(e) => e.target.style.color = '#111827'}
+                      >
+                        Profile
+                      </button>
+                    </div>
+                    <div className="flow-root">
+                      <button 
+                        onClick={() => {
+                          navigate('/account/order')
+                          setOpen(false)
+                        }}
+                        className="-m-2 block p-2 font-medium text-gray-900 transition-colors w-full text-left"
+                        onMouseEnter={(e) => e.target.style.color = '#3D8D7A'}
+                        onMouseLeave={(e) => e.target.style.color = '#111827'}
+                      >
+                        My Orders
+                      </button>
+                    </div>
+                    <div className="flow-root">
+                      <button 
+                        onClick={handleSignOut}
+                        className="-m-2 block p-2 font-medium text-red-600 transition-colors w-full text-left hover:text-red-700"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </>
+                )
               ) : (
                 <>
                   <div className="flow-root">
@@ -461,69 +473,76 @@ export default function Navigation() {
               </PopoverGroup>
 
               <div className="ml-auto flex items-center">
-                {/* ✅ Desktop Auth Section */}
+                {/* ✅ Desktop Auth Section - Show loading state */}
                 <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:space-x-6">
-                  {jwt || user ? (
-                    <Menu as="div" className="relative">
-                      <MenuButton className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-                        <div 
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md transition-transform hover:scale-105"
-                          style={{ backgroundColor: '#3D8D7A' }}
-                        >
-                          {getInitial(user)}
-                        </div>
-                        <span className="text-sm font-medium text-gray-700 hidden xl:block">
-                          {getUserName()}
-                        </span>
-                      </MenuButton>
-                      <MenuItems className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black/5 focus:outline-none divide-y divide-gray-100">
-                        <div className="px-4 py-3">
-                          <p className="text-sm font-medium text-gray-900">{getUserName()}</p>
-                          <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                        </div>
-                        <div className="py-1">
-                          <MenuItem>
-                            {({ focus }) => (
-                              <button
-                                onClick={() => navigate('/profile')}
-                                className={`${
-                                  focus ? 'bg-gray-50' : ''
-                                } block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors`}
-                              >
-                                My Profile
-                              </button>
-                            )}
-                          </MenuItem>
-                          <MenuItem>
-                            {({ focus }) => (
-                              <button
-                                onClick={() => navigate('/account/order')}
-                                className={`${
-                                  focus ? 'bg-gray-50' : ''
-                                } block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors`}
-                              >
-                                My Orders
-                              </button>
-                            )}
-                          </MenuItem>
-                        </div>
-                        <div className="py-1">
-                          <MenuItem>
-                            {({ focus }) => (
-                              <button
-                                onClick={handleSignOut}
-                                className={`${
-                                  focus ? 'bg-red-50' : ''
-                                } block w-full px-4 py-2 text-left text-sm text-red-600 font-medium transition-colors`}
-                              >
-                                Sign Out
-                              </button>
-                            )}
-                          </MenuItem>
-                        </div>
-                      </MenuItems>
-                    </Menu>
+                  {jwt ? (
+                    isLoading || !user ? (
+                      // Show loading spinner while fetching user data
+                      <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse" />
+                    ) : (
+                      // Logged in - show user menu
+                      <Menu as="div" className="relative">
+                        <MenuButton className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+                          <div 
+                            className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md transition-transform hover:scale-105"
+                            style={{ backgroundColor: '#3D8D7A' }}
+                          >
+                            {getInitial(user)}
+                          </div>
+                          <span className="text-sm font-medium text-gray-700 hidden xl:block">
+                            {getUserName()}
+                          </span>
+                        </MenuButton>
+                        <MenuItems className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black/5 focus:outline-none divide-y divide-gray-100">
+                          <div className="px-4 py-3">
+                            <p className="text-sm font-medium text-gray-900">{getUserName()}</p>
+                            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                          </div>
+                          <div className="py-1">
+                            <MenuItem>
+                              {({ focus }) => (
+                                <button
+                                  onClick={() => navigate('/profile')}
+                                  className={`${
+                                    focus ? 'bg-gray-50' : ''
+                                  } block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors`}
+                                >
+                                  My Profile
+                                </button>
+                              )}
+                            </MenuItem>
+                            <MenuItem>
+                              {({ focus }) => (
+                                <button
+                                  onClick={() => navigate('/account/order')}
+                                  className={`${
+                                    focus ? 'bg-gray-50' : ''
+                                  } block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors`}
+                                >
+                                  My Orders
+                                </button>
+                              )}
+                            </MenuItem>
+                          </div>
+                          <div className="py-1">
+                            <MenuItem>
+                              {({ focus }) => (
+                                <button
+                                  onClick={handleSignOut}
+                                  className={`${
+                                    focus ? 'bg-red-50' : ''
+                                  } block w-full px-4 py-2 text-left text-sm text-red-600 font-medium transition-colors`}
+                                >
+                                  Sign Out
+                                </button>
+                              )}
+                            </MenuItem>
+                          </div>
+                        </MenuItems>
+                      </Menu>
+                    )
                   ) : (
+                    // Not logged in - show sign in/create account
                     <>
                       <button 
                         onClick={() => navigate('/login')}

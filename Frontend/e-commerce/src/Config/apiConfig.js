@@ -7,10 +7,13 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// ✅ Always add JWT if exists
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("jwtToken");
+  const token = localStorage.getItem("jwt"); // ✅ Correct key
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
+
+export default api;

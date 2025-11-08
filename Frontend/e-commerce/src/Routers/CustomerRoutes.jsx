@@ -11,13 +11,14 @@ import Checkout from '../customer/components/Checkout/Checkout';
 import Order from '../customer/components/Order/Order';
 import OrderDetails from '../customer/components/Order/OrderDetails';
 import SignIn from '../customer/components/Signin/SignIn';
+import RequireAuth from "./RequireAuth";
 
 const CustomerRoutes = () => {
   return (
     <div>
       <Navigation />
       
-      <main className="flex-grow">
+      <main className="flex-grow pt-20">
         <Routes>
           <Route path="/" element={<HomePage />} /> 
           <Route path="/login" element={<SignIn />} /> {/* ✅ FIXED */}
@@ -31,7 +32,9 @@ const CustomerRoutes = () => {
           <Route path="/account/order/:orderId" element={<OrderDetails />} />
           <Route path="/:levelOne/:levelTwo/:levelThree" element={<ProductList />} />
           <Route path="/product/:productId" element={<ProductDetails />} />
-
+          <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>
+  }
+/>
         </Routes>
       </main>
 

@@ -1,22 +1,20 @@
 import { useState, useEffect } from "react";
 import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { login, register } from "../../../State/Auth/Action"; // ✅ fixed import path
-import { useNavigate } from "react-router-dom";
+import { login, register } from "../../../State/Auth/Action";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function SignIn() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Get authentication state from Redux
   const { isLoading, error, jwt, user } = useSelector((state) => state.auth);
 
   // Determine initial mode (SignIn or SignUp)
   const getInitialMode = () => {
-    if (typeof window !== "undefined") {
-      return window.location.pathname === "/signup" ? false : true;
-    }
-    return true;
+    return location.pathname === "/login";
   };
 
   const [isSignIn, setIsSignIn] = useState(getInitialMode());
@@ -29,20 +27,18 @@ export default function SignIn() {
   });
   const [errors, setErrors] = useState({});
 
-  // Update URL when mode changes
+  // Update mode based on route changes
   useEffect(() => {
-    const newPath = isSignIn ? "/login" : "/signup";
-    if (typeof window !== "undefined" && window.location.pathname !== newPath) {
-      window.history.pushState({}, "", newPath);
-    }
-  }, [isSignIn]);
+    setIsSignIn(location.pathname === "/login");
+  }, [location.pathname]);
 
-  // Redirect user after successful login/signup
-  useEffect(() => {
-    if (jwt || user) {
-      navigate("/");
-    }
-  }, [jwt, user, navigate]);
+useEffect(() => {
+  if (jwt && user) {
+    const redirectTo = location.state?.from || "/"; 
+    navigate(redirectTo, { replace: true });
+  }
+}, [jwt, user,navigate, location.state]);
+
 
   // Validation helpers
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -90,7 +86,8 @@ export default function SignIn() {
   };
 
   const toggleMode = () => {
-    setIsSignIn(!isSignIn);
+    const newPath = isSignIn ? "/signup" : "/login";
+    navigate(newPath);
     setErrors({});
     setFormData({ firstName: "", lastName: "", email: "", password: "" });
   };
@@ -122,6 +119,12 @@ export default function SignIn() {
               : "Join HKL Sons today"}
           </p>
         </div>
+        {location.state?.message && (
+  <div className="bg-yellow-100 text-yellow-800 border border-yellow-300 p-3 rounded-md mb-4 text-center text-sm">
+    {location.state.message}
+  </div>
+)}
+
 
         {/* Form Card */}
         <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
@@ -133,7 +136,7 @@ export default function SignIn() {
                   id="firstName"
                   name="firstName"
                   label="First Name"
-                  icon={<User />}
+                  icon={<User className="h-5 w-5 text-gray-400" />}
                   value={formData.firstName}
                   onChange={handleInputChange}
                   error={errors.firstName}
@@ -143,7 +146,7 @@ export default function SignIn() {
                   id="lastName"
                   name="lastName"
                   label="Last Name"
-                  icon={<User />}
+                  icon={<User className="h-5 w-5 text-gray-400" />}
                   value={formData.lastName}
                   onChange={handleInputChange}
                   error={errors.lastName}
@@ -157,7 +160,7 @@ export default function SignIn() {
               id="email"
               name="email"
               label="Email Address"
-              icon={<Mail />}
+              icon={<Mail className="h-5 w-5 text-gray-400" />}
               type="email"
               value={formData.email}
               onChange={handleInputChange}
@@ -185,7 +188,7 @@ export default function SignIn() {
                   onChange={handleInputChange}
                   className={`block w-full pl-10 pr-10 py-2.5 border ${
                     errors.password ? "border-red-500" : "border-gray-300"
-                  } rounded-lg focus:ring-2`}
+                  } rounded-lg focus:ring-2 focus:ring-[#3D8D7A] focus:border-transparent`}
                   placeholder="••••••••"
                 />
                 <button
@@ -194,9 +197,9 @@ export default function SignIn() {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
+                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
+                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                   )}
                 </button>
               </div>
@@ -223,7 +226,7 @@ export default function SignIn() {
               type="submit"
               disabled={isLoading}
               className={`w-full py-2.5 px-4 rounded-lg text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 ${
-                isLoading ? "opacity-60 cursor-not-allowed" : ""
+                isLoading ? "opacity-60 cursor-not-allowed" : "hover:opacity-90"
               }`}
               style={{ backgroundColor: "#3D8D7A" }}
             >
@@ -235,7 +238,9 @@ export default function SignIn() {
             </button>
 
             {error && (
-              <p className="text-center text-sm text-red-600 mt-2">{error}</p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-600 text-center">{error}</p>
+              </div>
             )}
           </form>
 
@@ -303,7 +308,7 @@ function InputField({
           onChange={onChange}
           className={`block w-full pl-10 pr-3 py-2.5 border ${
             error ? "border-red-500" : "border-gray-300"
-          } rounded-lg focus:ring-2`}
+          } rounded-lg focus:ring-2 focus:ring-[#3D8D7A] focus:border-transparent transition-colors`}
           placeholder={placeholder}
         />
       </div>
