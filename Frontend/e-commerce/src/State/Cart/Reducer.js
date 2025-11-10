@@ -65,8 +65,11 @@ export const cartReducer = (state = initialState, action) => {
       return { ...state, loading: false, error: action.payload };
 
     // ✅ Clear cart (on logout)
-    case CLEAR_CART:
-      return { ...state, cartItems: [], cart: null };
+ // In your Cart Reducer
+case CLEAR_CART:
+  console.log("🗑️ CART CLEARED - Check stack trace!");
+  console.trace(); // This will show you where clearCart is being called
+  return { ...state, cartItems: [], loading: false };
 
     default:
       return state;
