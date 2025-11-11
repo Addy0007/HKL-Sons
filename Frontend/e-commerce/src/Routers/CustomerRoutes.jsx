@@ -15,6 +15,7 @@ import RequireAuth from "./RequireAuth";
 // ✅ New checkout step components
 import CheckoutAddress from '../customer/components/Checkout/CheckoutAddress';
 import CheckoutSummary from '../customer/components/Checkout/CheckoutSummary';
+import PaymentSuccess from '../customer/components/Payment/PaymentSuccess';
 
 const CustomerRoutes = () => {
   return (
@@ -31,7 +32,7 @@ const CustomerRoutes = () => {
           <Route path="/cart" element={<Cart />} />
           <Route path="/products" element={<Product />} />
           <Route path="/productDetails" element={<ProductDetails />} />
-
+          <Route path="/payment/:orderId" element={<PaymentSuccess />} />
           <Route path="/product/:productId" element={<ProductDetails />} />
           <Route path="/:levelOne/:levelTwo/:levelThree" element={<ProductList />} />
 
@@ -60,6 +61,8 @@ const CustomerRoutes = () => {
 
           <Route path="/account/order" element={<Order />} />
           <Route path="/account/order/:orderId" element={<OrderDetails />} />
+
+          
         </Routes>
       </main>
 

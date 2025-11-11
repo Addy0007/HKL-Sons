@@ -60,3 +60,13 @@ export const getOrderById = (orderId) => async (dispatch) => {
     dispatch({ type: GET_ORDER_BY_ID_FAILURE, payload: error.message });
   }
 };
+export const createPendingOrder = (address) => async (dispatch) => {
+  try {
+    const { data } = await api.post("/api/orders/pending", { address });
+    return data; // ✅ Return the order object { id, totalPrice, ... }
+  } catch (error) {
+    console.error("Create Pending Order Error:", error);
+    alert("Unable to create order.");
+    return null;
+  }
+};

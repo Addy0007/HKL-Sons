@@ -6,44 +6,36 @@ import axios from "axios";
 import { saveCheckoutAddress } from "../../../State/Checkout/Action";
 import { getCart } from "../../../State/Cart/Action";
 import { CLEAR_CHECKOUT_ADDRESS } from "../../../State/Checkout/ActionType";
+
 const CheckoutAddress = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
-  // Auth & Cart from Redux
+  
   const { user, isLoading } = useSelector((state) => state.auth);
   const { cart } = useSelector((state) => state);
-
-  // Last saved/working address from Redux (persisted to localStorage by your action)
   const savedAddress = useSelector((state) => state.checkout.address);
 
-  
-useEffect(() => {
-  if (savedAddress && savedAddress._user && savedAddress._user !== user?.id) {
-    // ✅ Different user is logged in now → clear old address
-    dispatch({ type: CLEAR_CHECKOUT_ADDRESS });
-  }
-}, [savedAddress, user, dispatch]);
+  useEffect(() => {
+    if (savedAddress && savedAddress._user && savedAddress._user !== user?.id) {
+      dispatch({ type: CLEAR_CHECKOUT_ADDRESS });
+    }
+  }, [savedAddress, user, dispatch]);
 
-
-  // ---------- Local UI/Data State ----------
-  // Lists for dynamic selects
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [pincodes, setPincodes] = useState([]);
-
-  // Saved addresses from backend
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedSavedAddressId, setSelectedSavedAddressId] = useState(null);
-
-  // UX & Guards
   const [loadingStates, setLoadingStates] = useState(true);
   const [error, setError] = useState(null);
   const [pincodeStatus, setPincodeStatus] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
   const [isCartChecked, setIsCartChecked] = useState(false);
+  
+  // ✅ NEW: State for save feedback
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState(null);
 
-  // Address form model (when adding a new address)
   const [address, setAddress] = useState({
     firstName: "",
     lastName: "",
@@ -55,7 +47,6 @@ useEffect(() => {
     mobile: "",
   });
 
-  // ---------- Effects: Fetch Cart ----------
   useEffect(() => {
     const fetchCart = async () => {
       if (!isLoading) {
@@ -66,7 +57,6 @@ useEffect(() => {
     fetchCart();
   }, [dispatch, isLoading]);
 
-  // If cart empty after fetch → bounce to /cart
   useEffect(() => {
     if (!isLoading && isCartChecked && !cart.loading) {
       if (!cart.cartItems || cart.cartItems.length === 0) {
@@ -75,24 +65,23 @@ useEffect(() => {
     }
   }, [isLoading, isCartChecked, cart.loading, cart.cartItems, navigate]);
 
-  // ---------- Effects: Fetch Saved Addresses ----------
-  useEffect(() => {
-    const loadSavedAddresses = async () => {
-      try {
-        const jwt = localStorage.getItem("jwt");
-        const res = await axios.get("/api/address", {
-          headers: { Authorization: `Bearer ${jwt}` },
-        });
-        setSavedAddresses(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
+  // ✅ MODIFIED: Reload saved addresses function
+  const loadSavedAddresses = async () => {
+    try {
+      const jwt = localStorage.getItem("jwt");
+      const res = await axios.get("/api/address", {
+        headers: { Authorization: `Bearer ${jwt}` },
+      });
+      setSavedAddresses(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      setSavedAddresses([]);
+    }
+  };
 
-        setSavedAddresses([]);
-      }
-    };
+  useEffect(() => {
     if (user) loadSavedAddresses();
   }, [user]);
 
-  // ---------- Effects: Load States List ----------
   useEffect(() => {
     const fetchStates = async () => {
       try {
@@ -118,15 +107,12 @@ useEffect(() => {
     fetchStates();
   }, []);
 
-  // ---------- Effects: Restore Address (Redux/localStorage) ----------
   useEffect(() => {
     const restore = async () => {
       if (!savedAddress || isInitialized || loadingStates) return;
-
-      // restore base address fields
+      
       setAddress(savedAddress);
-
-      // preload dependent lists for better UX
+      
       try {
         const jwt = localStorage.getItem("jwt");
         if (savedAddress.state) {
@@ -138,7 +124,7 @@ useEffect(() => {
         } else {
           setDistricts([]);
         }
-
+        
         if (savedAddress.district) {
           const pinRes = await axios.get(
             `/api/locations/pincodes/${savedAddress.district}`,
@@ -148,8 +134,7 @@ useEffect(() => {
         } else {
           setPincodes([]);
         }
-
-        // validate pincode if available
+        
         if (savedAddress.zipCode && savedAddress.zipCode.length === 6) {
           try {
             const lookup = await axios.get(
@@ -163,23 +148,19 @@ useEffect(() => {
         } else {
           setPincodeStatus("");
         }
-      } catch {
-        // ignore restore/preload errors
-      }
-
+      } catch {}
+      
       setIsInitialized(true);
     };
     restore();
   }, [savedAddress, isInitialized, loadingStates]);
 
-  // ---------- Handlers: Form field changes (with Redux persist) ----------
   const handleFieldChange = (field, value) => {
     const updated = { ...address, [field]: value };
     setAddress(updated);
     dispatch(saveCheckoutAddress(updated));
   };
 
-  // ---------- Handlers: State/District/Pincode cascade ----------
   const onStateChange = async (stateName) => {
     const updated = { ...address, state: stateName, district: "", zipCode: "" };
     setAddress(updated);
@@ -187,9 +168,9 @@ useEffect(() => {
     setPincodes([]);
     setPincodeStatus("");
     dispatch(saveCheckoutAddress(updated));
-
+    
     if (!stateName) return;
-
+    
     try {
       const jwt = localStorage.getItem("jwt");
       const res = await axios.get(`/api/locations/districts/${stateName}`, {
@@ -207,19 +188,9 @@ useEffect(() => {
     setPincodes([]);
     setPincodeStatus("");
     dispatch(saveCheckoutAddress(updated));
-
+    
     if (!districtName) return;
-
-try {
-  const jwt = localStorage.getItem("jwt");
-  const res = await axios.get(`/api/locations/pincodes/${districtName}`, {
-    headers: { Authorization: `Bearer ${jwt}` },
-  });
-  setPincodes(Array.isArray(res.data) ? res.data : []);
-} catch {
-  setPincodes([]);
-}
-
+    
     try {
       const jwt = localStorage.getItem("jwt");
       const res = await axios.get(`/api/locations/pincodes/${districtName}`, {
@@ -234,29 +205,29 @@ try {
   const handlePincodeInput = async (pin) => {
     const updated = { ...address, zipCode: pin };
     setAddress(updated);
+    
     if (pin.length < 6) {
       setPincodeStatus("");
       dispatch(saveCheckoutAddress(updated));
       return;
     }
-
+    
     try {
       const jwt = localStorage.getItem("jwt");
       const res = await axios.get(`/api/locations/lookup/${pin}`, {
         headers: { Authorization: `Bearer ${jwt}` },
       });
-
+      
       const deliverable = !!res.data?.deliverable;
       setPincodeStatus(deliverable ? "deliverable" : "not-deliverable");
-
+      
       const finalAddress = {
         ...updated,
         state: res.data?.state || updated.state,
         district: res.data?.district || updated.district,
       };
       setAddress(finalAddress);
-
-      // preload cascades if lookup returned state/district
+      
       if (res.data?.state) {
         try {
           const distRes = await axios.get(`/api/locations/districts/${res.data.state}`, {
@@ -267,6 +238,7 @@ try {
           setDistricts([]);
         }
       }
+      
       if (res.data?.district) {
         try {
           const pinRes = await axios.get(`/api/locations/pincodes/${res.data.district}`, {
@@ -277,7 +249,7 @@ try {
           setPincodes([]);
         }
       }
-
+      
       dispatch(saveCheckoutAddress(finalAddress));
     } catch {
       setPincodeStatus("not-found");
@@ -285,39 +257,74 @@ try {
     }
   };
 
-  // ---------- Continue with NEW address ----------
-  const handleContinue = async () => {
+  // ✅ NEW: Save Address to Database (without navigation)
+  const handleSaveAddress = async () => {
     if (!cart.cartItems || cart.cartItems.length === 0) {
       alert("Your cart is empty. Please add items before checkout.");
       navigate("/cart");
       return;
     }
 
-    // Save address so it appears next time in saved list (non-blocking)
+    setIsSaving(true);
+    setSaveMessage(null);
+
     try {
       const jwt = localStorage.getItem("jwt");
       await axios.post("/api/address", address, {
         headers: { Authorization: `Bearer ${jwt}` },
       });
-    } catch {
-      // ignore save failure; don't block checkout
+      
+      setSaveMessage({ type: "success", text: "✅ Address saved successfully!" });
+      
+      // Reload saved addresses list
+      await loadSavedAddresses();
+      
+      // Clear the form
+      setAddress({
+        firstName: "",
+        lastName: "",
+        streetAddress: "",
+        state: "",
+        district: "",
+        zipCode: "",
+        city: "",
+        mobile: "",
+      });
+      setPincodeStatus("");
+      
+    } catch (err) {
+      setSaveMessage({ 
+        type: "error", 
+        text: "❌ Failed to save address. Please try again." 
+      });
+    } finally {
+      setIsSaving(false);
+      // Clear message after 3 seconds
+      setTimeout(() => setSaveMessage(null), 3000);
     }
+  };
 
+  // ✅ MODIFIED: Continue now just navigates (no saving)
+  const handleContinue = async () => {
+    if (!cart.cartItems || cart.cartItems.length === 0) {
+      alert("Your cart is empty. Please add items before checkout.");
+      navigate("/cart");
+      return;
+    }
+    
     dispatch(saveCheckoutAddress(address));
     navigate("/checkout/summary");
   };
 
-  // ---------- Select Saved Address (direct proceed) ----------
   const selectSavedAddress = (addr) => {
     setSelectedSavedAddressId(addr.id);
     dispatch(saveCheckoutAddress(addr));
     navigate("/checkout/summary");
   };
 
-  // ---------- Loading / Guards ----------
   if (isLoading) return <div className="text-center mt-10">Checking login...</div>;
   if (!user) return null;
-
+  
   if (!isCartChecked || cart.loading) {
     return (
       <div className="min-h-screen bg-gray-100 py-10 px-4 flex items-center justify-center">
@@ -328,7 +335,7 @@ try {
       </div>
     );
   }
-
+  
   if (!cart.cartItems || cart.cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-gray-100 py-10 px-4 flex items-center justify-center">
@@ -345,44 +352,52 @@ try {
     );
   }
 
-  // ---------- Render ----------
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4">
       <div className="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow">
         <h1 className="text-2xl font-bold text-emerald-800 mb-6">Select Delivery Address</h1>
-
+        
         {error && (
           <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
             {error}
           </div>
         )}
 
+        {/* ✅ NEW: Save feedback message */}
+        {saveMessage && (
+          <div className={`p-3 rounded mb-4 ${
+            saveMessage.type === "success" 
+              ? "bg-green-100 text-green-700" 
+              : "bg-red-100 text-red-700"
+          }`}>
+            {saveMessage.text}
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* LEFT: Saved Addresses (30–40%) */}
           <div className="lg:col-span-1 space-y-4">
             <h3 className="text-lg font-semibold text-gray-800">Saved Addresses</h3>
-
+            
             {savedAddresses.length === 0 && (
               <p className="text-gray-500 text-sm">No saved addresses</p>
             )}
-
+            
             {savedAddresses.map((addr) => {
               const selected = selectedSavedAddressId === addr.id;
               return (
                 <div
                   key={addr.id}
-                  className={`relative p-4 border rounded-lg transition cursor-pointer group 
-                    ${selected ? "border-emerald-600 bg-emerald-50" : "hover:border-emerald-500"}`}
+                  className={`relative p-4 border rounded-lg transition cursor-pointer group ${
+                    selected ? "border-emerald-600 bg-emerald-50" : "hover:border-emerald-500"
+                  }`}
                   onClick={() => selectSavedAddress(addr)}
                 >
-                  {/* Amazon-style selection tick */}
                   {selected && (
                     <div className="absolute -top-2 -right-2 bg-emerald-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow">
                       ✓
                     </div>
                   )}
-
-                  {/* Address text */}
+                  
                   <p className="font-medium text-gray-900">
                     {addr.firstName} {addr.lastName}
                   </p>
@@ -394,8 +409,7 @@ try {
                     {addr.state} - {addr.zipCode}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">📞 {addr.mobile}</p>
-
-                  {/* CTA */}
+                  
                   <button
                     className="mt-3 w-full bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700"
                     onClick={(e) => {
@@ -409,13 +423,12 @@ try {
               );
             })}
           </div>
-
-          {/* RIGHT: Add New Address Form (60–70%) */}
+          
           <div className="lg:col-span-2">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
               Add New Address
             </h3>
-
+            
             {loadingStates ? (
               <div className="text-center py-10">Loading form...</div>
             ) : (
@@ -430,6 +443,8 @@ try {
                 onDistrictChange={onDistrictChange}
                 handlePincodeInput={handlePincodeInput}
                 onContinue={handleContinue}
+                onSaveAddress={handleSaveAddress}  // ✅ NEW prop
+                isSaving={isSaving}  // ✅ NEW prop
               />
             )}
           </div>

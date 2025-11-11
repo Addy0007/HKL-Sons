@@ -28,7 +28,6 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) =
         disabled={disabled}
         className="border rounded-md p-3 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
       />
-
       {isOpen && !disabled && (
         <>
           <div
@@ -59,7 +58,14 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) =
   );
 };
 
-const SearchablePincodeSelect = ({ value, onChange, options, placeholder, onManualInput, disabled }) => {
+const SearchablePincodeSelect = ({
+  value,
+  onChange,
+  options,
+  placeholder,
+  onManualInput,
+  disabled
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -75,7 +81,6 @@ const SearchablePincodeSelect = ({ value, onChange, options, placeholder, onManu
     const val = e.target.value;
     setSearchTerm(val);
     setIsOpen(true);
-
     if (onManualInput) {
       onManualInput(val);
     }
@@ -93,7 +98,6 @@ const SearchablePincodeSelect = ({ value, onChange, options, placeholder, onManu
         maxLength={6}
         className="border rounded-md p-3 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
       />
-
       {isOpen && !disabled && options.length > 0 && (
         <>
           <div
@@ -103,7 +107,6 @@ const SearchablePincodeSelect = ({ value, onChange, options, placeholder, onManu
               setSearchTerm("");
             }}
           />
-
           <div className="absolute z-20 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option, index) => (
@@ -135,14 +138,11 @@ const DeliveryForm = ({
   onStateChange,
   onDistrictChange,
   handlePincodeInput,
-  onContinue
+  onContinue,
+  onSaveAddress,  // ✅ NEW prop
+  isSaving  // ✅ NEW prop
 }) => {
-
-  // ✅ NEW — Mode Toggle
-  const [useSavedAddress, setUseSavedAddress] = useState(false);
-
   const isFormValid = () => {
-    if (useSavedAddress) return true; // 👉 If using saved address, skip validation
     return (
       address.firstName &&
       address.lastName &&
@@ -158,46 +158,29 @@ const DeliveryForm = ({
 
   return (
     <div className="space-y-4">
-
-      {/* ✅ Mode Switch */}
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-gray-700">Address Mode</label>
-        <select
-          value={useSavedAddress ? "saved" : "new"}
-          onChange={(e) => setUseSavedAddress(e.target.value === "saved")}
-          className="border rounded-md p-2 text-sm"
-        >
-          <option value="new">Add New Address</option>
-          <option value="saved">Use Saved Address</option>
-        </select>
-      </div>
-
       <h2 className="text-xl font-semibold text-emerald-800">Delivery Address</h2>
 
       <input
         type="text"
         value={address.firstName}
         onChange={(e) => handleFieldChange("firstName", e.target.value)}
-        disabled={useSavedAddress}
         placeholder="First Name"
-        className="border rounded-md p-3 w-full disabled:bg-gray-100"
+        className="border rounded-md p-3 w-full"
       />
 
       <input
         type="text"
         value={address.lastName}
         onChange={(e) => handleFieldChange("lastName", e.target.value)}
-        disabled={useSavedAddress}
         placeholder="Last Name"
-        className="border rounded-md p-3 w-full disabled:bg-gray-100"
+        className="border rounded-md p-3 w-full"
       />
 
       <textarea
         value={address.streetAddress}
         onChange={(e) => handleFieldChange("streetAddress", e.target.value)}
-        disabled={useSavedAddress}
         placeholder="House / Flat / Street Address"
-        className="border rounded-md p-3 w-full min-h-[80px] disabled:bg-gray-100"
+        className="border rounded-md p-3 w-full min-h-[80px]"
       />
 
       <SearchableSelect
@@ -205,7 +188,6 @@ const DeliveryForm = ({
         onChange={onStateChange}
         options={states}
         placeholder="Search state..."
-        disabled={useSavedAddress}
       />
 
       <SearchableSelect
@@ -213,7 +195,7 @@ const DeliveryForm = ({
         onChange={onDistrictChange}
         options={districts}
         placeholder={address.state ? "Search district..." : "Select State First"}
-        disabled={useSavedAddress || !address.state}
+        disabled={!address.state}
       />
 
       <SearchablePincodeSelect
@@ -222,7 +204,6 @@ const DeliveryForm = ({
         options={pincodes}
         placeholder="Enter PIN Code"
         onManualInput={handlePincodeInput}
-        disabled={useSavedAddress}
       />
 
       {pincodeStatus === "deliverable" && (
@@ -236,32 +217,51 @@ const DeliveryForm = ({
         type="text"
         value={address.city}
         onChange={(e) => handleFieldChange("city", e.target.value)}
-        disabled={useSavedAddress}
         placeholder="City"
-        className="border rounded-md p-3 w-full disabled:bg-gray-100"
+        className="border rounded-md p-3 w-full"
       />
 
       <input
         type="tel"
         value={address.mobile}
         onChange={(e) => handleFieldChange("mobile", e.target.value)}
-        disabled={useSavedAddress}
         placeholder="Phone Number"
         maxLength={10}
-        className="border rounded-md p-3 w-full disabled:bg-gray-100"
+        className="border rounded-md p-3 w-full"
       />
 
-      {/* Continue */}
-      <div className="flex justify-end">
+      {/* ✅ NEW: Two-button layout */}
+      <div className="flex gap-3 justify-end pt-2">
+        <button
+          disabled={!isFormValid() || isSaving}
+          onClick={onSaveAddress}
+          className="bg-emerald-600 text-white py-2 px-6 rounded-md hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center gap-2"
+        >
+          {isSaving ? (
+            <>
+              <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Saving...
+            </>
+          ) : (
+            "💾 Save Address"
+          )}
+        </button>
+
         <button
           disabled={!isFormValid()}
           onClick={onContinue}
-          className="bg-emerald-700 text-white py-2 px-6 rounded-md hover:bg-emerald-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="bg-emerald-700 text-white py-2 px-6 rounded-md hover:bg-emerald-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
         >
-          Continue
+          Continue to Summary →
         </button>
       </div>
 
+      <p className="text-xs text-gray-500 text-center pt-2">
+        💡 Tip: Save your address to use it again in future orders
+      </p>
     </div>
   );
 };
