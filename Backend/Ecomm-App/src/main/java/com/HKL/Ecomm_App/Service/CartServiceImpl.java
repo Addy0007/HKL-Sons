@@ -193,4 +193,44 @@ public class CartServiceImpl implements CartService {
             System.out.println("⚠️ Cart is already empty or doesn't exist");
         }
     }
+
+    @Override
+    @Transactional
+    public void clearSelectedItems(Long userId) {
+        Cart cart = cartRepository.findByUserId(userId);
+
+        if (cart == null) return;
+
+        Long cartId = cart.getId();
+
+        // ✅ Physically delete selected items from DB
+        cartItemRepository.deleteSelectedItems(cartId);
+
+        // ✅ Clear selected items from memory list
+        cart.getCartItems().removeIf(CartItem::isSelected);
+
+        updateCartTotals(cart);
+
+        cartRepository.save(cart);
+    }
+
+    private void updateCartTotals(Cart cart) {
+        int totalPrice = 0;
+        int totalDiscountedPrice = 0;
+        int totalItem = 0;
+
+        for (CartItem item : cart.getCartItems()) {
+            totalPrice += item.getPrice();
+            totalDiscountedPrice += item.getDiscountedPrice();
+            totalItem += item.getQuantity();
+        }
+
+        cart.setTotalPrice(totalPrice);
+        cart.setTotalDiscountedPrice(totalDiscountedPrice);
+        cart.setTotalItem(totalItem);
+        cart.setDiscount(totalPrice - totalDiscountedPrice);
+
+        cartRepository.save(cart);
+    }
+
 }

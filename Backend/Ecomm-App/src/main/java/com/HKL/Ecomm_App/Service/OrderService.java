@@ -21,4 +21,6 @@ public interface OrderService {
     List<Order> getAllOrders();
 
     List<Order> userOrderHistory(Long id);
+    Order createPendingOrder(User user, Address address) throws UserException;
+    Order createOrderFromSelectedCartItems(User user, Address shippingAddress) throws UserException;
 }

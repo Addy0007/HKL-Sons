@@ -271,4 +271,122 @@ public class OrderServiceImpl implements OrderService {
 
         return savedOrder;
     }
+    @Override
+    @Transactional
+    public Order createPendingOrder(User user, Address shippingAddress) throws UserException {
+
+        // ✅ Save & link address to user, same as createOrder flow
+        shippingAddress.setUser(user);
+        Address savedAddress = addressRepository.save(shippingAddress);
+
+        if (!user.getAddress().contains(savedAddress)) {
+            user.getAddress().add(savedAddress);
+            userRepository.save(user);
+        }
+
+        // ✅ Get user cart
+        Cart cart = cartService.findUserCart(user.getId());
+        if (cart == null || cart.getCartItems().isEmpty()) {
+            throw new RuntimeException("Cart is empty. Cannot create order.");
+        }
+
+        // ✅ Filter only selected items
+        List<CartItem> selectedItems = cart.getCartItems().stream()
+                .filter(CartItem::isSelected)
+                .toList();
+
+        if (selectedItems.isEmpty()) {
+            throw new RuntimeException("No items selected for checkout.");
+        }
+
+        // ✅ Create Order Items list
+        List<OrderItem> orderItems = new ArrayList<>();
+        double totalPrice = 0;
+
+        for (CartItem cartItem : selectedItems) {
+            OrderItem orderItem = new OrderItem();
+            orderItem.setProduct(cartItem.getProduct());
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setSize(cartItem.getSize());
+            orderItem.setPrice(cartItem.getPrice());
+            orderItem.setDiscountedPrice(cartItem.getDiscountedPrice());
+
+            totalPrice += cartItem.getDiscountedPrice();
+            orderItems.add(orderItem);
+        }
+
+        // ✅ Create order entity
+        Order order = new Order();
+        order.setUser(user);
+        order.setShippingAddress(savedAddress);
+        order.setOrderItems(orderItems);
+        order.setTotalPrice(totalPrice);
+        order.setOrderStatus(OrderStatus.PENDING);
+        order.getPaymentDetails().setStatus(PaymentStatus.PENDING);
+        order.setCreatedAt(LocalDateTime.now());
+
+        // ✅ Save order first to generate ID
+        Order savedOrder = orderRepository.save(order);
+
+        // ✅ Link items to the order
+        for (OrderItem item : orderItems) {
+            item.setOrder(savedOrder);
+            orderItemRepository.save(item);
+        }
+
+        // ✅ IMPORTANT:
+        // Do NOT clear cart here. Clear only after successful payment in PaymentController.
+
+        return savedOrder;
+    }
+    @Override
+    @Transactional
+    public Order createOrderFromSelectedCartItems(User user, Address shippingAddress) throws UserException {
+
+        // ✅ Load user cart
+        Cart cart = cartService.findUserCart(user.getId());
+
+        // ✅ Get only selected cart items
+        List<CartItem> selectedItems = cart.getCartItems()
+                .stream()
+                .filter(CartItem::isSelected)
+                .toList();
+
+        if (selectedItems.isEmpty()) {
+            throw new RuntimeException("No selected items found in cart.");
+        }
+
+        // ✅ Calculate totals
+        double totalPrice = selectedItems.stream()
+                .mapToDouble(CartItem::getDiscountedPrice)
+                .sum();
+
+        // ✅ Create order
+        Order order = new Order();
+        order.setUser(user);
+        order.setShippingAddress(shippingAddress);
+        order.setOrderStatus(OrderStatus.PENDING);
+        order.getPaymentDetails().setStatus(PaymentStatus.PENDING);
+        order.setOrderDate(LocalDateTime.now());
+        order.setTotalPrice(totalPrice);
+        order.setTotalItem(selectedItems.size());
+
+        Order savedOrder = orderRepository.save(order);
+
+        // ✅ Convert selected cart items → order items
+        for (CartItem cartItem : selectedItems) {
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(savedOrder);
+            orderItem.setProduct(cartItem.getProduct());
+            orderItem.setPrice(cartItem.getPrice());
+            orderItem.setDiscountedPrice(cartItem.getDiscountedPrice());
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setSize(cartItem.getSize());
+            orderItemService.saveOrderItem(orderItem);
+        }
+
+        return savedOrder;
+    }
+
+
 }

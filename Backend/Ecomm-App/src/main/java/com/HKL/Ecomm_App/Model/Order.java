@@ -31,9 +31,11 @@ public class Order {
     private LocalDateTime orderDate;
     private LocalDateTime deliveryDate;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JsonIgnoreProperties({"user"}) // ✅ Prevent circular reference
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "shipping_address_id")
+    @JsonIgnoreProperties({"user"})
     private Address shippingAddress;
+
 
     @Embedded
     private PaymentDetails paymentDetails = new PaymentDetails();

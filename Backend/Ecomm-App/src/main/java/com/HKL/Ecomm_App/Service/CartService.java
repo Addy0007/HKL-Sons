@@ -12,4 +12,5 @@ public interface CartService {
     String addCartItem(Long userId, AddItemRequest req) throws ProductException, CartItemException, UserException;
     Cart findUserCart(Long userId) throws  UserException;
     void clearCart(Long userId);
+    public void clearSelectedItems(Long userId);
 }
