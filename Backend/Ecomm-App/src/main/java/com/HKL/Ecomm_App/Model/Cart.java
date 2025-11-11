@@ -29,7 +29,7 @@ public class Cart {
     @OneToMany(
             mappedBy = "cart",
             cascade = CascadeType.ALL,
-            orphanRemoval = true,
+            orphanRemoval = false,
             fetch = FetchType.EAGER
     )
     @Fetch(FetchMode.SUBSELECT) // ✅ Avoid N+1 issue

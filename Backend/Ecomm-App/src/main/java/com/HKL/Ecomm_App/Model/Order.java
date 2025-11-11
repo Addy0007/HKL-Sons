@@ -1,5 +1,6 @@
 package com.HKL.Ecomm_App.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -20,15 +21,18 @@ public class Order {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties({"password", "address", "paymentInformation", "ratings", "reviews"})
     private User user;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"order"}) // ✅ Prevent circular reference
     private List<OrderItem> orderItems = new ArrayList<>();
 
     private LocalDateTime orderDate;
     private LocalDateTime deliveryDate;
 
     @OneToOne(cascade = CascadeType.ALL)
+    @JsonIgnoreProperties({"user"}) // ✅ Prevent circular reference
     private Address shippingAddress;
 
     @Embedded

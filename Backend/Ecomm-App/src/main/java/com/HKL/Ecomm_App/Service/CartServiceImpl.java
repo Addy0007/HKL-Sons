@@ -15,7 +15,6 @@ import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 
 @Service
@@ -47,7 +46,9 @@ public class CartServiceImpl implements CartService {
     public Cart createCart(User user) {
         Cart cart = new Cart();
         cart.setUser(user);
-        return cartRepository.save(cart);
+        Cart savedCart = cartRepository.save(cart);
+        System.out.println("✅ New cart created with ID: " + savedCart.getId());
+        return savedCart;
     }
 
     @Override
@@ -66,7 +67,6 @@ public class CartServiceImpl implements CartService {
         if (cart == null) {
             System.out.println("📦 Creating new cart for user: " + userId);
             cart = createCart(user);
-            // Flush to get the cart ID
             entityManager.flush();
         } else {
             System.out.println("✅ Found existing cart: " + cart.getId());
@@ -91,7 +91,6 @@ public class CartServiceImpl implements CartService {
 
             CartItem saved = cartItemRepository.saveAndFlush(cartItem);
             System.out.println("💾 New cart item saved with ID: " + saved.getId());
-            System.out.println("💾 Cart ID: " + (saved.getCart() != null ? saved.getCart().getId() : "NULL"));
 
         } else {
             System.out.println("🔄 Updating existing cart item: " + existing.getId());
@@ -105,7 +104,7 @@ public class CartServiceImpl implements CartService {
             System.out.println("💾 Cart item updated - New quantity: " + newQuantity);
         }
 
-        // ✅ CRITICAL: Clear the entire session
+        // Clear entity manager to avoid stale state
         entityManager.clear();
         System.out.println("🔄 Cleared entity manager cache");
 
@@ -130,18 +129,18 @@ public class CartServiceImpl implements CartService {
 
         System.out.println("✅ Cart found: " + cart.getId());
 
-        // Fetch items in stable order
+        // Fetch cart items in stable order
         List<CartItem> items = entityManager.createQuery(
                         "SELECT ci FROM CartItem ci WHERE ci.cart.id = :cartId ORDER BY ci.id ASC",
                         CartItem.class)
                 .setParameter("cartId", cart.getId())
                 .getResultList();
 
-        cart.setCartItems(items); // ✅ Assign List, not Set
+        cart.setCartItems(items);
 
         System.out.println("📦 Loaded " + items.size() + " cart items");
 
-        // Calculate totals
+        // Calculate cart totals
         int totalPrice = 0;
         int totalDiscountedPrice = 0;
         int totalItem = 0;
@@ -166,5 +165,32 @@ public class CartServiceImpl implements CartService {
         return cart;
     }
 
+    @Override
+    @Transactional
+    public void clearCart(Long userId) {
+        System.out.println("🗑️ Clearing cart for user: " + userId);
 
+        Cart cart = cartRepository.findByUserId(userId);
+
+        if (cart != null && !cart.getCartItems().isEmpty()) {
+            // Delete all cart items
+            cartItemRepository.deleteAll(cart.getCartItems());
+
+            // Clear the collection
+            cart.getCartItems().clear();
+
+            // Reset totals
+            cart.setTotalPrice(0);
+            cart.setTotalDiscountedPrice(0);
+            cart.setTotalItem(0);
+            cart.setDiscount(0);
+
+            cartRepository.save(cart);
+            entityManager.flush();
+
+            System.out.println("✅ Cart cleared successfully");
+        } else {
+            System.out.println("⚠️ Cart is already empty or doesn't exist");
+        }
+    }
 }

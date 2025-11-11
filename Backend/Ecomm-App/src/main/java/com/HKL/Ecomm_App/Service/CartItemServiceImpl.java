@@ -87,6 +87,33 @@ public class CartItemServiceImpl implements CartItemService {
                         new CartItemException("CartItem not found with id " + cartItemId));
     }
 
+    @Override
+    @Transactional
+    public CartItem toggleSelection(Long userId, Long cartItemId)
+            throws CartItemException, UserException {
+
+        System.out.println("🔄 Toggling selection for cart item: " + cartItemId + " (User: " + userId + ")");
+
+        CartItem item = findCartItemById(cartItemId);
+
+        // Security check: ensure user owns this cart item
+        if (!item.getUserId().equals(userId)) {
+            System.out.println("❌ Unauthorized toggle attempt - User " + userId + " doesn't own item " + cartItemId);
+            throw new UserException("Unauthorized access to cart item");
+        }
+
+        // Toggle the selection state
+        boolean newSelectionState = !item.isSelected();
+        item.setSelected(newSelectionState);
+
+        // Save and flush to ensure immediate persistence
+        CartItem updated = cartItemRepository.saveAndFlush(item);
+
+        System.out.println("✅ Cart item " + cartItemId + " selection toggled to: " + updated.isSelected());
+
+        return updated;
+    }
+
     private void calculateItemPrices(CartItem item) {
         item.setPrice(item.getProduct()
                 .getPrice() * item.getQuantity());

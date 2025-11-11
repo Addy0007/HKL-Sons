@@ -4,131 +4,271 @@ import com.HKL.Ecomm_App.Exception.OrderException;
 import com.HKL.Ecomm_App.Exception.UserException;
 import com.HKL.Ecomm_App.Model.*;
 import com.HKL.Ecomm_App.Repository.*;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class OrderServiceImpl implements OrderService{
+public class OrderServiceImpl implements OrderService {
     private final CartService cartService;
     private final OrderRepository orderRepository;
     private final AddressRepository addressRepository;
     private final UserRepository userRepository;
     private final OrderItemService orderItemService;
     private final OrderItemRepository orderItemRepository;
+    private final CartItemRepository cartItemRepository;
+    private final CartRepository cartRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public OrderServiceImpl(CartService cartService, OrderRepository orderRepository,
                             AddressRepository addressRepository, UserRepository userRepository,
-                            OrderItemService orderItemService, OrderItemRepository orderItemRepository) {
+                            OrderItemService orderItemService, OrderItemRepository orderItemRepository,
+                            CartItemRepository cartItemRepository,
+                            CartRepository cartRepository) {
         this.cartService = cartService;
         this.orderRepository = orderRepository;
         this.addressRepository = addressRepository;
         this.userRepository = userRepository;
         this.orderItemService = orderItemService;
         this.orderItemRepository = orderItemRepository;
+        this.cartItemRepository = cartItemRepository;
+        this.cartRepository = cartRepository;
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public Order findOrderById(Long orderId) throws OrderException {
+        System.out.println("🔍 Finding order with ID: " + orderId);
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderException("Order not found with id: " + orderId));
+
+        System.out.println("✅ Order found: " + order.getId() + " | Status: " + order.getOrderStatus());
+        return order;
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<Order> usersOrderHistory(Long userId) {
+        System.out.println("📋 Fetching order history for user: " + userId);
+        List<Order> orders = orderRepository.getUsersOrders(userId);
+        System.out.println("✅ Found " + orders.size() + " orders");
+        return orders;
+    }
+
+    @Override
+    @Transactional
+    public Order placedOrder(Long orderId) throws OrderException {
+        System.out.println("📦 Placing order: " + orderId);
+        Order order = findOrderById(orderId);
+        order.setOrderStatus(OrderStatus.PLACED);
+        Order saved = orderRepository.save(order);
+        System.out.println("✅ Order placed successfully");
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public Order confirmOrder(Long orderId) throws OrderException {
+        System.out.println("✅ Confirming order: " + orderId);
+        Order order = findOrderById(orderId);
+        order.setOrderStatus(OrderStatus.CONFIRMED);
+        Order saved = orderRepository.save(order);
+        System.out.println("✅ Order confirmed successfully");
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public Order shippedOrder(Long orderId) throws OrderException {
+        System.out.println("🚚 Shipping order: " + orderId);
+        Order order = findOrderById(orderId);
+        order.setOrderStatus(OrderStatus.SHIPPED);
+        Order saved = orderRepository.save(order);
+        System.out.println("✅ Order shipped successfully");
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public Order deliveredOrder(Long orderId) throws OrderException {
+        System.out.println("📬 Delivering order: " + orderId);
+        Order order = findOrderById(orderId);
+        order.setOrderStatus(OrderStatus.DELIVERED);
+        Order saved = orderRepository.save(order);
+        System.out.println("✅ Order delivered successfully");
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public Order cancelledOrder(Long orderId) throws OrderException {
+        System.out.println("❌ Cancelling order: " + orderId);
+        Order order = findOrderById(orderId);
+        order.setOrderStatus(OrderStatus.CANCELLED);
+        Order saved = orderRepository.save(order);
+        System.out.println("✅ Order cancelled successfully");
+        return saved;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Order> getAllOrders() {
+        System.out.println("📋 Fetching all orders");
+        List<Order> orders = orderRepository.findAll();
+        System.out.println("✅ Found " + orders.size() + " total orders");
+        return orders;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Order> userOrderHistory(Long userId) {
+        return usersOrderHistory(userId);
+    }
+
+    @Override
+    @Transactional
     public Order createOrder(User user, Address shippingAddress) throws UserException {
+        System.out.println("📦 ========== ORDER CREATION STARTED ==========");
+        System.out.println("👤 User ID: " + user.getId() + " | Email: " + user.getEmail());
+        System.out.println("📍 Shipping Address: " + shippingAddress.getFirstName() + " " +
+                shippingAddress.getLastName() + ", " + shippingAddress.getCity());
+
+        // ====== STEP 1: Save Shipping Address ======
         shippingAddress.setUser(user);
-        Address address=addressRepository.save(shippingAddress);
-        user.getAddress().add(address);
-        userRepository.save(user);
+        Address savedAddress = addressRepository.save(shippingAddress);
+        entityManager.flush();
+        System.out.println("✅ Address saved with ID: " + savedAddress.getId());
 
-        Cart cart=cartService.findUserCart(user.getId());
-        List<OrderItem> orderItems=new ArrayList<>();
-
-        for(CartItem item : cart.getCartItems()){
-            OrderItem orderItem=new OrderItem();
-
-            orderItem.setProduct(item.getProduct());
-            orderItem.setPrice(item.getPrice());
-            orderItem.setQuantity(item.getQuantity());
-            orderItem.setSize(item.getSize());
-            orderItem.setId(item.getId());
-            orderItem.setDiscountedPrice(item.getDiscountedPrice());
-
-            OrderItem createdOrderItem=orderItemRepository.save(orderItem);
-            orderItems.add(createdOrderItem);
+        // ====== STEP 2: Add address to user's address list ======
+        if (!user.getAddress().contains(savedAddress)) {
+            user.getAddress().add(savedAddress);
+            userRepository.save(user);
+            entityManager.flush();
+            System.out.println("✅ Address linked to user");
         }
-        Order createdOrder=new Order();
+
+        // ====== STEP 3: Get user's cart ======
+        Cart cart = cartService.findUserCart(user.getId());
+
+        if (cart == null) {
+            throw new UserException("Cart not found for user: " + user.getId());
+        }
+
+        if (cart.getCartItems() == null || cart.getCartItems().isEmpty()) {
+            throw new UserException("Cart is empty. Cannot create order.");
+        }
+
+        System.out.println("🛒 Cart ID: " + cart.getId() + " | Items: " + cart.getCartItems().size());
+
+        // ====== STEP 4: Create Order Items from Cart Items ======
+        List<OrderItem> orderItems = new ArrayList<>();
+
+        // Create a copy of cart items to avoid concurrent modification
+        List<CartItem> cartItemsCopy = new ArrayList<>(cart.getCartItems());
+
+        for (CartItem cartItem : cartItemsCopy) {
+            OrderItem orderItem = new OrderItem();
+            orderItem.setProduct(cartItem.getProduct());
+            orderItem.setPrice(cartItem.getPrice());
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setSize(cartItem.getSize());
+            orderItem.setDiscountedPrice(cartItem.getDiscountedPrice());
+
+            orderItems.add(orderItem);
+
+            System.out.println("  📦 OrderItem prepared: " + cartItem.getProduct().getTitle() +
+                    " | Qty: " + cartItem.getQuantity() +
+                    " | Size: " + cartItem.getSize() +
+                    " | Price: ₹" + cartItem.getDiscountedPrice());
+        }
+
+        System.out.println("✅ Created " + orderItems.size() + " order items from cart");
+
+        // ====== STEP 5: Create and Save Order ======
+        Order createdOrder = new Order();
         createdOrder.setUser(user);
         createdOrder.setOrderItems(orderItems);
         createdOrder.setTotalPrice(cart.getTotalPrice());
         createdOrder.setTotalDiscountedPrice(cart.getTotalDiscountedPrice());
         createdOrder.setDiscount(cart.getDiscount());
         createdOrder.setTotalItem(cart.getTotalItem());
-
-        createdOrder.setShippingAddress(address);
+        createdOrder.setShippingAddress(savedAddress);
         createdOrder.setOrderDate(LocalDateTime.now());
         createdOrder.setOrderStatus(OrderStatus.PENDING);
         createdOrder.getPaymentDetails().setStatus(PaymentStatus.PENDING);
         createdOrder.setCreatedAt(LocalDateTime.now());
 
-        Order savedOrder=orderRepository.save(createdOrder);
-        for(OrderItem item:orderItems){
+        Order savedOrder = orderRepository.save(createdOrder);
+        entityManager.flush();
+
+        System.out.println("✅ Order saved with ID: " + savedOrder.getId());
+        System.out.println("💰 Order Total: ₹" + savedOrder.getTotalDiscountedPrice() +
+                " (Items: " + savedOrder.getTotalItem() + ")");
+
+        // ====== STEP 6: Save Order Items with Order Reference ======
+        for (OrderItem item : orderItems) {
             item.setOrder(savedOrder);
-            orderItemRepository.save(item);
+            OrderItem savedItem = orderItemRepository.save(item);
+            System.out.println("  ✅ OrderItem saved with ID: " + savedItem.getId());
         }
-        return  savedOrder;
-    }
 
+        entityManager.flush();
+        System.out.println("✅ All " + orderItems.size() + " order items saved");
 
-    @Override
-    public Order findOrderById(Long orderId) throws OrderException {
-        return orderRepository.findById(orderId).orElseThrow(() -> new OrderException("Order not found"));
-    }
+        // ====== STEP 7: Clear cart manually (with orphanRemoval removed from Cart entity) ======
+        try {
+            System.out.println("🗑️ Clearing cart after order creation...");
 
-    @Override
-    public List<Order> usersOrderHistory(Long userId) {
-        List<Order> orders =orderRepository.getUsersOrders(userId);
-        return orders;
-    }
+            final Long cartId = cart.getId();
 
-    @Override
-    public Order placedOrder(Long orderId) throws OrderException {
-        Order order=findOrderById(orderId);
-        order.setOrderStatus(OrderStatus.PLACED);
-        return orderRepository.save(order);
-    }
+            // First, manually delete all cart items from the database
+            List<CartItem> itemsToDelete = cartItemRepository.findByCartId(cartId);
 
-    @Override
-    public Order confirmOrder(Long orderId) throws OrderException {
-        Order order=findOrderById(orderId);
-        order.setOrderStatus(OrderStatus.CONFIRMED);
-        return orderRepository.save(order);
-    }
+            System.out.println("🗑️ Found " + itemsToDelete.size() + " cart items to delete");
 
-    @Override
-    public Order shippedOrder(Long orderId) throws OrderException {
-        Order order=findOrderById(orderId);
-        order.setOrderStatus(OrderStatus.SHIPPED);
-        return orderRepository.save(order);
-    }
+            if (!itemsToDelete.isEmpty()) {
+                // Delete each cart item
+                cartItemRepository.deleteAll(itemsToDelete);
+                cartItemRepository.flush();
 
-    @Override
-    public Order deliveredOrder(Long orderId) throws OrderException {
-        Order order=findOrderById(orderId);
-        order.setOrderStatus(OrderStatus.DELIVERED);
-        return orderRepository.save(order);
-    }
+                System.out.println("✅ Deleted " + itemsToDelete.size() + " cart items from database");
+            }
 
-    @Override
-    public Order cancelledOrder(Long orderId) throws OrderException {
-        Order order=findOrderById(orderId);
-        order.setOrderStatus(OrderStatus.CANCELLED);
-        return orderRepository.save(order);
-    }
+            // Clear the EntityManager to remove stale references
+            entityManager.clear();
 
-    @Override
-    public List<Order> getAllOrders() {
-        return orderRepository.findAll();
-    }
+            // Now fetch a fresh cart and update its totals
+            Cart freshCart = cartRepository.findById(cartId)
+                    .orElseThrow(() -> new RuntimeException("Cart not found"));
 
-    @Override
-    public List<Order> userOrderHistory(Long id) {
-        return orderRepository.getUsersOrders(id);
+            // Reset totals
+            freshCart.setTotalPrice(0);
+            freshCart.setTotalDiscountedPrice(0);
+            freshCart.setTotalItem(0);
+            freshCart.setDiscount(0);
+
+            cartRepository.save(freshCart);
+
+            System.out.println("✅ Cart cleared successfully");
+
+        } catch (Exception e) {
+            System.err.println("⚠️ Warning: Failed to clear cart: " + e.getMessage());
+            e.printStackTrace();
+            // Don't throw exception - order was created successfully
+        }
+
+        System.out.println("📦 ========== ORDER CREATION COMPLETED ==========");
+        System.out.println("✅ Order ID: " + savedOrder.getId() + " | Status: " + savedOrder.getOrderStatus());
+
+        return savedOrder;
     }
 }

@@ -31,12 +31,23 @@ public class CartItemController {
         return ResponseEntity.ok("Cart item removed successfully");
     }
 
-
     @PutMapping("/{cartItemId}")
-    public ResponseEntity<CartItem> updateCartItem(@PathVariable Long cartItemId, @RequestBody CartItem cartItem,
-                                                   @RequestHeader("Authorization") String jwt) throws UserException, CartItemException {
-        User user =userService.findUserProfileByJwt(jwt);
-        CartItem updatedCartItem = cartItemService.updateCartItem(user.getId(),cartItemId, cartItem);
+    public ResponseEntity<CartItem> updateCartItem(@PathVariable Long cartItemId,
+                                                   @RequestBody CartItem cartItem,
+                                                   @RequestHeader("Authorization") String jwt)
+            throws UserException, CartItemException {
+        User user = userService.findUserProfileByJwt(jwt);
+        CartItem updatedCartItem = cartItemService.updateCartItem(user.getId(), cartItemId, cartItem);
         return ResponseEntity.ok(updatedCartItem);
+    }
+
+    // ✅ NEW: Toggle selection status
+    @PatchMapping("/{cartItemId}/toggle-selection")
+    public ResponseEntity<CartItem> toggleSelection(@PathVariable Long cartItemId,
+                                                    @RequestHeader("Authorization") String jwt)
+            throws UserException, CartItemException {
+        User user = userService.findUserProfileByJwt(jwt);
+        CartItem updatedItem = cartItemService.toggleSelection(user.getId(), cartItemId);
+        return ResponseEntity.ok(updatedItem);
     }
 }

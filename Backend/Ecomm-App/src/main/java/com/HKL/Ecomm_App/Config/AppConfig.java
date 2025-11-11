@@ -56,36 +56,24 @@ public class AppConfig {
         return http.build();
     }
 
-    // ✅ Configure Cross-Origin Resource Sharing
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        // Allowed frontend URLs
         configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5173",  // Vite (your frontend)
-                "http://localhost:3000",  // React CRA (optional)
-                "http://localhost:4200"   // Angular (optional)
+                "http://localhost:5173",
+                "http://localhost:3000",
+                "http://localhost:4200"
         ));
-
-        // Allowed request types
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
-        // Allowed headers from frontend
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Collections.singletonList("*"));
-
-        // Headers exposed to frontend (e.g. Authorization token)
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
-
-        // Allow cookies or credentials (JWT tokens)
         configuration.setAllowCredentials(true);
 
-        // Apply to all endpoints
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-
         return source;
     }
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
