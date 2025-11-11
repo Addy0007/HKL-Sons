@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import CartItem from "./CartItem";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getCart, removeCartItem, updateCartItem } from "../../../State/Cart/Action";
+import { getCart, removeCartItem, updateCartItem, toggleCartItemSelection } from "../../../State/Cart/Action";
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -10,12 +10,10 @@ const Cart = () => {
   const { cartItems } = useSelector((state) => state.cart);
   const { isAuthenticated } = useSelector((state) => state.auth);
 
-  // Load cart on mount
   useEffect(() => {
     dispatch(getCart());
   }, [dispatch]);
 
-  // Handle Checkout
   const handleCheckout = () => {
     if (!isAuthenticated) {
       return navigate("/login", {
@@ -28,20 +26,51 @@ const Cart = () => {
     navigate("/checkout?step=2");
   };
 
-  // ✅ Calculate all price values
-  const subtotal = cartItems.reduce(
+  const handleToggleSelection = (itemId) => {
+    console.log("Cart: Toggling selection for item", itemId);
+    dispatch(toggleCartItemSelection(itemId));
+  };
+
+  // Debug: Log cart items and their selection state
+  useEffect(() => {
+    console.log("Cart Items:", cartItems.map(item => ({
+      id: item.id,
+      product: item.product.title,
+      selected: item.selected
+    })));
+  }, [cartItems]);
+
+  // ✅ Filter only selected items for price calculation
+  const selectedItems = cartItems.filter(item => item.selected !== false);
+
+  const subtotal = selectedItems.reduce(
     (sum, item) => sum + item.quantity * item.product.price,
     0
   );
 
-  const discountedTotal = cartItems.reduce(
+  const discountedTotal = selectedItems.reduce(
     (sum, item) => sum + item.quantity * item.product.discountedPrice,
     0
   );
 
   const discount = subtotal - discountedTotal;
-  const delivery = discountedTotal > 499 ? 0 : 50; // Example delivery rule
+  const delivery = discountedTotal > 499 ? 0 : 50;
   const grandTotal = discountedTotal + delivery;
+
+  // ✅ Select/Deselect All
+  const allSelected = cartItems.length > 0 && cartItems.every(item => item.selected !== false);
+  
+  const handleSelectAll = () => {
+    console.log("Select All clicked, current state:", allSelected);
+    cartItems.forEach(item => {
+      // If currently all selected, deselect all
+      // If not all selected, select all
+      const shouldToggle = allSelected ? item.selected !== false : item.selected === false;
+      if (shouldToggle) {
+        dispatch(toggleCartItemSelection(item.id));
+      }
+    });
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen py-10 px-4 sm:px-6 lg:px-10">
@@ -49,9 +78,27 @@ const Cart = () => {
 
         {/* LEFT SECTION */}
         <div className="lg:col-span-2 space-y-5">
-          <h2 className="text-2xl font-semibold text-emerald-800 border-b pb-2">
-            My Shopping Cart
-          </h2>
+          <div className="flex items-center justify-between border-b pb-2">
+            <h2 className="text-2xl font-semibold text-emerald-800">
+              My Shopping Cart
+            </h2>
+            
+            {/* Select All Checkbox */}
+            {cartItems.length > 0 && (
+              <button
+                onClick={handleSelectAll}
+                className="text-sm font-medium text-emerald-700 hover:text-emerald-800 flex items-center gap-2"
+              >
+                <input 
+                  type="checkbox" 
+                  checked={allSelected}
+                  onChange={handleSelectAll}
+                  className="w-4 h-4 accent-emerald-700 cursor-pointer"
+                />
+                Select All
+              </button>
+            )}
+          </div>
 
           {cartItems.length > 0 ? (
             cartItems.map((item) => (
@@ -67,6 +114,7 @@ const Cart = () => {
                   }
                 }}
                 onRemove={() => dispatch(removeCartItem(item.id))}
+                onToggleSelection={handleToggleSelection}
               />
             ))
           ) : (
@@ -85,7 +133,7 @@ const Cart = () => {
         {/* RIGHT SECTION: PRICE DETAILS */}
         <div className="bg-white border rounded-xl shadow-md p-6 h-fit">
           <h3 className="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">
-            Price Details ({cartItems.length} items)
+            Price Details ({selectedItems.length} of {cartItems.length} items selected)
           </h3>
 
           <div className="space-y-3 text-sm text-gray-700">
@@ -115,12 +163,18 @@ const Cart = () => {
           </div>
 
           <button
-            className="mt-6 w-full bg-emerald-700 text-white font-medium py-3 rounded-md hover:bg-emerald-800 transition"
+            className="mt-6 w-full bg-emerald-700 text-white font-medium py-3 rounded-md hover:bg-emerald-800 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
             onClick={handleCheckout}
-            disabled={cartItems.length === 0}
+            disabled={selectedItems.length === 0}
           >
-            Proceed to Checkout
+            Proceed to Checkout ({selectedItems.length} items)
           </button>
+
+          {selectedItems.length === 0 && cartItems.length > 0 && (
+            <p className="text-xs text-orange-600 text-center mt-2">
+              Please select at least one item to checkout
+            </p>
+          )}
         </div>
 
       </div>

@@ -8,57 +8,31 @@ const OrderSummary = ({ address, onEdit }) => {
   const dispatch = useDispatch();
   const { cart } = useSelector((state) => state);
 
-  // ✅ Check if cart is empty and redirect to cart page
+  // ✅ Selected Items Only
+  const selectedItems = cart.cartItems?.filter(item => item.selected !== false) || [];
+
+  // ✅ If no selected items, send back to cart
   useEffect(() => {
-    if (!cart.cartItems || cart.cartItems.length === 0) {
-      console.warn("Cart is empty, redirecting to cart page");
+    if (selectedItems.length === 0) {
       navigate("/cart", { replace: true });
     }
-  }, [cart.cartItems, navigate]);
+  }, [selectedItems, navigate]);
 
-  // Calculate totals
-  const calculateSubtotal = () => {
-    return cart.cartItems?.reduce((total, item) => {
-      return total + (item.price * item.quantity);
-    }, 0) || 0;
-  };
-
-  const subtotal = calculateSubtotal();
-  const shipping = subtotal > 500 ? 0 : 40; // Free shipping above ₹500
-  const tax = subtotal * 0.18; // 18% GST
+  // ✅ Calculate totals based only on selected items
+  const subtotal = selectedItems.reduce((sum, item) => sum + item.discountedPrice, 0);
+  const shipping = subtotal > 500 ? 0 : 40;
+  const tax = subtotal * 0.18;
   const total = subtotal + shipping + tax;
 
   const handlePlaceOrder = () => {
-    // ✅ Double-check cart before placing order
-    if (!cart.cartItems || cart.cartItems.length === 0) {
-      alert("Your cart is empty. Please add items before placing an order.");
-      navigate("/cart");
-      return;
+    if (selectedItems.length === 0) {
+      alert("No selected items to checkout.");
+      return navigate("/cart");
     }
-
-    const reqData = {
-      address,
-      navigate,
-    };
-    dispatch(createOrder(reqData));
+    dispatch(createOrder({ address, navigate }));
   };
 
-  // ✅ Don't render if cart is empty
-  if (!cart.cartItems || cart.cartItems.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-100 py-10 px-4 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">Your cart is empty</p>
-          <button
-            onClick={() => navigate("/cart")}
-            className="bg-emerald-700 text-white py-2 px-6 rounded-md hover:bg-emerald-800"
-          >
-            Go to Cart
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (selectedItems.length === 0) return null;
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4">
@@ -66,83 +40,60 @@ const OrderSummary = ({ address, onEdit }) => {
         <h1 className="text-3xl font-bold text-emerald-800 mb-6">Order Summary</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Address & Items */}
+          
+          {/* LEFT SIDE */}
           <div className="lg:col-span-2 space-y-6">
-            
-            {/* Delivery Address Card */}
+
+            {/* Delivery Address */}
             <div className="bg-white rounded-xl shadow p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-emerald-800">Delivery Address</h2>
-                <button
-                  onClick={onEdit}
-                  className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
-                >
+                <button onClick={onEdit} className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">
                   Edit
                 </button>
               </div>
-              
+
               <div className="text-gray-700 space-y-1">
-                <p className="font-semibold">
-                  {address.firstName} {address.lastName}
-                </p>
+                <p className="font-semibold">{address.firstName} {address.lastName}</p>
                 <p>{address.streetAddress}</p>
-                <p>
-                  {address.city}, {address.district}
-                </p>
-                <p>
-                  {address.state} - {address.zipCode}
-                </p>
-                <p className="pt-2">
-                  <span className="font-medium">Phone:</span> {address.mobile}
-                </p>
+                <p>{address.city}, {address.district}</p>
+                <p>{address.state} - {address.zipCode}</p>
+                <p className="pt-2"><span className="font-medium">Phone:</span> {address.mobile}</p>
               </div>
             </div>
 
-            {/* Order Items Card */}
+            {/* ✅ Order Items Card */}
             <div className="bg-white rounded-xl shadow p-6">
-              <h2 className="text-xl font-semibold text-emerald-800 mb-4">
-                Order Items ({cart.cartItems?.length || 0})
-              </h2>
-              
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-emerald-800">
+                  Order Items ({selectedItems.length})
+                </h2>
+
+                <button
+                  onClick={() => navigate("/cart")}
+                  className="text-sm font-medium text-emerald-600 hover:text-emerald-700 underline"
+                >
+                  Modify Selection
+                </button>
+              </div>
+
               <div className="space-y-4">
-                {cart.cartItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex gap-4 pb-4 border-b last:border-b-0"
-                  >
-                    {/* Product Image */}
+                {selectedItems.map((item) => (
+                  <div key={item.id} className="flex gap-4 pb-4 border-b last:border-b-0">
                     <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                      <img
-                        src={item.product?.imageUrl || "/placeholder.png"}
-                        alt={item.product?.title || "Product"}
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={item.product?.imageUrl} alt={item.product?.title} className="w-full h-full object-cover" />
                     </div>
 
-                    {/* Product Details */}
                     <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">
-                        {item.product?.title || "Product Name"}
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {item.product?.brand || "Brand"}
-                      </p>
-                      {item.size && (
-                        <p className="text-sm text-gray-500">Size: {item.size}</p>
-                      )}
-                      <p className="text-sm text-gray-600 mt-1">
-                        Quantity: {item.quantity}
-                      </p>
+                      <h3 className="font-medium text-gray-900">{item.product?.title}</h3>
+                      <p className="text-sm text-gray-500">{item.product?.brand}</p>
+                      {item.size && <p className="text-sm text-gray-500">Size: {item.size}</p>}
+                      <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                     </div>
 
-                    {/* Price */}
                     <div className="text-right">
-                      <p className="font-semibold text-gray-900">
-                        ₹{(item.price * item.quantity).toFixed(2)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        ₹{item.price} each
-                      </p>
+                      <p className="font-semibold text-gray-900">₹{item.discountedPrice}</p>
+                      <p className="text-sm text-gray-500 line-through">₹{item.price}</p>
                     </div>
                   </div>
                 ))}
@@ -150,64 +101,33 @@ const OrderSummary = ({ address, onEdit }) => {
             </div>
           </div>
 
-          {/* Right Column - Price Breakdown */}
+          {/* RIGHT SIDE PRICE BOX */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow p-6 sticky top-4">
-              <h2 className="text-xl font-semibold text-emerald-800 mb-4">
-                Price Details
-              </h2>
+              <h2 className="text-xl font-semibold text-emerald-800 mb-4">Price Details</h2>
 
-              <div className="space-y-3">
-                {/* Subtotal */}
-                <div className="flex justify-between text-gray-700">
-                  <span>Subtotal</span>
-                  <span>₹{subtotal.toFixed(2)}</span>
-                </div>
+              <div className="space-y-3 text-gray-700 text-sm">
+                <div className="flex justify-between"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>Shipping</span><span className={shipping === 0 ? "text-green-600" : ""}>{shipping === 0 ? "FREE" : `₹${shipping}`}</span></div>
+                <div className="flex justify-between"><span>Tax (18% GST)</span><span>₹{tax.toFixed(2)}</span></div>
 
-                {/* Shipping */}
-                <div className="flex justify-between text-gray-700">
-                  <span>Shipping</span>
-                  <span className={shipping === 0 ? "text-green-600" : ""}>
-                    {shipping === 0 ? "FREE" : `₹${shipping.toFixed(2)}`}
-                  </span>
-                </div>
-
-                {/* Tax */}
-                <div className="flex justify-between text-gray-700">
-                  <span>Tax (GST 18%)</span>
-                  <span>₹{tax.toFixed(2)}</span>
-                </div>
-
-                <div className="border-t pt-3">
-                  <div className="flex justify-between text-lg font-bold text-gray-900">
-                    <span>Total</span>
-                    <span>₹{total.toFixed(2)}</span>
-                  </div>
+                <div className="border-t pt-3 flex justify-between text-lg font-bold text-gray-900">
+                  <span>Total</span>
+                  <span>₹{total.toFixed(2)}</span>
                 </div>
               </div>
 
-              {/* Free Shipping Message */}
-              {subtotal < 500 && (
-                <div className="mt-4 p-3 bg-emerald-50 rounded-lg text-sm text-emerald-700">
-                  Add ₹{(500 - subtotal).toFixed(2)} more for FREE shipping!
-                </div>
-              )}
-
-              {/* Place Order Button */}
               <button
                 onClick={handlePlaceOrder}
-                className="w-full mt-6 bg-emerald-700 text-white py-3 px-6 rounded-lg font-semibold hover:bg-emerald-800 transition-colors"
+                className="w-full mt-6 bg-emerald-700 text-white py-3 rounded-lg font-semibold hover:bg-emerald-800 transition"
               >
                 Place Order
               </button>
 
-              {/* Security Message */}
-              <div className="mt-4 text-center text-xs text-gray-500">
-                <p>🔒 Secure Checkout</p>
-                <p className="mt-1">Your payment information is encrypted</p>
-              </div>
+              <p className="text-center text-xs text-gray-500 mt-3">🔒 Secure Checkout</p>
             </div>
           </div>
+
         </div>
       </div>
     </div>

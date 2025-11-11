@@ -1,22 +1,45 @@
-import React from "react"
-import "./CartItem.css"
-import { IconButton } from "@mui/material"
-import { Add, Remove, Delete } from "@mui/icons-material"
+import React from "react";
+import { IconButton, Checkbox } from "@mui/material";
+import { Add, Remove, Delete } from "@mui/icons-material";
 
-const CartItem = ({ item, onIncrease, onDecrease, onRemove }) => {
-  const { product, size, quantity } = item;
+const CartItem = ({ item, onIncrease, onDecrease, onRemove, onToggleSelection }) => {
+  const { product, size, quantity, selected = true } = item;
+
+  // Debug log to see the actual value
+  console.log(`CartItem ${item.id}: selected =`, selected, typeof selected);
+
+  const handleCheckboxChange = (e) => {
+    console.log("Checkbox clicked, current selected:", selected);
+    onToggleSelection(item.id);
+  };
 
   return (
-    <div className={`cart-item p-5 border rounded-xl shadow-md bg-white hover:shadow-lg transition duration-200 
-      ${quantity === 0 ? "opacity-50" : "opacity-100"}`}>
-      
+    <div 
+      className={`cart-item p-5 border rounded-xl shadow-md bg-white transition duration-200 
+        ${quantity === 0 ? "opacity-50" : "opacity-100"}
+        ${!selected ? "bg-gray-50 border-gray-300" : "hover:shadow-lg border-emerald-200"}`}
+    >
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row gap-5">
+
+          {/* ✅ Selection Checkbox */}
+          <div className="flex items-start">
+            <Checkbox
+              checked={selected === true}
+              onChange={handleCheckboxChange}
+              sx={{
+                color: "#059669",
+                "&.Mui-checked": { color: "#059669" },
+              }}
+            />
+          </div>
 
           {/* Product Image */}
           <div className="w-[6rem] h-[6rem] sm:w-[8rem] sm:h-[8rem] flex-shrink-0">
             <img
-              className="w-full h-full object-cover object-top rounded-md border"
+              className={`w-full h-full object-cover object-top rounded-md border ${
+                !selected ? "opacity-60" : ""
+              }`}
               src={product.imageUrl}
               alt={product.title}
             />
@@ -24,13 +47,17 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove }) => {
 
           {/* Product Info */}
           <div className="flex-1 space-y-2">
-            <p className="font-semibold text-gray-900 text-lg">{product.title}</p>
+            <p className={`font-semibold text-lg ${!selected ? "text-gray-500" : "text-gray-900"}`}>
+              {product.title}
+            </p>
             <p className="text-gray-600 text-sm">Size: {size}</p>
             <p className="text-gray-500 text-sm">Seller: {product.brand}</p>
 
             {/* Price */}
             <div className="flex flex-wrap items-center gap-4 pt-2">
-              <p className="font-semibold text-gray-900 text-lg">₹{product.discountedPrice}</p>
+              <p className={`font-semibold text-lg ${!selected ? "text-gray-500" : "text-gray-900"}`}>
+                ₹{product.discountedPrice}
+              </p>
               <p className="opacity-50 line-through text-sm">₹{product.price}</p>
               <p className="text-green-600 font-medium text-sm">{product.discountPercent}% Off</p>
             </div>
@@ -43,9 +70,8 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove }) => {
 
             {/* Quantity Control */}
             <div className="flex items-center border border-gray-300 rounded-md overflow-hidden shadow-sm w-fit">
-              {/* Only show decrease button if quantity > 0 */}
               {quantity > 0 && (
-                <IconButton size="small" onClick={onDecrease}>
+                <IconButton size="small" onClick={onDecrease} disabled={!selected}>
                   <Remove fontSize="small" />
                 </IconButton>
               )}
@@ -56,10 +82,7 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove }) => {
                 {quantity}
               </div>
 
-              <IconButton 
-                size="small" 
-                onClick={onIncrease}
-              >
+              <IconButton size="small" onClick={onIncrease} disabled={!selected}>
                 <Add fontSize="small" />
               </IconButton>
             </div>
@@ -74,16 +97,21 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove }) => {
           </div>
         </div>
 
-        {/* Show this label when item is in "waiting to be removed" state */}
+        {/* Show labels */}
+        {!selected && (
+          <p className="text-xs text-orange-600 italic pl-1">
+            ℹ️ This item will remain in your cart but won't be included in checkout
+          </p>
+        )}
+        
         {quantity === 0 && (
           <p className="text-xs text-red-500 italic pl-1">
             Will be removed automatically soon
           </p>
         )}
-
       </div>
     </div>
-  )
-}
+  );
+};
 
 export default CartItem;

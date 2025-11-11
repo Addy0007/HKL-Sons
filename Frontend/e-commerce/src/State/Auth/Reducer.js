@@ -12,6 +12,7 @@ import {
   REGISTER_SUCCESS,
 } from "./ActionType";
 
+
 const getInitialState = () => {
   const jwt = localStorage.getItem("jwt");
   return {

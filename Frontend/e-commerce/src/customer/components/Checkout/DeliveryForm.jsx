@@ -5,7 +5,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) =
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredOptions = options.filter(option =>
-    option.toLowerCase().includes(searchTerm.toLowerCase())
+    option?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSelect = (option) => {
@@ -26,13 +26,13 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) =
         onFocus={() => setIsOpen(true)}
         placeholder={placeholder}
         disabled={disabled}
-        className="border rounded-md p-3 w-full disabled:bg-gray-100"
+        className="border rounded-md p-3 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
       />
-      
+
       {isOpen && !disabled && (
         <>
-          <div 
-            className="fixed inset-0 z-10" 
+          <div
+            className="fixed inset-0 z-10"
             onClick={() => {
               setIsOpen(false);
               setSearchTerm("");
@@ -59,13 +59,11 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) =
   );
 };
 
-const SearchablePincodeSelect = ({ value, onChange, options, placeholder, onManualInput }) => {
+const SearchablePincodeSelect = ({ value, onChange, options, placeholder, onManualInput, disabled }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredOptions = options.filter(option =>
-    option.includes(searchTerm)
-  );
+  const filteredOptions = options.filter(option => option.includes(searchTerm));
 
   const handleSelect = (option) => {
     onChange(option);
@@ -77,7 +75,7 @@ const SearchablePincodeSelect = ({ value, onChange, options, placeholder, onManu
     const val = e.target.value;
     setSearchTerm(val);
     setIsOpen(true);
-    
+
     if (onManualInput) {
       onManualInput(val);
     }
@@ -90,20 +88,22 @@ const SearchablePincodeSelect = ({ value, onChange, options, placeholder, onManu
         value={isOpen ? searchTerm : value}
         onChange={handleInputChange}
         onFocus={() => setIsOpen(true)}
+        disabled={disabled}
         placeholder={placeholder}
         maxLength={6}
-        className="border rounded-md p-3 w-full"
+        className="border rounded-md p-3 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
       />
-      
-      {isOpen && options.length > 0 && (
+
+      {isOpen && !disabled && options.length > 0 && (
         <>
-          <div 
-            className="fixed inset-0 z-10" 
+          <div
+            className="fixed inset-0 z-10"
             onClick={() => {
               setIsOpen(false);
               setSearchTerm("");
             }}
           />
+
           <div className="absolute z-20 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option, index) => (
@@ -127,7 +127,7 @@ const SearchablePincodeSelect = ({ value, onChange, options, placeholder, onManu
 
 const DeliveryForm = ({
   address,
-  handleFieldChange, // ✅ Auto-saves to Redux/localStorage
+  handleFieldChange,
   states,
   districts,
   pincodes,
@@ -137,8 +137,12 @@ const DeliveryForm = ({
   handlePincodeInput,
   onContinue
 }) => {
-  
+
+  // ✅ NEW — Mode Toggle
+  const [useSavedAddress, setUseSavedAddress] = useState(false);
+
   const isFormValid = () => {
+    if (useSavedAddress) return true; // 👉 If using saved address, skip validation
     return (
       address.firstName &&
       address.lastName &&
@@ -148,123 +152,106 @@ const DeliveryForm = ({
       address.zipCode &&
       address.city &&
       address.mobile &&
-      pincodeStatus === 'deliverable'
+      pincodeStatus === "deliverable"
     );
   };
 
   return (
     <div className="space-y-4">
+
+      {/* ✅ Mode Switch */}
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-gray-700">Address Mode</label>
+        <select
+          value={useSavedAddress ? "saved" : "new"}
+          onChange={(e) => setUseSavedAddress(e.target.value === "saved")}
+          className="border rounded-md p-2 text-sm"
+        >
+          <option value="new">Add New Address</option>
+          <option value="saved">Use Saved Address</option>
+        </select>
+      </div>
+
       <h2 className="text-xl font-semibold text-emerald-800">Delivery Address</h2>
 
-      {/* First Name */}
       <input
         type="text"
         value={address.firstName}
-        onChange={(e) => handleFieldChange('firstName', e.target.value)}
+        onChange={(e) => handleFieldChange("firstName", e.target.value)}
+        disabled={useSavedAddress}
         placeholder="First Name"
-        className="border rounded-md p-3 w-full"
-        required
+        className="border rounded-md p-3 w-full disabled:bg-gray-100"
       />
 
-      {/* Last Name */}
       <input
         type="text"
         value={address.lastName}
-        onChange={(e) => handleFieldChange('lastName', e.target.value)}
+        onChange={(e) => handleFieldChange("lastName", e.target.value)}
+        disabled={useSavedAddress}
         placeholder="Last Name"
-        className="border rounded-md p-3 w-full"
-        required
+        className="border rounded-md p-3 w-full disabled:bg-gray-100"
       />
 
-      {/* Street Address */}
       <textarea
         value={address.streetAddress}
-        onChange={(e) => handleFieldChange('streetAddress', e.target.value)}
-        placeholder="House / Flat / Street Address (e.g., 303, Parkwood Apartments, Near City Mall)"
-        className="border rounded-md p-3 w-full min-h-[80px]"
-        required
+        onChange={(e) => handleFieldChange("streetAddress", e.target.value)}
+        disabled={useSavedAddress}
+        placeholder="House / Flat / Street Address"
+        className="border rounded-md p-3 w-full min-h-[80px] disabled:bg-gray-100"
       />
 
-      {/* State - Searchable */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-        <SearchableSelect
-          value={address.state}
-          onChange={onStateChange}
-          options={states}
-          placeholder="Type to search state..."
-          disabled={false}
-        />
-      </div>
+      <SearchableSelect
+        value={address.state}
+        onChange={onStateChange}
+        options={states}
+        placeholder="Search state..."
+        disabled={useSavedAddress}
+      />
 
-      {/* District - Searchable */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">District</label>
-        <SearchableSelect
-          value={address.district}
-          onChange={onDistrictChange}
-          options={districts}
-          placeholder={address.state ? "Type to search district..." : "Select State First"}
-          disabled={!address.state}
-        />
-      </div>
+      <SearchableSelect
+        value={address.district}
+        onChange={onDistrictChange}
+        options={districts}
+        placeholder={address.state ? "Search district..." : "Select State First"}
+        disabled={useSavedAddress || !address.state}
+      />
 
-      {/* Pincode - Single Unified Searchable Field */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">PIN Code</label>
-        <SearchablePincodeSelect
-          value={address.zipCode}
-          onChange={handlePincodeInput}
-          options={pincodes}
-          placeholder="Type or search PIN code..."
-          onManualInput={handlePincodeInput}
-        />
-        
-        {/* Status Messages */}
-        {pincodeStatus === 'not-deliverable' && address.zipCode.length === 6 && (
-          <p className="text-red-600 text-sm mt-1 flex items-center">
-            <span className="mr-1">🚫</span> 
-            Sorry, we cannot deliver to this PIN code
-          </p>
-        )}
-        
-        {pincodeStatus === 'not-found' && address.zipCode.length === 6 && (
-          <p className="text-red-600 text-sm mt-1 flex items-center">
-            <span className="mr-1">🚫</span> 
-            Sorry, we cannot deliver to this PIN code
-          </p>
-        )}
-        
-        {pincodeStatus === 'deliverable' && (
-          <p className="text-green-600 text-sm mt-1 flex items-center">
-            <span className="mr-1">✅</span> 
-            Delivery available
-          </p>
-        )}
-      </div>
+      <SearchablePincodeSelect
+        value={address.zipCode}
+        onChange={handlePincodeInput}
+        options={pincodes}
+        placeholder="Enter PIN Code"
+        onManualInput={handlePincodeInput}
+        disabled={useSavedAddress}
+      />
 
-      {/* City */}
+      {pincodeStatus === "deliverable" && (
+        <p className="text-green-600 text-sm">✅ Delivery available</p>
+      )}
+      {(pincodeStatus === "not-deliverable" || pincodeStatus === "not-found") && (
+        <p className="text-red-600 text-sm">🚫 We cannot deliver here</p>
+      )}
+
       <input
         type="text"
         value={address.city}
-        onChange={(e) => handleFieldChange('city', e.target.value)}
+        onChange={(e) => handleFieldChange("city", e.target.value)}
+        disabled={useSavedAddress}
         placeholder="City"
-        className="border rounded-md p-3 w-full"
-        required
+        className="border rounded-md p-3 w-full disabled:bg-gray-100"
       />
 
-      {/* Mobile */}
       <input
         type="tel"
         value={address.mobile}
-        onChange={(e) => handleFieldChange('mobile', e.target.value)}
+        onChange={(e) => handleFieldChange("mobile", e.target.value)}
+        disabled={useSavedAddress}
         placeholder="Phone Number"
         maxLength={10}
-        className="border rounded-md p-3 w-full"
-        required
+        className="border rounded-md p-3 w-full disabled:bg-gray-100"
       />
 
-      {/* Continue Button */}
+      {/* Continue */}
       <div className="flex justify-end">
         <button
           disabled={!isFormValid()}
@@ -274,6 +261,7 @@ const DeliveryForm = ({
           Continue
         </button>
       </div>
+
     </div>
   );
 };

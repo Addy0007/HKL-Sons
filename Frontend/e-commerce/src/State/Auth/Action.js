@@ -5,7 +5,7 @@ import {
   GET_USER_REQUEST, GET_USER_SUCCESS, GET_USER_FAILURE,
   LOGOUT_SUCCESS, LOGOUT_FAILURE,
 } from "./ActionType";
-
+import { CLEAR_CHECKOUT_ADDRESS } from "../Checkout/ActionType";
 import { CLEAR_CART } from "../Cart/ActionType";
 
 // ✅ REGISTER
@@ -53,8 +53,12 @@ export const getUser = () => async (dispatch) => {
 export const logout = () => async (dispatch) => {
   try {
     localStorage.removeItem("jwt");
+
     dispatch({ type: LOGOUT_SUCCESS });
-    dispatch({ type: CLEAR_CART }); // ✅ clear user cart
+
+    dispatch({ type: CLEAR_CART }); // ✅ Clear cart
+    dispatch({ type: CLEAR_CHECKOUT_ADDRESS }); // ✅ Clear saved checkout address
+
   } catch (error) {
     dispatch({ type: LOGOUT_FAILURE, payload: error.message });
   }

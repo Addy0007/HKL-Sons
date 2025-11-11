@@ -1,6 +1,6 @@
 import { api } from "../../Config/apiConfig";
 import { clearCheckoutAddress } from "../Checkout/Action";
-import { GET_CART_REQUEST } from "../Cart/ActionType"; // Import if you want to refresh cart
+import { getCart } from "../Cart/Action"; // ✅ Import getCart action
 import {
   CREATE_ORDER_REQUEST,
   CREATE_ORDER_SUCCESS,
@@ -18,7 +18,6 @@ export const createOrder = (reqData) => async (dispatch) => {
     console.log("📦 Sending order request...");
     console.log("📍 Address data:", reqData.address);
     
-    // ✅ Send only the address in the request body
     const { data } = await api.post(`/api/orders`, {
       address: reqData.address
     });
@@ -31,11 +30,11 @@ export const createOrder = (reqData) => async (dispatch) => {
       // ✅ Clear checkout address after successful order
       dispatch(clearCheckoutAddress());
       
-      // ✅ Navigate to order details page (this route exists in your CustomerRoutes)
-      reqData.navigate(`/account/order/${data.id}`);
+      // ✅ Refresh cart to get updated (empty) cart from backend
+      dispatch(getCart());
       
-      // Optional: Refresh cart to get updated state from backend
-      // dispatch({ type: GET_CART_REQUEST });
+      // ✅ Navigate to order details page
+      reqData.navigate(`/account/order/${data.id}`);
     }
 
   } catch (error) {
@@ -44,7 +43,7 @@ export const createOrder = (reqData) => async (dispatch) => {
     dispatch({ type: CREATE_ORDER_FAILURE, payload: error.message });
     
     // ✅ Show error to user
-    alert("Failed to create order. Please try again.");
+    alert("Failed to create order: " + (error.response?.data?.message || error.message));
   }
 };
 
@@ -54,10 +53,10 @@ export const getOrderById = (orderId) => async (dispatch) => {
 
   try {
     const { data } = await api.get(`/api/orders/${orderId}`);
-    console.log("Order fetched:", data);
+    console.log("✅ Order fetched:", data);
     dispatch({ type: GET_ORDER_BY_ID_SUCCESS, payload: data });
   } catch (error) {
-    console.log("Get order error:", error);
+    console.error("❌ Get order error:", error);
     dispatch({ type: GET_ORDER_BY_ID_FAILURE, payload: error.message });
   }
 };

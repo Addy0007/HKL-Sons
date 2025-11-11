@@ -12,6 +12,9 @@ import {
   UPDATE_CART_ITEM_REQUEST,
   UPDATE_CART_ITEM_SUCCESS,
   UPDATE_CART_ITEM_FAILURE,
+  TOGGLE_CART_ITEM_SELECTION_REQUEST,
+  TOGGLE_CART_ITEM_SELECTION_SUCCESS,
+  TOGGLE_CART_ITEM_SELECTION_FAILURE,
   CLEAR_CART
 } from "./ActionType";
 
@@ -53,15 +56,13 @@ export const addItemToCart = (reqData) => async (dispatch, getState) => {
 
   const { isAuthenticated } = getState().auth;
 
-  // ✅ If not logged in → show login prompt instead of adding to guest cart
   if (!isAuthenticated) {
     return dispatch({
       type: ADD_ITEM_TO_CART_FAILURE,
-      payload: { message: "AUTH_REQUIRED" } // <--- We'll use this in UI
+      payload: { message: "AUTH_REQUIRED" }
     });
   }
 
-  // ✅ Logged-in user add to cart
   try {
     await api.put("/api/cart/add", reqData);
     dispatch(getCart());
@@ -70,7 +71,6 @@ export const addItemToCart = (reqData) => async (dispatch, getState) => {
     dispatch({ type: ADD_ITEM_TO_CART_FAILURE, payload: error.message });
   }
 };
-
 
 // ---------- REMOVE ----------
 export const removeCartItem = (cartItemId) => async (dispatch, getState) => {
@@ -118,6 +118,37 @@ export const updateCartItem = (cartItemId, quantity) => async (dispatch, getStat
     dispatch(getCart());
   } catch (error) {
     dispatch({ type: UPDATE_CART_ITEM_FAILURE, payload: error.message });
+  }
+};
+
+// ✅ NEW: Toggle Selection
+export const toggleCartItemSelection = (cartItemId) => async (dispatch, getState) => {
+  dispatch({ type: TOGGLE_CART_ITEM_SELECTION_REQUEST });
+
+  const { isAuthenticated } = getState().auth;
+
+  if (!isAuthenticated) {
+    let guestCart = loadGuestCart();
+    const item = guestCart.find((i) => i.id === cartItemId);
+    if (item) {
+      // Toggle the selected state
+      item.selected = item.selected === false ? true : false;
+    }
+    saveGuestCart(guestCart);
+
+    dispatch({ type: TOGGLE_CART_ITEM_SELECTION_SUCCESS, payload: { cartItems: guestCart } });
+    return;
+  }
+
+  try {
+    const { data } = await api.patch(`/api/cart-items/${cartItemId}/toggle-selection`);
+    console.log("Toggle response:", data);
+    dispatch({ type: TOGGLE_CART_ITEM_SELECTION_SUCCESS });
+    // Force refresh cart to get updated selection state
+    await dispatch(getCart());
+  } catch (error) {
+    console.error("Toggle selection error:", error);
+    dispatch({ type: TOGGLE_CART_ITEM_SELECTION_FAILURE, payload: error.message });
   }
 };
 
