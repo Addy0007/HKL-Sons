@@ -1,6 +1,7 @@
 package com.HKL.Ecomm_App.Service;
 
 import com.HKL.Ecomm_App.Exception.ProductException;
+import com.HKL.Ecomm_App.Model.OrderItem;
 import com.HKL.Ecomm_App.Model.Product;
 import com.HKL.Ecomm_App.Request.CreateProductRequest;
 import com.HKL.Ecomm_App.Request.UpdateProductRequest;
@@ -21,6 +22,6 @@ public interface ProductService {
     public List<Product> findProductByCategory(String category);
     public Page<Product> getAllProducts(String category, List<String> colours, List<String> sizes, Integer minPrice, Integer maxPrice,
                                         Integer minDiscount, String sort, String stock, Integer pageNumber, Integer pageSize);
-
+    public void reduceStockAfterPurchase(List<OrderItem> orderItems);
 
 }

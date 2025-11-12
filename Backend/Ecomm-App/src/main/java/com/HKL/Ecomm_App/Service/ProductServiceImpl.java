@@ -2,6 +2,7 @@ package com.HKL.Ecomm_App.Service;
 
 import com.HKL.Ecomm_App.Exception.ProductException;
 import com.HKL.Ecomm_App.Model.Category;
+import com.HKL.Ecomm_App.Model.OrderItem;
 import com.HKL.Ecomm_App.Model.Product;
 import com.HKL.Ecomm_App.Model.Size;
 import com.HKL.Ecomm_App.Repository.CategoryRepository;
@@ -252,4 +253,20 @@ public class ProductServiceImpl implements ProductService {
 
         return new PageImpl<>(paginated, PageRequest.of(pageNumber, pageSize, sortBy), filtered.size());
     }
+
+    // ✅ Reduce stock after successful order (COD or online)
+    @Transactional
+    public void reduceStockAfterPurchase(List<OrderItem> orderItems) {
+        for (OrderItem item : orderItems) {
+            Product product = item.getProduct();
+            if (product == null) continue;
+
+            int newQty = Math.max(0, product.getQuantity() - item.getQuantity());
+            product.setQuantity(newQty);
+
+            productRepository.save(product);
+            System.out.println("🧾 Updated stock for product: " + product.getTitle() + " → " + newQty);
+        }
+    }
+
 }

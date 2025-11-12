@@ -38,4 +38,8 @@ public class Address {
     private User user;
 
     private String mobile;
+
+    @Column(name = "active")
+    private boolean active = true;
+
 }

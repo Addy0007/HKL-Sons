@@ -183,14 +183,17 @@ export default function ProductDetails() {
             </div>
 
             {/* ADD TO CART BUTTON */}
-            <button
+                <button
+              disabled={product.quantity <= 0 || !selectedSize}
               onClick={handleAddToCart}
-              disabled={!selectedSize}
-              className="mt-8 w-full sm:w-2/3 bg-emerald-700 text-white font-semibold py-2.5 rounded-md hover:bg-emerald-800 transition-colors shadow-sm hover:shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className={`mt-8 w-full sm:w-2/3 px-4 py-2.5 rounded-md font-semibold shadow-sm transition-colors ${
+                product.quantity <= 0
+                  ? "bg-gray-400 cursor-not-allowed text-white"
+                  : "bg-emerald-700 hover:bg-emerald-800 text-white"
+              }`}
             >
-              Add to Cart
+              {product.quantity <= 0 ? "Out of Stock" : "Add to Cart"}
             </button>
-
           </div>
         </div>
       </section>

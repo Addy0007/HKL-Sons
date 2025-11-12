@@ -72,7 +72,12 @@ const CheckoutAddress = () => {
       const res = await axios.get("/api/address", {
         headers: { Authorization: `Bearer ${jwt}` },
       });
-      setSavedAddresses(Array.isArray(res.data) ? res.data : []);
+      setSavedAddresses(
+  Array.isArray(res.data)
+    ? res.data.filter((addr) => addr.active !== false)
+    : []
+);
+
     } catch (err) {
       setSavedAddresses([]);
     }
@@ -382,72 +387,99 @@ const CheckoutAddress = () => {
               <p className="text-gray-500 text-sm">No saved addresses</p>
             )}
             
-            {savedAddresses.map((addr) => {
-              const selected = selectedSavedAddressId === addr.id;
-              return (
-                <div
-                  key={addr.id}
-                  className={`relative p-4 border rounded-lg transition cursor-pointer group ${
-                    selected ? "border-emerald-600 bg-emerald-50" : "hover:border-emerald-500"
-                  }`}
-                  onClick={() => selectSavedAddress(addr)}
-                >
-                  {selected && (
-                    <div className="absolute -top-2 -right-2 bg-emerald-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow">
-                      ✓
-                    </div>
-                  )}
-                  
-                  <p className="font-medium text-gray-900">
-                    {addr.firstName} {addr.lastName}
-                  </p>
-                  <p className="text-gray-700">{addr.streetAddress}</p>
-                  <p className="text-gray-700">
-                    {addr.city}, {addr.district}
-                  </p>
-                  <p className="text-gray-700">
-                    {addr.state} - {addr.zipCode}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">📞 {addr.mobile}</p>
-                  
-                  <button
-                    className="mt-3 w-full bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      selectSavedAddress(addr);
-                    }}
-                  >
-                    Deliver to this address
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-          
-          <div className="lg:col-span-2">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Add New Address
-            </h3>
-            
-            {loadingStates ? (
-              <div className="text-center py-10">Loading form...</div>
-            ) : (
-              <DeliveryForm
-                address={address}
-                handleFieldChange={handleFieldChange}
-                states={states}
-                districts={districts}
-                pincodes={pincodes}
-                pincodeStatus={pincodeStatus}
-                onStateChange={onStateChange}
-                onDistrictChange={onDistrictChange}
-                handlePincodeInput={handlePincodeInput}
-                onContinue={handleContinue}
-                onSaveAddress={handleSaveAddress}  // ✅ NEW prop
-                isSaving={isSaving}  // ✅ NEW prop
-              />
-            )}
-          </div>
+{savedAddresses.map((addr) => {
+  const selected = selectedSavedAddressId === addr.id;
+  return (
+    <div
+      key={addr.id}
+      className={`relative p-4 border rounded-lg transition cursor-pointer group ${
+        selected ? "border-emerald-600 bg-emerald-50" : "hover:border-emerald-500"
+      }`}
+      onClick={() => selectSavedAddress(addr)}
+    >
+      {selected && (
+        <div className="absolute -top-2 -right-2 bg-emerald-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow">
+          ✓
+        </div>
+      )}
+
+      <p className="font-medium text-gray-900">
+        {addr.firstName} {addr.lastName}
+      </p>
+      <p className="text-gray-700">{addr.streetAddress}</p>
+      <p className="text-gray-700">
+        {addr.city}, {addr.district}
+      </p>
+      <p className="text-gray-700">
+        {addr.state} - {addr.zipCode}
+      </p>
+      <p className="text-sm text-gray-500 mt-1">📞 {addr.mobile}</p>
+
+      <div className="flex gap-2 mt-3">
+        {/* ✅ Deliver button */}
+        <button
+          className="flex-1 bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700"
+          onClick={(e) => {
+            e.stopPropagation();
+            selectSavedAddress(addr);
+          }}
+        >
+          Deliver to this address
+        </button>
+
+        {/* 🗑️ Delete button */}
+        <button
+          className="flex-1 bg-red-500 text-white py-2 rounded-md hover:bg-red-600"
+          onClick={async (e) => {
+            e.stopPropagation();
+            if (!window.confirm("Are you sure you want to delete this address?")) return;
+
+            try {
+              const jwt = localStorage.getItem("jwt");
+              await axios.delete(`/api/address/${addr.id}`, {
+                headers: { Authorization: `Bearer ${jwt}` },
+              });
+              await loadSavedAddresses();
+              alert("✅ Address deleted successfully");
+            } catch (error) {
+              console.error("Failed to delete address:", error);
+              alert("❌ Failed to delete address. Please try again.");
+            }
+          }}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+})}
+</div>
+
+<div className="lg:col-span-2">
+  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+    Add New Address
+  </h3>
+
+  {loadingStates ? (
+    <div className="text-center py-10">Loading form...</div>
+  ) : (
+    <DeliveryForm
+      address={address}
+      handleFieldChange={handleFieldChange}
+      states={states}
+      districts={districts}
+      pincodes={pincodes}
+      pincodeStatus={pincodeStatus}
+      onStateChange={onStateChange}
+      onDistrictChange={onDistrictChange}
+      handlePincodeInput={handlePincodeInput}
+      onContinue={handleContinue}
+      onSaveAddress={handleSaveAddress}
+      isSaving={isSaving}
+    />
+  )}
+        </div>
+
         </div>
       </div>
     </div>
