@@ -25,6 +25,20 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserException("No user found with id " + userId));
     }
 
+
+    @Override
+    @Transactional
+    public User findUserByEmail(String email) throws UserException {
+        User user = userRepository.findByEmail(email);
+
+        if (user == null) {
+            throw new UserException("User not found with email " + email);
+        }
+
+        return user;
+    }
+
+
     @Override
     @Transactional
     public User findUserProfileByJwt(String jwt) throws UserException {

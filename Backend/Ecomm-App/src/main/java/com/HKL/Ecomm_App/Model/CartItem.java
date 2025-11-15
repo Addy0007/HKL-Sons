@@ -23,7 +23,7 @@ public class CartItem {
     private int quantity;
     private Integer price;
     private Integer discountedPrice;
-    private Long userId;
+
 
     // ✅ NEW: Track if item is selected for checkout
     @Column(nullable = false)
@@ -34,7 +34,7 @@ public class CartItem {
     }
 
     public CartItem(Long id, Cart cart, Product product, String size, int quantity,
-                    Integer price, Integer discountedPrice, Long userId, boolean selected) {
+                    Integer price, Integer discountedPrice, boolean selected) {
         this.id = id;
         this.cart = cart;
         this.product = product;
@@ -42,7 +42,6 @@ public class CartItem {
         this.quantity = quantity;
         this.price = price;
         this.discountedPrice = discountedPrice;
-        this.userId = userId;
         this.selected = selected;
     }
 
@@ -101,14 +100,6 @@ public class CartItem {
 
     public void setDiscountedPrice(Integer discountedPrice) {
         this.discountedPrice = discountedPrice;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
     }
 
     public boolean isSelected() {

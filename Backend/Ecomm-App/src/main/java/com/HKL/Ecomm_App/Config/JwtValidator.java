@@ -12,14 +12,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
-import java.util.List;
 
 public class JwtValidator extends OncePerRequestFilter {
 
@@ -38,7 +36,7 @@ public class JwtValidator extends OncePerRequestFilter {
         String jwt = request.getHeader(JwtConstant.JWT_HEADER);
 
         if (jwt != null && jwt.startsWith("Bearer ")) {
-            String token = jwt.substring(7); // actual token without "Bearer "
+            String token = jwt.substring(7);
 
             try {
                 Claims claims = Jwts.parserBuilder()
@@ -47,27 +45,22 @@ public class JwtValidator extends OncePerRequestFilter {
                         .parseClaimsJws(token)
                         .getBody();
 
-                String email = claims.getSubject(); // or claims.get("email")
-                Object authoritiesObj = claims.get("authorities");
-                String authorities = authoritiesObj != null ? String.valueOf(authoritiesObj) : "";
+                String email = claims.getSubject();
 
-                List<GrantedAuthority> auths = authorities.isEmpty()
-                        ? AuthorityUtils.NO_AUTHORITIES
-                        : AuthorityUtils.commaSeparatedStringToAuthorityList(authorities);
-
+                // 🔥 IMPORTANT: no authorities, so we assign empty list
                 Authentication authentication =
-                        new UsernamePasswordAuthenticationToken(email, null, auths);
+                        new UsernamePasswordAuthenticationToken(email, null, AuthorityUtils.NO_AUTHORITIES);
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
             } catch (ExpiredJwtException e) {
-                // token expired
                 throw new BadCredentialsException("Token expired, please login again");
             } catch (Exception e) {
-                throw new BadCredentialsException("Invalid token .. from Jwt Validator");
+                throw new BadCredentialsException("Invalid token in Jwt Validator");
             }
         }
 
         filterChain.doFilter(request, response);
     }
 }
+

@@ -75,7 +75,8 @@ public class CartServiceImpl implements CartService {
         Product product = productService.findProductById(req.getProductId());
         System.out.println("🎁 Product found: " + product.getTitle());
 
-        CartItem existing = cartItemService.isCartItemExist(cart, product, req.getSize(), userId);
+        CartItem existing = cartItemService.isCartItemExist(cart, product, req.getSize());
+
 
         if (existing == null) {
             System.out.println("➕ Creating new cart item");
@@ -84,7 +85,6 @@ public class CartServiceImpl implements CartService {
             cartItem.setProduct(product);
             cartItem.setCart(cart);
             cartItem.setQuantity(req.getQuantity());
-            cartItem.setUserId(userId);
             cartItem.setSize(req.getSize());
             cartItem.setPrice(product.getPrice() * req.getQuantity());
             cartItem.setDiscountedPrice(product.getDiscountedPrice() * req.getQuantity());

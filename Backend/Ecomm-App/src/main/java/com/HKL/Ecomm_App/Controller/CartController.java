@@ -8,13 +8,15 @@ import com.HKL.Ecomm_App.Model.User;
 import com.HKL.Ecomm_App.Request.AddItemRequest;
 import com.HKL.Ecomm_App.Service.CartService;
 import com.HKL.Ecomm_App.Service.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/cart")
 public class CartController {
+
     private final CartService cartService;
     private final UserService userService;
 
@@ -23,34 +25,27 @@ public class CartController {
         this.userService = userService;
     }
 
+    private User getLoggedUser() throws UserException {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        return userService.findUserByEmail(email);
+    }
+
     @GetMapping({"", "/"})
-    public ResponseEntity<Cart> findUserCart(@RequestHeader("Authorization") String jwt) throws UserException {
-        User user = userService.findUserProfileByJwt(jwt);
+    public ResponseEntity<Cart> findUserCart() throws UserException {
+        User user = getLoggedUser();
         Cart cart = cartService.findUserCart(user.getId());
-
-        System.out.println("Cart found: " + (cart != null));
-        if (cart != null) {
-            System.out.println("Cart items count: " + cart.getCartItems().size());
-        }
-
         return ResponseEntity.ok(cart);
     }
 
     @PutMapping("/add")
-    public ResponseEntity<Cart> addCartItem(@RequestHeader("Authorization") String jwt,
-                                            @RequestBody AddItemRequest req)
+    public ResponseEntity<Cart> addCartItem(@RequestBody AddItemRequest req)
             throws UserException, ProductException, CartItemException {
 
-        System.out.println("Adding item - ProductId: " + req.getProductId() +
-                ", Quantity: " + req.getQuantity() +
-                ", Size: " + req.getSize());
-
-        User user = userService.findUserProfileByJwt(jwt);
+        User user = getLoggedUser();
         cartService.addCartItem(user.getId(), req);
         Cart cart = cartService.findUserCart(user.getId());
 
-        System.out.println("After adding - Cart items count: " + cart.getCartItems().size());
-
-        return new ResponseEntity<>(cart, HttpStatus.OK);
+        return ResponseEntity.ok(cart);
     }
 }

@@ -30,7 +30,7 @@ public class Cart {
             mappedBy = "cart",
             cascade = CascadeType.ALL,
             orphanRemoval = false,
-            fetch = FetchType.EAGER
+            fetch = FetchType.LAZY
     )
     @Fetch(FetchMode.SUBSELECT) // ✅ Avoid N+1 issue
     @OrderBy("id ASC")
@@ -43,6 +43,6 @@ public class Cart {
     @Column(name = "total_item")
     private int totalItem;
 
-    private int totalDiscountedPrice;
-    private int discount;
+    private double totalDiscountedPrice;
+    private double discount;
 }

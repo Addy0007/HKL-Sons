@@ -58,11 +58,9 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public List<Order> usersOrderHistory(Long userId) {
-        System.out.println("📋 Fetching order history for user: " + userId);
-        List<Order> orders = orderRepository.getUsersOrders(userId);
-        System.out.println("✅ Found " + orders.size() + " orders");
-        return orders;
+        return orderRepository.findByUserId(userId);
     }
+
 
     @Override
     @Transactional
@@ -275,7 +273,6 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public Order createPendingOrder(User user, Address shippingAddress) throws UserException {
 
-        // ✅ Save & link address to user, same as createOrder flow
         shippingAddress.setUser(user);
         Address savedAddress = addressRepository.save(shippingAddress);
 
@@ -284,14 +281,10 @@ public class OrderServiceImpl implements OrderService {
             userRepository.save(user);
         }
 
-        // ✅ Get user cart
         Cart cart = cartService.findUserCart(user.getId());
-        if (cart == null || cart.getCartItems().isEmpty()) {
-            throw new RuntimeException("Cart is empty. Cannot create order.");
-        }
 
-        // ✅ Filter only selected items
-        List<CartItem> selectedItems = cart.getCartItems().stream()
+        List<CartItem> selectedItems = cart.getCartItems()
+                .stream()
                 .filter(CartItem::isSelected)
                 .toList();
 
@@ -299,9 +292,12 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("No items selected for checkout.");
         }
 
-        // ✅ Create Order Items list
+        int totalItems = selectedItems.size();
+        double totalDiscounted = selectedItems.stream().mapToDouble(CartItem::getDiscountedPrice).sum();
+        double totalPrice = selectedItems.stream().mapToDouble(CartItem::getPrice).sum();
+        double discount = totalPrice - totalDiscounted;
+
         List<OrderItem> orderItems = new ArrayList<>();
-        double totalPrice = 0;
 
         for (CartItem cartItem : selectedItems) {
             OrderItem orderItem = new OrderItem();
@@ -310,35 +306,31 @@ public class OrderServiceImpl implements OrderService {
             orderItem.setSize(cartItem.getSize());
             orderItem.setPrice(cartItem.getPrice());
             orderItem.setDiscountedPrice(cartItem.getDiscountedPrice());
-
-            totalPrice += cartItem.getDiscountedPrice();
             orderItems.add(orderItem);
         }
 
-        // ✅ Create order entity
         Order order = new Order();
         order.setUser(user);
         order.setShippingAddress(savedAddress);
         order.setOrderItems(orderItems);
         order.setTotalPrice(totalPrice);
+        order.setTotalDiscountedPrice(totalDiscounted);
+        order.setTotalItem(totalItems);
+        order.setDiscount(discount);
         order.setOrderStatus(OrderStatus.PENDING);
         order.getPaymentDetails().setStatus(PaymentStatus.PENDING);
-        order.setCreatedAt(LocalDateTime.now());
+        order.setOrderDate(LocalDateTime.now());
 
-        // ✅ Save order first to generate ID
         Order savedOrder = orderRepository.save(order);
 
-        // ✅ Link items to the order
         for (OrderItem item : orderItems) {
             item.setOrder(savedOrder);
             orderItemRepository.save(item);
         }
 
-        // ✅ IMPORTANT:
-        // Do NOT clear cart here. Clear only after successful payment in PaymentController.
-
         return savedOrder;
     }
+
     @Override
     @Transactional
     public Order createOrderFromSelectedCartItems(User user, Address shippingAddress) throws UserException {

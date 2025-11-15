@@ -26,32 +26,28 @@ import java.util.Collections;
 @EnableWebSecurity
 public class AppConfig {
 
-    // ✅ Main security filter chain
+    @Bean
+    public JwtValidator jwtValidator() {
+        return new JwtValidator();
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // Disable CSRF since this is a REST API
                 .csrf(csrf -> csrf.disable())
-
-                // ✅ Enable CORS with our custom configuration
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // Stateless sessions (JWT handles authentication)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // Authorization rules
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/api/locations/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger access
-                        .requestMatchers("/api/products/**").permitAll() // ✅ ADDED: Make all product endpoints public
-                        .requestMatchers("/api/**").authenticated() // Protected routes (cart, orders, etc.)
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/products/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )
-
-                // ✅ Add your custom JWT validator before UsernamePasswordAuthenticationFilter
-                .addFilterBefore(new JwtValidator(), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtValidator(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -73,7 +69,6 @@ public class AppConfig {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-
 
     @Bean
     public PasswordEncoder passwordEncoder() {

@@ -1,33 +1,61 @@
 package com.HKL.Ecomm_App.Response;
 
-import com.HKL.Ecomm_App.Model.OrderStatus;
-import lombok.AllArgsConstructor;
+import com.HKL.Ecomm_App.Model.*;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class OrderResponse {
+
     private Long id;
     private String orderId;
+
     private OrderStatus orderStatus;
-    private Integer totalDiscountedPrice;
-    private Integer totalItem;
+
+    private double totalPrice;
+    private double totalDiscountedPrice;
+    private double discount;
+
+    private int totalItem;
+
     private LocalDateTime orderDate;
     private LocalDateTime createdAt;
+    private LocalDateTime deliveryDate;
 
-    public static OrderResponse fromOrder(com.HKL.Ecomm_App.Model.Order order) {
-        OrderResponse response = new OrderResponse();
-        response.setId(order.getId());
-        response.setOrderId(order.getOrderId());
-        response.setOrderStatus(order.getOrderStatus());
-        response.setTotalDiscountedPrice(order.getTotalDiscountedPrice());
-        response.setTotalItem(order.getTotalItem());
-        response.setOrderDate(order.getOrderDate());
-        response.setCreatedAt(order.getCreatedAt());
-        return response;
+    private Address shippingAddress;
+    private List<OrderItemResponse> orderItems;
+
+    private PaymentDetails paymentDetails;
+
+    public static OrderResponse fromOrder(Order order) {
+        OrderResponse res = new OrderResponse();
+
+        res.setId(order.getId());
+        res.setOrderId(order.getOrderId());
+        res.setOrderStatus(order.getOrderStatus());
+
+        res.setTotalPrice(order.getTotalPrice());
+        res.setTotalDiscountedPrice(order.getTotalDiscountedPrice());
+        res.setDiscount(order.getDiscount() != null ? order.getDiscount() : 0.0);
+
+        res.setTotalItem(order.getTotalItem());
+        res.setOrderDate(order.getOrderDate());
+        res.setCreatedAt(order.getCreatedAt());
+        res.setDeliveryDate(order.getDeliveryDate());
+
+        res.setShippingAddress(order.getShippingAddress());
+        res.setPaymentDetails(order.getPaymentDetails());
+
+        // Convert each OrderItem → OrderItemResponse for clean JSON
+        res.setOrderItems(
+                order.getOrderItems().stream()
+                        .map(OrderItemResponse::fromOrderItem)
+                        .collect(Collectors.toList())
+        );
+
+        return res;
     }
 }

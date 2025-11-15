@@ -21,17 +21,20 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth")
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 public class AuthController {
+
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CustomUserServiceImplementation customUserServiceImplementation;
     private final CartService cartService;
 
-    public AuthController(UserRepository userRepository,
-                          CustomUserServiceImplementation customUserServiceImplementation,
-                          PasswordEncoder passwordEncoder,
-                          JwtProvider jwtProvider,
-                          CartService cartService) {
+    public AuthController(
+            UserRepository userRepository,
+            CustomUserServiceImplementation customUserServiceImplementation,
+            PasswordEncoder passwordEncoder,
+            JwtProvider jwtProvider,
+            CartService cartService
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.customUserServiceImplementation = customUserServiceImplementation;
@@ -39,54 +42,69 @@ public class AuthController {
         this.cartService = cartService;
     }
 
+    // ----------------------------------------
+    // SIGNUP
+    // ----------------------------------------
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> createUserHandler(@RequestBody User user) {
-        String email = user.getEmail();
-        if (userRepository.findByEmail(email) != null) {
+
+        if (userRepository.findByEmail(user.getEmail()) != null) {
             throw new RuntimeException("Email is already used with another account");
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         User savedUser = userRepository.save(user);
+
+        // Create cart for new user
         cartService.createCart(savedUser);
 
+        // Generate token from email
         String token = jwtProvider.generateTokenFromEmail(savedUser.getEmail());
 
-        AuthResponse authResponse = new AuthResponse();
-        authResponse.setJwt(token);
-        authResponse.setMessage("SignUp Success");
-        authResponse.setUser(savedUser); // ✅ include user in response
+        savedUser.setPassword(null); // NEVER return password
+
+        AuthResponse authResponse = new AuthResponse(token, "SignUp Success", savedUser);
 
         return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
     }
 
+
+    // ----------------------------------------
+    // SIGNIN
+    // ----------------------------------------
     @PostMapping("/signin")
     public ResponseEntity<AuthResponse> loginUserHandler(@RequestBody LoginRequest loginRequest) {
-        String email = loginRequest.getEmail();
-        String password = loginRequest.getPassword();
 
-        Authentication authentication = authenticate(email, password);
+        Authentication authentication = authenticate(loginRequest.getEmail(), loginRequest.getPassword());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(loginRequest.getEmail());
         String token = jwtProvider.generateToken(authentication);
 
-        AuthResponse authResponse = new AuthResponse();
-        authResponse.setJwt(token);
-        authResponse.setMessage("SignIn Success");
-        authResponse.setUser(user);
+        user.setPassword(null); // DO NOT RETURN PASSWORD
+
+        AuthResponse authResponse = new AuthResponse(token, "SignIn Success", user);
 
         return new ResponseEntity<>(authResponse, HttpStatus.OK);
     }
 
-    private Authentication authenticate(String username, String password) {
-        UserDetails userDetails = customUserServiceImplementation.loadUserByUsername(username);
+
+    private Authentication authenticate(String email, String rawPassword) {
+
+        UserDetails userDetails = customUserServiceImplementation.loadUserByUsername(email);
+
         if (userDetails == null) {
-            throw new BadCredentialsException("Username not found");
+            throw new BadCredentialsException("User not found");
         }
-        if (!passwordEncoder.matches(password, userDetails.getPassword())) {
+
+        if (!passwordEncoder.matches(rawPassword, userDetails.getPassword())) {
             throw new BadCredentialsException("Invalid password");
         }
-        return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+        return new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
     }
 }

@@ -6,6 +6,8 @@ import com.HKL.Ecomm_App.Model.User;
 import com.HKL.Ecomm_App.Repository.AddressRepository;
 import com.HKL.Ecomm_App.Service.UserService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,33 +24,30 @@ public class AddressController {
         this.userService = userService;
     }
 
-    // ✅ Get all saved addresses for logged-in user
+    private User getLoggedUser() throws UserException {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        return userService.findUserByEmail(email);
+    }
+
     @GetMapping
-    public ResponseEntity<List<Address>> getUserAddresses(@RequestHeader("Authorization") String jwt)
-            throws UserException {
-        User user = userService.findUserProfileByJwt(jwt);
+    public ResponseEntity<List<Address>> getUserAddresses() throws UserException {
+        User user = getLoggedUser();
         List<Address> addresses = addressRepository.findByUserIdAndActiveTrue(user.getId());
         return ResponseEntity.ok(addresses);
     }
 
-    // ✅ Save a new address
     @PostMapping
-    public ResponseEntity<Address> saveAddress(
-            @RequestBody Address address,
-            @RequestHeader("Authorization") String jwt
-    ) throws UserException {
-        User user = userService.findUserProfileByJwt(jwt);
+    public ResponseEntity<Address> saveAddress(@RequestBody Address address) throws UserException {
+        User user = getLoggedUser();
         address.setUser(user);
         Address saved = addressRepository.save(address);
         return ResponseEntity.ok(saved);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteAddress(
-            @PathVariable Long id,
-            @RequestHeader("Authorization") String jwt
-    ) throws UserException {
-        User user = userService.findUserProfileByJwt(jwt);
+    public ResponseEntity<String> deleteAddress(@PathVariable Long id) throws UserException {
+        User user = getLoggedUser();
 
         Address address = addressRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Address not found"));
@@ -57,11 +56,9 @@ public class AddressController {
             return ResponseEntity.status(403).body("You are not authorized to delete this address");
         }
 
-        // ✅ Instead of deleting, mark inactive
         address.setActive(false);
         addressRepository.save(address);
 
         return ResponseEntity.ok("Address marked as deleted successfully");
     }
-
 }

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 
 import { createPendingOrder } from "../../../State/Order/Action";
-import { openRazorpayCheckout, placeOrderCOD } from "../../../State/Payment/Action"; // NEW
+import { openRazorpayCheckout, placeOrderCOD } from "../../../State/Payment/Action";
 
 const OrderSummary = ({ address, onEdit }) => {
   const navigate = useNavigate();
@@ -13,65 +13,90 @@ const OrderSummary = ({ address, onEdit }) => {
   const [processing, setProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("RAZORPAY"); // "RAZORPAY" | "COD"
 
-  const selectedItems = cart.cartItems?.filter((item) => item.selected !== false) || [];
+  // Items user selected for checkout (filter out any selected=false)
+  const selectedItems = cart?.cartItems?.filter((item) => item.selected !== false) ?? [];
 
   useEffect(() => {
-    if (selectedItems.length === 0) {
+    if (!selectedItems || selectedItems.length === 0) {
+      // no items -> go back to cart
       navigate("/cart", { replace: true });
     }
   }, [selectedItems, navigate]);
 
-  const subtotal = selectedItems.reduce((sum, item) => sum + item.discountedPrice, 0);
+  // price calcs
+  const subtotal = selectedItems.reduce((sum, item) => sum + (Number(item.discountedPrice) || 0), 0);
   const shipping = subtotal > 500 ? 0 : 40;
   const tax = subtotal * 0.18;
   const total = subtotal + shipping + tax;
 
   const handlePlaceOrder = async () => {
-    if (selectedItems.length === 0) {
+    if (!selectedItems || selectedItems.length === 0) {
       alert("No selected items to checkout.");
       return navigate("/cart");
     }
 
+    if (!address || !address.firstName) {
+      alert("Please provide a delivery address.");
+      return;
+    }
+
+    if (processing) return; // guard double-clicks
     setProcessing(true);
+
     try {
       if (paymentMethod === "COD") {
-        // 1) Place COD order directly (no Razorpay)
-        const codOrder = await dispatch(placeOrderCOD(address));
-        if (codOrder?.id) {
-          navigate(`/account/order/${codOrder.id}`);
+        // COD: place order directly (server should save order and mark payment status COD/PENDING)
+        console.debug("Placing COD order...");
+        const result = await dispatch(placeOrderCOD(address)); // should return order object
+        // Expectation: placeOrderCOD returns created order (with id)
+        if (result && result.id) {
+          navigate(`/account/order/${result.id}`);
         } else {
+          console.error("placeOrderCOD returned invalid result:", result);
           alert("Failed to place COD order. Try again.");
         }
         return;
       }
 
-      // 2) Razorpay flow: create pending order -> open popup
-      const newOrder = await dispatch(createPendingOrder(address));
-      if (!newOrder?.id) {
+      // RAZORPAY flow:
+      // 1) create a pending order on server (status PENDING). Backend returns the order (id).
+      console.debug("Creating pending order...");
+      const pendingOrder = await dispatch(createPendingOrder(address));
+      if (!pendingOrder || !pendingOrder.id) {
+        console.error("createPendingOrder failed or returned no id:", pendingOrder);
         alert("Unable to create order. Please try again.");
         return;
       }
 
-      await dispatch(
-        openRazorpayCheckout({
-          orderId: newOrder.id,
-          user: auth?.user,
-          address,
-          onSuccess: () => {},  // optional hook
-          onFailure: () => {},  // optional hook
-        })
-      );
-      // After popup success, your PaymentSuccess page handles verification + redirect.
+      console.debug("Pending order created, id=", pendingOrder.id);
 
-    } catch (e) {
-      console.error("Checkout error:", e);
+      // 2) open Razorpay checkout popup. This action should handle popup and server-side verification.
+      //    It should resolve to something like { success: true, orderId: <id> } after server verifies payment.
+      const paymentResult = await dispatch(openRazorpayCheckout({
+        orderId: pendingOrder.id,
+        user: auth?.user,
+        address,
+      }));
+
+      // openRazorpayCheckout MUST return a result that tells us if payment succeeded
+      if (paymentResult && paymentResult.success) {
+        // success -> navigate to order detail page (backend should have finalized the order)
+        // Many systems use returned orderId or paymentResult.orderId
+        const finalOrderId = paymentResult.orderId || pendingOrder.id;
+        navigate(`/account/order/${finalOrderId}`);
+      } else {
+        console.warn("Payment not completed or cancelled:", paymentResult);
+        alert("Payment was not completed. You can retry from Orders page.");
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
       alert("Something went wrong. Please try again.");
     } finally {
       setProcessing(false);
     }
   };
 
-  if (selectedItems.length === 0) return null;
+  if (!selectedItems || selectedItems.length === 0) return null;
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4">
@@ -79,9 +104,7 @@ const OrderSummary = ({ address, onEdit }) => {
         <h1 className="text-3xl font-bold text-emerald-800 mb-6">Order Summary</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* LEFT: Address + Items */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Address */}
             <div className="bg-white rounded-xl shadow p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-emerald-800">Delivery Address</h2>
@@ -91,14 +114,13 @@ const OrderSummary = ({ address, onEdit }) => {
               </div>
               <div className="text-gray-700 space-y-1">
                 <p className="font-semibold">{address.firstName} {address.lastName}</p>
-                <p>{address.streetAddress}</p>
+                <p style={{whiteSpace: "pre-line"}}>{address.streetAddress}</p>
                 <p>{address.city}, {address.district}</p>
                 <p>{address.state} - {address.zipCode}</p>
                 <p className="pt-2"><span className="font-medium">Phone:</span> {address.mobile}</p>
               </div>
             </div>
 
-            {/* Items */}
             <div className="bg-white rounded-xl shadow p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-emerald-800">
@@ -134,7 +156,6 @@ const OrderSummary = ({ address, onEdit }) => {
             </div>
           </div>
 
-          {/* RIGHT: Summary + Payment method */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow p-6 sticky top-4">
               <h2 className="text-xl font-semibold text-emerald-800 mb-4">Price Details</h2>
@@ -149,7 +170,6 @@ const OrderSummary = ({ address, onEdit }) => {
                 </div>
               </div>
 
-              {/* Payment Method Selector */}
               <div className="mt-6 space-y-3">
                 <h3 className="text-sm font-medium text-gray-700">Payment Method</h3>
 
@@ -193,7 +213,6 @@ const OrderSummary = ({ address, onEdit }) => {
               <p className="text-center text-xs text-gray-500 mt-3">🔒 Secure Checkout</p>
             </div>
           </div>
-
         </div>
       </div>
     </div>

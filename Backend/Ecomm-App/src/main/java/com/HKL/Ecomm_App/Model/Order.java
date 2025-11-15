@@ -3,6 +3,8 @@ package com.HKL.Ecomm_App.Model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,17 +43,17 @@ public class Order {
     private PaymentDetails paymentDetails = new PaymentDetails();
 
     private double totalPrice;
-    private Integer totalDiscountedPrice;
-    private Integer discount;
+    private Double totalDiscountedPrice;
+    private Double discount;
+
+
 
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
 
     private int totalItem;
+
+    @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @PrePersist
-    public void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
 }

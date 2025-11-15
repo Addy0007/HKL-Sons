@@ -40,6 +40,7 @@ public class Address {
     private String mobile;
 
     @Column(name = "active")
-    private boolean active = true;
+    private Boolean active = true;
+
 
 }

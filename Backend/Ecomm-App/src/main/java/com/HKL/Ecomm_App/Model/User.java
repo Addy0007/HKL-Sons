@@ -3,6 +3,7 @@ package com.HKL.Ecomm_App.Model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -20,7 +21,10 @@ public class User {
     private String firstName;
     private String lastName;
     private String password;
+
+    @Column(unique = true)
     private String email;
+
     private String role;
     private String mobile;
 
@@ -40,7 +44,9 @@ public class User {
     @JsonIgnore
     private List<Review> reviews=new ArrayList<>();
 
+    @CreationTimestamp
     private LocalDateTime createdAt;
+
 
 
 }

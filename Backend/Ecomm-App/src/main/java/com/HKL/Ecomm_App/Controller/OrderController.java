@@ -10,6 +10,8 @@ import com.HKL.Ecomm_App.Service.OrderService;
 import com.HKL.Ecomm_App.Service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,43 +26,40 @@ public class OrderController {
         this.userService = userService;
     }
 
+    private User getLoggedUser() throws UserException {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        return userService.findUserByEmail(email);
+    }
+
     @PostMapping
-    public ResponseEntity<OrderResponse> createOrder(
-            @RequestBody Address shippingAddress,
-            @RequestHeader("Authorization") String jwt) throws UserException {
+    public ResponseEntity<OrderResponse> createOrder(@RequestBody Address shippingAddress)
+            throws UserException {
 
-        System.out.println("📦 Creating order...");
-        System.out.println("📍 Address received: " + shippingAddress);
-
-        User user = userService.findUserProfileByJwt(jwt);
-        System.out.println("👤 User: " + user.getEmail());
-
+        User user = getLoggedUser();
         Order order = orderService.createOrder(user, shippingAddress);
 
-        System.out.println("✅ Order created with ID: " + order.getId());
-
-        // Return a simple DTO to avoid serialization issues
-        OrderResponse response = OrderResponse.fromOrder(order);
-
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        return new ResponseEntity<>(OrderResponse.fromOrder(order), HttpStatus.CREATED);
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<Order> findOrderById(
-            @PathVariable Long orderId,
-            @RequestHeader("Authorization") String jwt) throws UserException, OrderException {
+    public ResponseEntity<?> findOrderById(@PathVariable Long orderId)
+            throws UserException, OrderException {
 
-        User user = userService.findUserProfileByJwt(jwt);
+        User user = getLoggedUser();
         Order order = orderService.findOrderById(orderId);
 
-        return new ResponseEntity<>(order, HttpStatus.OK);
+        // SECURITY CHECK
+        if (!order.getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(403).body("You cannot view someone else's order");
+        }
+
+        return ResponseEntity.ok(OrderResponse.fromOrder(order));
     }
 
     @GetMapping("/user")
-    public ResponseEntity<?> userOrderHistory(
-            @RequestHeader("Authorization") String jwt) throws UserException {
-
-        User user = userService.findUserProfileByJwt(jwt);
-        return new ResponseEntity<>(orderService.usersOrderHistory(user.getId()), HttpStatus.OK);
+    public ResponseEntity<?> userOrderHistory() throws UserException {
+        User user = getLoggedUser();
+        return ResponseEntity.ok(orderService.userOrderHistory(user.getId()));
     }
 }

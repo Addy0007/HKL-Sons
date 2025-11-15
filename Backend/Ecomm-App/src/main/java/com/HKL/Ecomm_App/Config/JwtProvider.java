@@ -44,10 +44,15 @@ public class JwtProvider {
     }
 
     public String getEmailFromToken(String jwt) {
-        if (jwt == null || !jwt.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("Invalid JWT token format");
+
+        if (jwt == null) {
+            throw new IllegalArgumentException("JWT is missing");
         }
-        jwt = jwt.substring(7);
+
+        // Support both: "Bearer token" and "token"
+        if (jwt.startsWith("Bearer ")) {
+            jwt = jwt.substring(7);
+        }
 
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -55,7 +60,7 @@ public class JwtProvider {
                 .parseClaimsJws(jwt)
                 .getBody();
 
-        String email = String.valueOf(claims.get("email"));
-        return email;
+        return claims.get("email", String.class);
     }
+
 }

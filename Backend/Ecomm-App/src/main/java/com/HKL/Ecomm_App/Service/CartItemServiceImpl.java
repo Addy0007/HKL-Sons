@@ -41,10 +41,10 @@ public class CartItemServiceImpl implements CartItemService {
 
         CartItem item = findCartItemById(id);
 
-        if (!item.getUserId()
-                .equals(userId)) {
+        if (!item.getCart().getUser().getId().equals(userId)) {
             throw new UserException("Unauthorized update request for cart item");
         }
+
      //   if (cartItem.getQuantity() <= 0) {
      //       cartItemRepository.delete(item);
       //      return null;
@@ -58,8 +58,9 @@ public class CartItemServiceImpl implements CartItemService {
 
     @Override
     @Transactional(readOnly = true)
-    public CartItem isCartItemExist(Cart cart, Product product, String size, Long userId) {
-        CartItem item = cartItemRepository.isCartItemExist(cart, product, size, userId);
+    public CartItem isCartItemExist(Cart cart, Product product, String size) {
+        CartItem item = cartItemRepository.findExistingItem(cart, product, size);
+
         System.out.println("🔍 Checking if cart item exists: " + (item != null ? "YES (ID: " + item.getId() + ")" : "NO"));
         return item;
     }
@@ -71,10 +72,10 @@ public class CartItemServiceImpl implements CartItemService {
 
         CartItem cartItem = findCartItemById(cartItemId);
 
-        if (!cartItem.getUserId()
-                .equals(userId)) {
+        if (!cartItem.getCart().getUser().getId().equals(userId)) {
             throw new UserException("Cannot remove another user's cart item");
         }
+
 
         cartItemRepository.deleteById(cartItemId);
     }
@@ -97,7 +98,8 @@ public class CartItemServiceImpl implements CartItemService {
         CartItem item = findCartItemById(cartItemId);
 
         // Security check: ensure user owns this cart item
-        if (!item.getUserId().equals(userId)) {
+        if (!item.getCart().getUser().getId().equals(userId)) {
+
             System.out.println("❌ Unauthorized toggle attempt - User " + userId + " doesn't own item " + cartItemId);
             throw new UserException("Unauthorized access to cart item");
         }

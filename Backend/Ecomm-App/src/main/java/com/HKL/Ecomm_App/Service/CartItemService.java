@@ -8,19 +8,21 @@ import com.HKL.Ecomm_App.Model.Product;
 
 public interface CartItemService {
 
+
     CartItem createCartItem(CartItem cartItem);
 
     CartItem updateCartItem(Long userId, Long id, CartItem cartItem)
             throws CartItemException, UserException;
 
-    CartItem isCartItemExist(Cart cart, Product product, String size, Long userId);
+    // 🔥 UPDATED: Removed userId because CartItem no longer has userId field
+    CartItem isCartItemExist(Cart cart, Product product, String size);
 
     void removeCartItem(Long userId, Long cartItemId)
             throws CartItemException, UserException;
 
     CartItem findCartItemById(Long cartItemId) throws CartItemException;
 
-    // ✅ NEW: Toggle selection
+    // Toggle selection
     CartItem toggleSelection(Long userId, Long cartItemId)
             throws CartItemException, UserException;
 }

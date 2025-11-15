@@ -158,13 +158,22 @@ public class ProductServiceImpl implements ProductService {
         };
 
         // ✅ Fetch all products from database with basic filters
-        List<Product> allProducts = productRepository.filterProductsPage(
+        Pageable pageable = PageRequest.of(
+                0,
+                Integer.MAX_VALUE,   // fetch all items
+                sortBy               // apply sorting
+        );
+
+        Page<Product> result = productRepository.filterProducts(
                 (category == null || category.isBlank()) ? null : category.toLowerCase(),
                 minPrice,
                 maxPrice,
                 minDiscount,
-                sortBy
+                pageable
         );
+
+        List<Product> allProducts = result.getContent();
+
 
         System.out.println("✅ Products fetched from DB: " + allProducts.size());
 

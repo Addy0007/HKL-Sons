@@ -2,6 +2,7 @@ package com.HKL.Ecomm_App.Model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -33,10 +34,10 @@ public class Product {
     private Set<Size> sizes = new HashSet<>();
 
     
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.LAZY)
     private List<Rating> ratings = new ArrayList<>();
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.LAZY)
     private List<Review> reviews = new ArrayList<>();
 
     @Column(name="num_ratings")
@@ -45,5 +46,7 @@ public class Product {
     @ManyToOne
     @JoinColumn(name="category_id")
     private Category category;
+
+    @CreationTimestamp
     private LocalDateTime createdAt;
 }
