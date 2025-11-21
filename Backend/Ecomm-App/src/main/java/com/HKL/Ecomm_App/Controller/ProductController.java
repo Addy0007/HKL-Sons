@@ -1,7 +1,7 @@
 package com.HKL.Ecomm_App.Controller;
 
+import com.HKL.Ecomm_App.DTO.ProductDTO;
 import com.HKL.Ecomm_App.Exception.ProductException;
-import com.HKL.Ecomm_App.Model.Product;
 import com.HKL.Ecomm_App.Service.ProductService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +21,7 @@ public class ProductController {
 
     // GET filtered products
     @GetMapping("/products")
-    public ResponseEntity<Page<Product>> findProductByCategoryHandler(
+    public ResponseEntity<Page<ProductDTO>> findProductByCategoryHandler(
             @RequestParam(required = false, defaultValue = "") String category,
             @RequestParam(required = false, name = "color") List<String> colors,
             @RequestParam(required = false, name = "size") List<String> sizes,
@@ -34,20 +34,13 @@ public class ProductController {
             @RequestParam(defaultValue = "12") Integer pageSize
     ) {
 
-        // ⭐ Normalize null lists
         if (colors == null) colors = List.of();
         if (sizes == null) sizes = List.of();
 
-        // ⭐ Remove empty values ("")
-        colors = colors.stream()
-                .filter(c -> c != null && !c.isBlank())
-                .toList();
+        colors = colors.stream().filter(c -> c != null && !c.isBlank()).toList();
+        sizes = sizes.stream().filter(s -> s != null && !s.isBlank()).toList();
 
-        sizes = sizes.stream()
-                .filter(s -> s != null && !s.isBlank())
-                .toList();
-
-        Page<Product> res = productService.getAllProducts(
+        Page<ProductDTO> res = productService.getAllProducts(
                 category, colors, sizes, minPrice, maxPrice,
                 minDiscount, sort, stock, pageNumber, pageSize
         );
@@ -57,7 +50,7 @@ public class ProductController {
 
     // GET product by ID
     @GetMapping("/products/{productId}")
-    public ResponseEntity<Product> findProductByIdHandler(@PathVariable Long productId)
+    public ResponseEntity<ProductDTO> findProductByIdHandler(@PathVariable Long productId)
             throws ProductException {
         return ResponseEntity.ok(productService.findProductById(productId));
     }

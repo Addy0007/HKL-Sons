@@ -14,13 +14,15 @@ public class Rating {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // MUST IGNORE user to avoid recursion
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="user_id",nullable = false)
+    @JoinColumn(name="user_id", nullable = false)
     private User user;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="product_id",nullable = false)
+    @JoinColumn(name="product_id", nullable = false)
     private Product product;
 
     @Column(name="rating")

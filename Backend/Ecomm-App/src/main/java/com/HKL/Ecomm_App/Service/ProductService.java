@@ -1,5 +1,6 @@
 package com.HKL.Ecomm_App.Service;
 
+import com.HKL.Ecomm_App.DTO.ProductDTO;
 import com.HKL.Ecomm_App.Exception.ProductException;
 import com.HKL.Ecomm_App.Model.OrderItem;
 import com.HKL.Ecomm_App.Model.Product;
@@ -9,19 +10,32 @@ import org.springframework.data.domain.Page;
 
 import java.util.List;
 
-
 public interface ProductService {
-    public Product createProduct(CreateProductRequest req);
 
-    public String deleteProduct(Long productId) throws ProductException;
+    ProductDTO createProduct(CreateProductRequest req);
 
-    public Product updateProduct(Long productId, UpdateProductRequest req) throws ProductException;
+    String deleteProduct(Long productId) throws ProductException;
 
-    public Product findProductById(Long id) throws ProductException;
+    ProductDTO updateProduct(Long productId, UpdateProductRequest req) throws ProductException;
 
-    public List<Product> findProductByCategory(String category);
-    public Page<Product> getAllProducts(String category, List<String> colours, List<String> sizes, Integer minPrice, Integer maxPrice,
-                                        Integer minDiscount, String sort, String stock, Integer pageNumber, Integer pageSize);
-    public void reduceStockAfterPurchase(List<OrderItem> orderItems);
+    ProductDTO findProductById(Long id) throws ProductException;
+
+    List<ProductDTO> findProductByCategory(String category);
+
+    Page<ProductDTO> getAllProducts(
+            String category,
+            List<String> colours,
+            List<String> sizes,
+            Integer minPrice,
+            Integer maxPrice,
+            Integer minDiscount,
+            String sort,
+            String stock,
+            Integer pageNumber,
+            Integer pageSize
+    );
+
+    void reduceStockAfterPurchase(List<OrderItem> orderItems);
+    Product findProductEntityById(Long id) throws ProductException;
 
 }

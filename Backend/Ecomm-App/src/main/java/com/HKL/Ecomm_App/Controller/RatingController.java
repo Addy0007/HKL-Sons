@@ -1,8 +1,8 @@
 package com.HKL.Ecomm_App.Controller;
 
+import com.HKL.Ecomm_App.DTO.RatingDTO;
 import com.HKL.Ecomm_App.Exception.ProductException;
 import com.HKL.Ecomm_App.Exception.UserException;
-import com.HKL.Ecomm_App.Model.Rating;
 import com.HKL.Ecomm_App.Model.User;
 import com.HKL.Ecomm_App.Request.RatingRequest;
 import com.HKL.Ecomm_App.Service.RatingService;
@@ -28,24 +28,21 @@ public class RatingController {
 
     private User getLoggedUser() throws UserException {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        return userService.findUserByEmail(email);
+        return userService.findUserByEmail(auth.getName());
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Rating> createRating(
-            @RequestBody RatingRequest ratingRequest
-    ) throws UserException, ProductException {
+    public ResponseEntity<RatingDTO> createRating(@RequestBody RatingRequest ratingRequest)
+            throws UserException, ProductException {
 
         User user = getLoggedUser();
-        Rating createdRating = ratingService.createRating(ratingRequest, user);
+        RatingDTO createdRating = ratingService.createRating(ratingRequest, user);
 
         return ResponseEntity.ok(createdRating);
     }
 
     @GetMapping("/product/{productId}")
-    public ResponseEntity<List<Rating>> getRatingsByProductId(@PathVariable Long productId) {
-        List<Rating> ratings = ratingService.getProductRating(productId);
-        return ResponseEntity.ok(ratings);
+    public ResponseEntity<List<RatingDTO>> getRatingsByProductId(@PathVariable Long productId) {
+        return ResponseEntity.ok(ratingService.getProductRating(productId));
     }
 }

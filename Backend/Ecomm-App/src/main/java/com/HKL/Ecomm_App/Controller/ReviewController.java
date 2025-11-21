@@ -1,8 +1,8 @@
 package com.HKL.Ecomm_App.Controller;
 
+import com.HKL.Ecomm_App.DTO.ReviewDTO;
 import com.HKL.Ecomm_App.Exception.ProductException;
 import com.HKL.Ecomm_App.Exception.UserException;
-import com.HKL.Ecomm_App.Model.Review;
 import com.HKL.Ecomm_App.Model.User;
 import com.HKL.Ecomm_App.Request.ReviewRequest;
 import com.HKL.Ecomm_App.Service.ReviewService;
@@ -28,24 +28,21 @@ public class ReviewController {
 
     private User getLoggedUser() throws UserException {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        return userService.findUserByEmail(email);
+        return userService.findUserByEmail(auth.getName());
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Review> createReview(
-            @RequestBody ReviewRequest reviewRequest
-    ) throws UserException, ProductException {
+    public ResponseEntity<ReviewDTO> createReview(@RequestBody ReviewRequest reviewRequest)
+            throws UserException, ProductException {
 
         User user = getLoggedUser();
-        Review createdReview = reviewService.createReview(reviewRequest, user);
+        ReviewDTO createdReview = reviewService.createReview(reviewRequest, user);
 
         return ResponseEntity.ok(createdReview);
     }
 
     @GetMapping("/product/{productId}")
-    public ResponseEntity<List<Review>> getReviewsByProductId(@PathVariable Long productId) {
-        List<Review> reviews = reviewService.getAllReview(productId);
-        return ResponseEntity.ok(reviews);
+    public ResponseEntity<List<ReviewDTO>> getReviewsByProductId(@PathVariable Long productId) {
+        return ResponseEntity.ok(reviewService.getAllReview(productId));
     }
 }
