@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Routes, Route } from "react-router-dom";
 import { getUser } from "./State/Auth/Action";
 import CustomerRoutes from "./Routers/CustomerRoutes";
-
+import AdminRouter from "./Routers/AdminRouter";
 function App() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -19,6 +19,7 @@ function App() {
     <div className="min-h-screen flex flex-col">
       <Routes>
         <Route path="/*" element={<CustomerRoutes />} />
+        <Route path="/admin/*" element={<AdminRouter />} />
       </Routes>
     </div>
   );

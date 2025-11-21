@@ -198,7 +198,8 @@ export default function ProductDetails() {
         </div>
       </section>
 
-      <ProductReviewSection />
+     <ProductReviewSection productId={productId} />
+
 
 
       {/* ✅ LOGIN POPUP MODAL */}
