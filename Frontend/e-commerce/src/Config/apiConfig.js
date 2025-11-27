@@ -1,15 +1,14 @@
 import axios from "axios";
 
-export const API_BASE_URL = "http://localhost:5454";
+export const API_BASE_URL = "http://192.168.29.55:5454";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
 });
 
-// ✅ Always add JWT if exists
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("jwt"); // ✅ Correct key
+  const token = localStorage.getItem("jwt");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

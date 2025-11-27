@@ -52,21 +52,29 @@ public class AuthController {
             throw new RuntimeException("Email is already used with another account");
         }
 
+        // Encode password
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        // Default role
+        if (user.getRole() == null) {
+            user.setRole("ROLE_CUSTOMER");
+        }
+
         User savedUser = userRepository.save(user);
 
-        // Create cart for new user
+        // Create user cart
         cartService.createCart(savedUser);
 
-        // Generate token from email
+        // Generate JWT
         String token = jwtProvider.generateTokenFromEmail(savedUser.getEmail());
 
-        savedUser.setPassword(null); // NEVER return password
+        savedUser.setPassword(null);
 
         AuthResponse authResponse = new AuthResponse(token, "SignUp Success", savedUser);
 
         return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
     }
+
 
 
     // ----------------------------------------

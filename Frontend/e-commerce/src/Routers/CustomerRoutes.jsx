@@ -10,6 +10,9 @@ import ProductDetails from '../customer/components/ProductDetails/ProductDetails
 import Order from '../customer/components/Order/Order';
 import OrderDetails from '../customer/components/Order/OrderDetails';
 import SignIn from '../customer/components/Signin/SignIn';
+import ForgotPassword from "../customer/components/Signin/ForgotPassword";
+import ResetPassword from "../customer/components/Signin/ResetPassword";
+
 import RequireAuth from "./RequireAuth";
 
 // ✅ New checkout step components
@@ -62,6 +65,9 @@ const CustomerRoutes = () => {
           <Route path="/account/order" element={<Order />} />
           <Route path="/account/order/:orderId" element={<OrderDetails />} />
 
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          
           
         </Routes>
       </main>

@@ -4,15 +4,11 @@ import {
   Dialog,
   DialogBackdrop,
   DialogPanel,
-  Tab,
-  TabGroup,
-  TabList,
-  TabPanel,
-  TabPanels,
 } from "@headlessui/react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ChevronRightIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 import { navigation } from "./NavigationConfig";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 export default function MobileNav({
   open,
@@ -21,98 +17,139 @@ export default function MobileNav({
   user,
   isLoading,
   getUserName,
+  getInitial,
   handleSignOut,
   handleCategoryClick,
 }) {
   const navigate = useNavigate();
+  const [expandedCategory, setExpandedCategory] = useState(null);
+
+  const toggleCategory = (categoryId) => {
+    setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
+  };
 
   return (
-    <Dialog open={open} onClose={setOpen} className="relative z-40 lg:hidden">
-      <DialogBackdrop className="fixed inset-0 bg-black/25" />
+    <Dialog open={open} onClose={setOpen} className="relative z-50 lg:hidden">
+      <DialogBackdrop className="fixed inset-0 bg-black/30" />
 
-      <div className="fixed inset-0 z-40 flex">
-        <DialogPanel className="relative flex w-full max-w-xs flex-col bg-white overflow-y-auto pb-12 shadow-xl">
-
-          <div className="flex px-4 pt-5 pb-2">
+      <div className="fixed inset-0 flex">
+        <DialogPanel className="relative mr-16 flex w-full max-w-xs flex-col bg-white shadow-xl">
+          
+          {/* Header with User Info */}
+          <div className="bg-gradient-to-r from-teal-700 to-teal-600 px-6 py-6">
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="-m-2 p-2 text-gray-400"
+              className="absolute top-4 right-4 p-2 text-white/80 hover:text-white"
             >
               <XMarkIcon className="h-6 w-6" />
             </button>
+
+            {jwt && user ? (
+              <div className="flex items-center gap-3 mt-2">
+                <div className="w-12 h-12 bg-white text-teal-700 rounded-full flex items-center justify-center font-semibold text-lg">
+                  {getInitial(user)}
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-semibold text-base">{getUserName()}</p>
+                  <p className="text-teal-100 text-sm">{user?.email}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 mt-2">
+                <UserCircleIcon className="w-12 h-12 text-white" />
+                <div>
+                  <p className="text-white font-semibold text-base">Welcome!</p>
+                  <p className="text-teal-100 text-sm">Sign in to continue</p>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Mobile Category Tabs */}
-          <TabGroup className="mt-2">
-            <div className="border-b border-gray-200">
-              <TabList className="flex space-x-8 px-4">
-                {navigation.categories.map((category) => (
-                  <Tab
-                    key={category.name}
-                    className="text-base font-medium px-1 py-4"
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto">
+
+            {/* Categories */}
+            <div className="py-2">
+              {navigation.categories.map((category) => (
+                <div key={category.id} className="border-b border-gray-100">
+                  <button
+                    onClick={() => toggleCategory(category.id)}
+                    className="flex items-center justify-between w-full px-6 py-4 text-left hover:bg-gray-50"
                   >
-                    {category.name}
-                  </Tab>
-                ))}
-              </TabList>
+                    <span className="text-base font-semibold text-gray-900">
+                      {category.name}
+                    </span>
+                    <ChevronRightIcon 
+                      className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${
+                        expandedCategory === category.id ? 'rotate-90' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {/* Expanded Category Items */}
+                  {expandedCategory === category.id && (
+                    <div className="bg-gray-50 px-6 py-3">
+                      {category.sections.map((section) => (
+                        <div key={section.id} className="mb-4 last:mb-0">
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                            {section.name}
+                          </p>
+                          <ul className="space-y-2">
+                            {section.items.map((item) => (
+                              <li key={item.id}>
+                                <button
+                                  onClick={() => {
+                                    handleCategoryClick(
+                                      category.id,
+                                      section.id,
+                                      item.id,
+                                      null
+                                    );
+                                    setOpen(false);
+                                    setExpandedCategory(null);
+                                  }}
+                                  className="text-sm text-gray-700 hover:text-teal-700 hover:translate-x-1 transform transition-all duration-150 block w-full text-left py-1.5"
+                                >
+                                  {item.name}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
 
-            <TabPanels as="div">
-              {navigation.categories.map((category) => (
-                <TabPanel key={category.name} className="px-4 pt-10 pb-8">
-                  {category.sections.map((section) => (
-                    <div key={section.name} className="space-y-6">
-                      <p className="font-medium text-gray-900">{section.name}</p>
-
-                      <ul className="space-y-4">
-                        {section.items.map((item) => (
-                          <li key={item.id}>
-                            <button
-                              onClick={() =>
-                                handleCategoryClick(
-                                  category.id,
-                                  section.id,
-                                  item.id,
-                                  null
-                                )
-                              }
-                              className="text-gray-700 hover:text-teal-700"
-                            >
-                              {item.name}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </TabPanel>
+            {/* Pages */}
+            <div className="border-b border-gray-100">
+              {navigation.pages.map((page) => (
+                <a
+                  key={page.name}
+                  href={page.href}
+                  className="block px-6 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-teal-700"
+                  onClick={() => setOpen(false)}
+                >
+                  {page.name}
+                </a>
               ))}
-            </TabPanels>
-          </TabGroup>
+            </div>
 
-          {/* Bottom Divider */}
-          <div className="border-t border-gray-200 mt-6 pt-6 px-4">
-
-            {/* Auth Section */}
-            {jwt ? (
-              isLoading || !user ? (
-                <div className="h-12 bg-gray-100 rounded animate-pulse" />
-              ) : (
+            {/* User Actions */}
+            <div className="py-2">
+              {jwt ? (
                 <>
-                  <div className="mb-4">
-                    <p className="font-medium">{getUserName()}</p>
-                    <p className="text-sm text-gray-500">{user?.email}</p>
-                  </div>
-
                   <button
                     onClick={() => {
                       navigate("/profile");
                       setOpen(false);
                     }}
-                    className="block w-full text-left py-2 font-medium text-gray-700"
+                    className="block w-full text-left px-6 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-teal-700"
                   >
-                    Profile
+                    My Profile
                   </button>
 
                   <button
@@ -120,42 +157,43 @@ export default function MobileNav({
                       navigate("/account/order");
                       setOpen(false);
                     }}
-                    className="block w-full text-left py-2 font-medium text-gray-700"
+                    className="block w-full text-left px-6 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-teal-700"
                   >
                     My Orders
                   </button>
 
                   <button
                     onClick={handleSignOut}
-                    className="block w-full text-left py-2 font-medium text-red-600"
+                    className="block w-full text-left px-6 py-4 text-base font-medium text-red-600 hover:bg-red-50"
                   >
                     Logout
                   </button>
                 </>
-              )
-            ) : (
-              <>
-                <button
-                  onClick={() => {
-                    navigate("/login");
-                    setOpen(false);
-                  }}
-                  className="block w-full text-left py-2 font-medium"
-                >
-                  Sign In
-                </button>
+              ) : (
+                <div className="px-6 py-4 space-y-3">
+                  <button
+                    onClick={() => {
+                      navigate("/login");
+                      setOpen(false);
+                    }}
+                    className="w-full py-3 px-4 bg-teal-700 text-white font-semibold rounded-lg hover:bg-teal-800 transition-colors shadow-sm"
+                  >
+                    Sign In
+                  </button>
 
-                <button
-                  onClick={() => {
-                    navigate("/signup");
-                    setOpen(false);
-                  }}
-                  className="block w-full text-left py-2 font-medium"
-                >
-                  Create Account
-                </button>
-              </>
-            )}
+                  <button
+                    onClick={() => {
+                      navigate("/signup");
+                      setOpen(false);
+                    }}
+                    className="w-full py-3 px-4 border-2 border-teal-700 text-teal-700 font-semibold rounded-lg hover:bg-teal-50 transition-colors"
+                  >
+                    Create Account
+                  </button>
+                </div>
+              )}
+            </div>
+
           </div>
         </DialogPanel>
       </div>
