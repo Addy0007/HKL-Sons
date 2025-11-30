@@ -25,7 +25,8 @@ public class User {
     @Column(unique = true)
     private String email;
 
-    private String role;
+    @Column(nullable = false)
+    private String role = "ROLE_CUSTOMER";
     private String mobile;
 
     @OneToMany(mappedBy ="user",cascade = CascadeType.ALL)

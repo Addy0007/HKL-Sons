@@ -25,9 +25,9 @@ export const customerProductsReducer = (state = initialState, action) => {
     case FIND_PRODUCT_BY_ID_REQUEST:
       return { ...state, loading: true, error: null };
 
-    case FIND_PRODUCTS_SUCCESS:
-      // ✅ Handle nested page object from backend
-      { const responseData = action.payload;
+    case FIND_PRODUCTS_SUCCESS: {
+      // ✅ Fixed: Added curly braces for block scope
+      const responseData = action.payload;
       
       return {
         ...state,
@@ -38,7 +38,8 @@ export const customerProductsReducer = (state = initialState, action) => {
           totalElements: responseData.page?.totalElements || responseData.totalElements || 0,
           number: responseData.page?.number ?? responseData.number ?? 0,
         },
-      }; }
+      };
+    }
 
     case FIND_PRODUCT_BY_ID_SUCCESS:
       return { ...state, loading: false, product: action.payload };

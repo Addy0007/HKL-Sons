@@ -1,3 +1,4 @@
+// State/Product/Action.js
 import { api } from "../../Config/apiConfig";
 import {
   FIND_PRODUCTS_REQUEST,
@@ -29,8 +30,8 @@ export const findProducts = (reqData) => async (dispatch) => {
     const { data } = await api.get(`/api/products`, {
       params: {
         category: reqData.category,
-        color: reqData.colors,     // ✅ Send as "color" to match backend @RequestParam name
-        size: reqData.sizes,       // ✅ Send as "size" to match backend @RequestParam name
+        color: reqData.colors,
+        size: reqData.sizes,
         minPrice: reqData.minPrice,
         maxPrice: reqData.maxPrice,
         minDiscount: reqData.minDiscount,

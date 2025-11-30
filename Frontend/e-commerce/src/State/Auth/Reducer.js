@@ -12,24 +12,21 @@ import {
   REGISTER_SUCCESS,
 } from "./ActionType";
 
-
 const getInitialState = () => {
   const jwt = localStorage.getItem("jwt");
   return {
     user: null,
     jwt: jwt || null,
     isAuthenticated: !!jwt,
-    isLoading: !!jwt, // load profile if jwt exists
+    isLoading: !!jwt, // Will load user if jwt exists
     error: null,
   };
 };
-
 
 const initialState = getInitialState();
 
 export const authReducer = (state = initialState, action) => {
   switch (action.type) {
-    // ================= REQUESTS =================
     case REGISTER_REQUEST:
     case LOGIN_REQUEST:
     case GET_USER_REQUEST:
@@ -39,37 +36,40 @@ export const authReducer = (state = initialState, action) => {
         error: null,
       };
 
-    // ================= SUCCESS =================
     case REGISTER_SUCCESS:
     case LOGIN_SUCCESS:
-      // ✅ Store JWT in localStorage
+      console.log("✅ Auth Success - Storing in Redux:", action.payload);
+      
       if (action.payload.jwt) {
         localStorage.setItem("jwt", action.payload.jwt);
       }
+      
       return {
         ...state,
         isLoading: false,
         error: null,
         jwt: action.payload.jwt || state.jwt,
-        user: action.payload.user || state.user,
+        user: action.payload.user || state.user, // ✅ Store user with role
         isAuthenticated: true,
       };
 
     case GET_USER_SUCCESS:
+      console.log("✅ User Profile Loaded:", action.payload);
+      
       return {
         ...state,
         isLoading: false,
         error: null,
-        user: action.payload,
+        user: action.payload, // ✅ User includes role
         isAuthenticated: true,
       };
 
-    // ================= FAILURES =================
     case REGISTER_FAILURE:
     case LOGIN_FAILURE:
     case GET_USER_FAILURE:
-      // ✅ Clear JWT from localStorage on auth failure
+      console.error("❌ Auth Failure:", action.payload);
       localStorage.removeItem("jwt");
+      
       return {
         ...state,
         isLoading: false,
@@ -79,9 +79,7 @@ export const authReducer = (state = initialState, action) => {
         user: null,
       };
 
-    // ================= LOGOUT =================
     case LOGOUT_SUCCESS:
-      // ✅ Clear JWT from localStorage
       localStorage.removeItem("jwt");
       return {
         user: null,
@@ -97,7 +95,6 @@ export const authReducer = (state = initialState, action) => {
         error: action.payload,
       };
 
-    // ================= DEFAULT =================
     default:
       return state;
   }
