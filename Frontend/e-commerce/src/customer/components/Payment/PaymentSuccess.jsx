@@ -1,3 +1,5 @@
+// src/customer/components/Payment/PaymentSuccess.jsx
+
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
@@ -11,17 +13,30 @@ const PaymentSuccess = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // ✅ Extract Razorpay payment_id from URL
+  // ✅ Extract Razorpay params and detect errors
   useEffect(() => {
     const url = new URLSearchParams(window.location.search);
 
+    const errorCode = url.get("error[code]");
+    const errorDescription = url.get("error[description]");
+
+    // ❌ Payment failed (Razorpay error)
+    if (errorCode) {
+      navigate(`/payment-failed/${orderId}`, {
+        replace: true,
+        state: { errorCode, errorDescription },
+      });
+      return;
+    }
+
+    // ✅ Success: get payment id
     const id =
       url.get("razorpay_payment_id") || // Razorpay default
-      url.get("payment_id") ||          // Your backend callback param
+      url.get("payment_id") ||          // custom
       url.get("paymentId");             // fallback
 
     if (!id) {
-      // ❌ No payment ID → redirect back to order page
+      // ❌ No payment ID → go back to order page
       navigate(`/account/order/${orderId}`, { replace: true });
       return;
     }
@@ -29,21 +44,23 @@ const PaymentSuccess = () => {
     setPaymentId(id);
   }, [orderId, navigate]);
 
-  // ✅ Call backend to verify the payment
+  // ✅ Verify payment on backend
   useEffect(() => {
     if (!paymentId) return;
 
     const verify = async () => {
       try {
-        const result = await dispatch(
-          updatePayment({ paymentId, orderId })
-        );
-
-        console.log("Payment verification result:", result);
+        await dispatch(updatePayment({ paymentId, orderId }));
+        // Backend should:
+        // - verify signature
+        // - update order as PAID
       } catch (e) {
-        console.error("Verification error:", e);
+        console.error("Payment verification error:", e);
+        // Optional: navigate to payment-failed page instead
+        // navigate(`/payment-failed/${orderId}`, { replace: true });
       } finally {
         setProcessing(false);
+        // ✅ In both success/failure of verify, go to order details
         navigate(`/account/order/${orderId}`, { replace: true });
       }
     };
@@ -65,7 +82,7 @@ const PaymentSuccess = () => {
         </p>
 
         {processing && (
-          <div className="animate-spin h-10 w-10 border-4 border-emerald-700 border-t-transparent rounded-full mx-auto"></div>
+          <div className="animate-spin h-10 w-10 border-4 border-emerald-700 border-t-transparent rounded-full mx-auto" />
         )}
       </div>
     </div>

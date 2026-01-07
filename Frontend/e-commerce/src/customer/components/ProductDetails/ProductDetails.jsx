@@ -7,12 +7,7 @@ import { addItemToCart } from '../../../State/Cart/Action';
 import ProductReviewSection from './ProductReviewSection';
 import "./LoginPrompt.css";
 
-const placeholderImages = [
-  'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-02-secondary-product-shot.jpg',
-  'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-02-tertiary-product-shot-01.jpg',
-  'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-02-tertiary-product-shot-02.jpg',
-  'https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-02-featured-product-shot.jpg',
-];
+const placeholderImage = 'https://via.placeholder.com/600x800?text=No+Image';
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
@@ -45,7 +40,7 @@ export default function ProductDetails() {
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      setShowLoginPrompt(true); // ✅ Show popup instead of redirect
+      setShowLoginPrompt(true);
       return;
     }
 
@@ -75,43 +70,65 @@ export default function ProductDetails() {
     );
   }
 
-  const images = [
-    { src: product.imageUrl, alt: product.title },
-    ...placeholderImages.slice(1).map(src => ({ src, alt: product.title }))
-  ];
+  // ✅ Use real images from product data (or fallback to placeholder)
+  const images = product.images && product.images.length > 0 
+    ? product.images.map(url => ({ src: url, alt: product.title }))
+    : [{ src: product.imageUrl || placeholderImage, alt: product.title }];
+
+  // ✅ Parse highlights (comma-separated string or use defaults)
+  const highlights = product.highlights 
+    ? product.highlights.split(',').map(h => h.trim()).filter(Boolean)
+    : [
+        "Premium quality fabric",
+        "Comfortable & breathable fit",
+        "Perfect for casual & festive occasions",
+        "Available in multiple sizes"
+      ];
 
   return (
     <div className="min-h-screen bg-white pt-20">
-
-      {/* PRODUCT UI (unchanged) */}
       <section className="mx-auto w-full max-w-7xl px-3 sm:px-5 lg:px-8 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
 
           {/* LEFT IMAGES */}
           <div className="flex flex-col gap-4">
             <div className="w-full bg-gray-100 rounded-xl overflow-hidden aspect-square flex items-center justify-center">
-              <img src={images[selectedImage].src} alt={images[selectedImage].alt} className="w-full h-full object-cover" />
+              <img 
+                src={images[selectedImage].src} 
+                alt={images[selectedImage].alt} 
+                className="w-full h-full object-cover"
+                onError={(e) => e.target.src = placeholderImage}
+              />
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {images.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedImage(idx)}
-                  className={classNames(
-                    'flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all',
-                    selectedImage === idx ? 'border-emerald-600' : 'border-gray-200 hover:border-gray-300'
-                  )}
-                >
-                  <img src={img.src} alt={img.alt} className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
+            {images.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImage(idx)}
+                    className={classNames(
+                      'flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all',
+                      selectedImage === idx ? 'border-emerald-600' : 'border-gray-200 hover:border-gray-300'
+                    )}
+                  >
+                    <img 
+                      src={img.src} 
+                      alt={img.alt} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => e.target.src = placeholderImage}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* RIGHT DETAILS */}
           <div className="flex flex-col">
-            <h1 className="text-lg lg:text-2xl font-semibold text-gray-900 tracking-tight">{product.title}</h1>
+            <h1 className="text-lg lg:text-2xl font-semibold text-gray-900 tracking-tight">
+              {product.title}
+            </h1>
             <p className="text-gray-600 mt-1 text-sm">{product.brand} • {product.color}</p>
 
             <div className="mt-5 flex gap-5 text-lg text-gray-900">
@@ -121,35 +138,53 @@ export default function ProductDetails() {
             </div>
 
             {/* DESCRIPTION */}
-<p className="text-gray-700 text-base mt-6 leading-relaxed">
-  {product.description || 
-    "High-quality product crafted with care and attention to detail. Perfect for everyday wear and special occasions."
-  }
-</p>
+            <p className="text-gray-700 text-base mt-6 leading-relaxed">
+              {product.description || 
+                "High-quality product crafted with care and attention to detail. Perfect for everyday wear and special occasions."
+              }
+            </p>
 
-{/* HIGHLIGHTS */}
-<div className="mt-8">
-  <h3 className="text-sm font-semibold text-gray-900 mb-3">Highlights</h3>
-  <ul className="space-y-2 text-sm text-gray-700">
-    <li className="flex items-start gap-2">
-      <span className="text-emerald-600 mt-1">✓</span>
-      Premium quality fabric
-    </li>
-    <li className="flex items-start gap-2">
-      <span className="text-emerald-600 mt-1">✓</span>
-      Comfortable & breathable fit
-    </li>
-    <li className="flex items-start gap-2">
-      <span className="text-emerald-600 mt-1">✓</span>
-      Perfect for casual & festive occasions
-    </li>
-    <li className="flex items-start gap-2">
-      <span className="text-emerald-600 mt-1">✓</span>
-      Available in multiple sizes
-    </li>
-  </ul>
-</div>
+            {/* HIGHLIGHTS */}
+            <div className="mt-8">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Highlights</h3>
+              <ul className="space-y-2 text-sm text-gray-700">
+                {highlights.map((highlight, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="text-emerald-600 mt-1">✓</span>
+                    {highlight}
+                  </li>
+                ))}
+              </ul>
+            </div>
 
+            {/* PRODUCT DETAILS */}
+            {(product.material || product.careInstructions || product.countryOfOrigin) && (
+              <div className="mt-8">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Product Details</h3>
+                <dl className="space-y-2 text-sm text-gray-700">
+                  {product.material && (
+                    <>
+                      <dt className="font-medium inline">Material: </dt>
+                      <dd className="inline">{product.material}</dd>
+                      <br />
+                    </>
+                  )}
+                  {product.careInstructions && (
+                    <>
+                      <dt className="font-medium inline">Care: </dt>
+                      <dd className="inline">{product.careInstructions}</dd>
+                      <br />
+                    </>
+                  )}
+                  {product.countryOfOrigin && (
+                    <>
+                      <dt className="font-medium inline">Origin: </dt>
+                      <dd className="inline">{product.countryOfOrigin}</dd>
+                    </>
+                  )}
+                </dl>
+              </div>
+            )}
 
             {/* SIZE SELECTOR */}
             <div className="mt-8">
@@ -183,7 +218,7 @@ export default function ProductDetails() {
             </div>
 
             {/* ADD TO CART BUTTON */}
-                <button
+            <button
               disabled={product.quantity <= 0 || !selectedSize}
               onClick={handleAddToCart}
               className={`mt-8 w-full sm:w-2/3 px-4 py-2.5 rounded-md font-semibold shadow-sm transition-colors ${
@@ -198,11 +233,9 @@ export default function ProductDetails() {
         </div>
       </section>
 
-     <ProductReviewSection productId={productId} />
+      <ProductReviewSection productId={productId} />
 
-
-
-      {/* ✅ LOGIN POPUP MODAL */}
+      {/* LOGIN POPUP MODAL */}
       {showLoginPrompt && (
         <div className="login-popup-overlay animate-fadeIn">
           <div className="login-popup-box animate-slideUp">
@@ -233,7 +266,6 @@ export default function ProductDetails() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

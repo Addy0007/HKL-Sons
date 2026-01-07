@@ -33,6 +33,11 @@ import ProductsTable from "./Pages/ProductsTable";
 import OrderTable from "./Pages/OrderTable";
 import CustomerTable from "./Pages/CustomerTable";
 
+console.log("🧪 Admin.jsx loaded");
+console.log("🧪 CreateProductForm:", CreateProductForm);
+console.log("🧪 CreateProductForm type:", typeof CreateProductForm);
+
+
 const drawerWidth = 240;
 
 const menu = [

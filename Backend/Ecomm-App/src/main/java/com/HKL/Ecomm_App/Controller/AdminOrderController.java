@@ -18,34 +18,34 @@ public class AdminOrderController {
         this.orderService = orderService;
     }
 
-    // ✅ Get all orders
+
     @GetMapping
     public ResponseEntity<List<Order>> getAllOrders() {
         return ResponseEntity.ok(orderService.getAllOrders());
     }
 
-    // ✅ Confirm order
+
     @PutMapping("/{orderId}/confirmed")
     public ResponseEntity<Order> confirmOrderHandler(@PathVariable Long orderId)
             throws OrderException {
         return ResponseEntity.ok(orderService.confirmOrder(orderId));
     }
 
-    // ✅ Mark as shipped
+
     @PutMapping("/{orderId}/shipped")
     public ResponseEntity<Order> shippedOrderHandler(@PathVariable Long orderId)
             throws OrderException {
         return ResponseEntity.ok(orderService.shippedOrder(orderId));
     }
 
-    // ✅ Mark as delivered
+
     @PutMapping("/{orderId}/delivered")
     public ResponseEntity<Order> deliveredOrderHandler(@PathVariable Long orderId)
             throws OrderException {
         return ResponseEntity.ok(orderService.deliveredOrder(orderId));
     }
 
-    // ✅ Cancel order
+
     @PutMapping("/{orderId}/cancelled")
     public ResponseEntity<Order> cancelledOrderHandler(@PathVariable Long orderId)
             throws OrderException {

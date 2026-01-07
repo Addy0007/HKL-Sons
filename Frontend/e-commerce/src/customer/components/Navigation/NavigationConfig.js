@@ -1,4 +1,4 @@
-// src/components/Navigation/navigationConfig.js
+// src/components/Navigation/NavigationConfig.js
 
 export const navigation = {
   categories: [

@@ -6,14 +6,15 @@ import { cartReducer } from "./Cart/Reducer";
 import { orderReducer } from "./Order/Reducer";
 import { checkoutReducer } from "./Checkout/Reducer";
 import { adminProductReducer } from "./Admin/Reducer"; // ✅ ADD THIS
-
+import { adminOrderReducer } from "./AdminOrder/Reducer"; // ✅ ADD THIS
 const rootReducers = combineReducers({
   auth: authReducer,
   product: customerProductsReducer,
   cart: cartReducer,
   order: orderReducer,
   checkout: checkoutReducer,
-  adminProduct: adminProductReducer, // ✅ ADD THIS
+  adminProduct: adminProductReducer,
+  adminOrder: adminOrderReducer,
 });
 
 export const store = legacy_createStore(rootReducers, applyMiddleware(thunk));

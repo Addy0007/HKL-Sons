@@ -1,49 +1,69 @@
 package com.HKL.Ecomm_App.Request;
 
 import com.HKL.Ecomm_App.Model.Size;
-import lombok.Data;
 import jakarta.validation.constraints.*;
+import lombok.Data;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Data
 public class CreateProductRequest {
 
-    @NotBlank
+
+    @NotBlank(message = "Title is required")
     private String title;
 
     private String description;
 
-    @Positive
+    @Positive(message = "Price must be positive")
     private int price;
 
-    @PositiveOrZero
+    @PositiveOrZero(message = "Discounted price must be positive or zero")
     private int discountedPrice;
 
-    @Min(0)
-    @Max(100)
+    @Min(value = 0, message = "Discount percent must be at least 0")
+    @Max(value = 100, message = "Discount percent must be at most 100")
     private int discountPercent;
 
-    @Min(0)
+    @Min(value = 0, message = "Quantity must be at least 0")
     private int quantity;
 
-    @NotBlank
+    @NotBlank(message = "Brand is required")
     private String brand;
 
-    @NotBlank
+    @NotBlank(message = "Color is required")
     private String color;
 
-    private Set<Size> size = new HashSet<>();
 
+    @NotBlank(message = "Main image URL is required")
     private String imageUrl;
 
-    @NotBlank
+    private List<String> additionalImages;
+
+
+    private String highlights;
+
+    private String material;
+
+    private String careInstructions;
+
+    private String countryOfOrigin;
+
+    private String manufacturer;
+
+
+    @NotBlank(message = "Top level category is required")
     private String topLevelCategory;
 
-    @NotBlank
+    @NotBlank(message = "Second level category is required")
     private String secondLevelCategory;
 
-    @NotBlank
+    @NotBlank(message = "Third level category is required")
     private String thirdLevelCategory;
+
+
+    @NotEmpty(message = "At least one size is required")
+    private Set<Size> size = new HashSet<>();
 }

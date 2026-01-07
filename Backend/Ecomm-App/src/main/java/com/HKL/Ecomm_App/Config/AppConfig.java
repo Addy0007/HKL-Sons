@@ -1,7 +1,9 @@
+// ==================== 1. AppConfig.java ====================
 package com.HKL.Ecomm_App.Config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -16,14 +18,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.Collections;
 
-/**
- * ✅ Handles security configuration for your entire app:
- * - Enables JWT stateless authentication
- * - Configures public/private routes
- * - Sets up CORS for frontend (React on port 5173)
- */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true) // ✅ ENABLE METHOD SECURITY
 public class AppConfig {
 
     @Bean
@@ -39,12 +36,20 @@ public class AppConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Public endpoints
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/api/locations/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/products/**").permitAll()
+                        .requestMatchers("/api/ratings/**").permitAll()
+                        .requestMatchers("/api/reviews/**").permitAll()
+
+                        // Admin endpoints - require ADMIN role
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // All other API endpoints require authentication
                         .requestMatchers("/api/**").authenticated()
+
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtValidator(), UsernamePasswordAuthenticationFilter.class);
@@ -59,12 +64,14 @@ public class AppConfig {
                 "http://localhost:5173",
                 "http://localhost:3000",
                 "http://localhost:4200",
-                "http://192.168.29.55:5173"
+                "http://192.168.29.55:5173",
+                "http://192.168.29.55:3000"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Collections.singletonList("*"));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -76,3 +83,4 @@ public class AppConfig {
         return new BCryptPasswordEncoder();
     }
 }
+
