@@ -8,6 +8,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -22,9 +23,12 @@ import java.util.List;
 
 public class JwtValidator extends OncePerRequestFilter {
 
-    private final SecretKey key = Keys.hmacShaKeyFor(
-            Decoders.BASE64.decode(JwtConstant.SECRET_KEY)
-    );
+    @Value("${jwt.secret}")
+    private String SECRET_KEY;
+
+    private SecretKey getKey() {
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET_KEY));
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -38,24 +42,20 @@ public class JwtValidator extends OncePerRequestFilter {
                 jwt = jwt.substring(7);
 
                 Claims claims = Jwts.parserBuilder()
-                        .setSigningKey(key)
+                        .setSigningKey(getKey())
                         .build()
                         .parseClaimsJws(jwt)
                         .getBody();
 
                 String email = claims.get("email", String.class);
-                String role = claims.get("role", String.class); // ✅ Extract role
+                String role = claims.get("role", String.class);
 
                 if (role == null || role.isEmpty()) {
                     role = "ROLE_CUSTOMER";
                 }
 
-                System.out.println("🔐 JWT Validated:");
-                System.out.println("   Email: " + email);
-                System.out.println("   Role: " + role);
-                System.out.println("   Endpoint: " + request.getRequestURI());
+                System.out.println("🔐 JWT Validated - Email: " + email + ", Role: " + role);
 
-                // ✅ Create authorities with role
                 List<GrantedAuthority> authorities = new ArrayList<>();
                 authorities.add(new SimpleGrantedAuthority(role));
 
