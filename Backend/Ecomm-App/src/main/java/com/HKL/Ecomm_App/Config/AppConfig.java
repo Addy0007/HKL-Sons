@@ -69,9 +69,14 @@ public class AppConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Dynamic allowed origins based on environment
         List<String> allowedOrigins = new ArrayList<>();
         allowedOrigins.add(frontendUrl);
+
+        // Always allow both www and non-www in production
+        if (frontendUrl.contains("hklsons.com")) {
+            allowedOrigins.add("https://hklsons.com");
+            allowedOrigins.add("https://www.hklsons.com");
+        }
 
         // Add localhost URLs only in development
         if (frontendUrl.contains("localhost") || frontendUrl.contains("127.0.0.1")) {
