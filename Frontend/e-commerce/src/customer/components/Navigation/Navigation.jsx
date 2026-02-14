@@ -96,9 +96,9 @@ export default function Navigation() {
               {/* Logo */}
               <div className="absolute left-1/2 -translate-x-1/2 cursor-pointer" onClick={() => navigate("/")}>
                 <img
-                  src="/favicon.svg"
-                  className="h-8 w-auto"
-                  alt="HKL Sons"
+                      src="/web-app-manifest-192x192.png"
+                      className="h-8 w-8 rounded-full object-cover"
+                      alt="HKL Sons"
                 />
               </div>
 
@@ -137,9 +137,9 @@ export default function Navigation() {
               {/* Logo */}
               <div className="cursor-pointer" onClick={() => navigate("/")}>
                 <img
-                  src="/favicon.svg"
-                  className="h-8 w-auto"
-                  alt="HKL Sons"
+                      src="/web-app-manifest-192x192.png"
+                      className="h-8 w-8 rounded-full object-cover"
+                      alt="HKL Sons"
                 />
               </div>
 
