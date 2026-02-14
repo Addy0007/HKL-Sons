@@ -143,7 +143,7 @@ export default function Navigation() {
                 />
               </div>
 
-              {/* Desktop Nav */}
+              {/* Desktop NavBar */}
               <DesktopNav
                 handleCategoryClick={handleCategoryClick}
                 getInitial={getInitial}
