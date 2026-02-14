@@ -96,7 +96,7 @@ export default function Navigation() {
               {/* Logo */}
               <div className="absolute left-1/2 -translate-x-1/2 cursor-pointer" onClick={() => navigate("/")}>
                 <img
-                  src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=teal&shade=700"
+                  src="/favicon.svg"
                   className="h-8 w-auto"
                   alt="HKL Sons"
                 />
@@ -137,7 +137,7 @@ export default function Navigation() {
               {/* Logo */}
               <div className="cursor-pointer" onClick={() => navigate("/")}>
                 <img
-                  src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=teal&shade=700"
+                  src="/favicon.svg"
                   className="h-8 w-auto"
                   alt="HKL Sons"
                 />
