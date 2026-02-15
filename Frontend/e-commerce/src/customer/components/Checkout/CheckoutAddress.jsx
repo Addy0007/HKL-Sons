@@ -207,33 +207,36 @@ const CheckoutAddress = () => {
     }
   };
 
-  const handlePincodeInput = async (pin) => {
-    const updated = { ...address, zipCode: pin };
-    setAddress(updated);
+ const handlePincodeInput = async (pin) => {
+  const updated = { ...address, zipCode: pin };
+  setAddress(updated);
+  
+  if (pin.length < 6) {
+    setPincodeStatus("");
+    dispatch(saveCheckoutAddress(updated));
+    return;
+  }
+  
+  try {
+    const jwt = localStorage.getItem("jwt");
+    const res = await axios.get(`/api/locations/lookup/${pin}`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
     
-    if (pin.length < 6) {
-      setPincodeStatus("");
-      dispatch(saveCheckoutAddress(updated));
-      return;
-    }
+    // ✅ UPDATED: Always deliverable now!
+    setPincodeStatus("deliverable");
     
-    try {
-      const jwt = localStorage.getItem("jwt");
-      const res = await axios.get(`/api/locations/lookup/${pin}`, {
-        headers: { Authorization: `Bearer ${jwt}` },
-      });
-      
-      const deliverable = !!res.data?.deliverable;
-      setPincodeStatus(deliverable ? "deliverable" : "not-deliverable");
-      
+    if (res.data.found) {
+      // Pincode exists - auto-fill state and district
       const finalAddress = {
         ...updated,
-        state: res.data?.state || updated.state,
-        district: res.data?.district || updated.district,
+        state: res.data.state || updated.state,
+        district: res.data.district || updated.district,
       };
       setAddress(finalAddress);
       
-      if (res.data?.state) {
+      // Load districts for the state
+      if (res.data.state) {
         try {
           const distRes = await axios.get(`/api/locations/districts/${res.data.state}`, {
             headers: { Authorization: `Bearer ${jwt}` },
@@ -244,7 +247,8 @@ const CheckoutAddress = () => {
         }
       }
       
-      if (res.data?.district) {
+      // Load pincodes for the district
+      if (res.data.district) {
         try {
           const pinRes = await axios.get(`/api/locations/pincodes/${res.data.district}`, {
             headers: { Authorization: `Bearer ${jwt}` },
@@ -256,12 +260,18 @@ const CheckoutAddress = () => {
       }
       
       dispatch(saveCheckoutAddress(finalAddress));
-    } catch {
-      setPincodeStatus("not-found");
+    } else {
+      // ✅ Pincode NOT found - user needs to enter state/district manually
+      // But it's still deliverable!
       dispatch(saveCheckoutAddress(updated));
+      // Don't auto-fill anything, let user type
     }
-  };
-
+  } catch {
+    // ✅ Even on error, mark as deliverable
+    setPincodeStatus("deliverable");
+    dispatch(saveCheckoutAddress(updated));
+  }
+};
   // ✅ NEW: Save Address to Database (without navigation)
   const handleSaveAddress = async () => {
     if (!cart.cartItems || cart.cartItems.length === 0) {

@@ -31,16 +31,19 @@ const Cart = () => {
     dispatch(toggleCartItemSelection(itemId));
   };
 
-  // Debug: Log cart items and their selection state
-  useEffect(() => {
-    console.log("Cart Items:", cartItems.map(item => ({
-      id: item.id,
-      product: item.product.title,
-      selected: item.selected
-    })));
-  }, [cartItems]);
+  // ✅ Validate quantity against stock before increasing
+  const handleIncrease = (item) => {
+    const maxQuantity = item.product.quantity || 0;
+    
+    if (item.quantity >= maxQuantity) {
+      alert(`Maximum available quantity is ${maxQuantity}`);
+      return;
+    }
+    
+    dispatch(updateCartItem(item.id, item.quantity + 1));
+  };
 
-  // ✅ Filter only selected items for price calculation
+  // Filter only selected items for price calculation
   const selectedItems = cartItems.filter(item => item.selected !== false);
 
   const subtotal = selectedItems.reduce(
@@ -57,14 +60,10 @@ const Cart = () => {
   const delivery = discountedTotal > 499 ? 0 : 50;
   const grandTotal = discountedTotal + delivery;
 
-  // ✅ Select/Deselect All
   const allSelected = cartItems.length > 0 && cartItems.every(item => item.selected !== false);
   
   const handleSelectAll = () => {
-    console.log("Select All clicked, current state:", allSelected);
     cartItems.forEach(item => {
-      // If currently all selected, deselect all
-      // If not all selected, select all
       const shouldToggle = allSelected ? item.selected !== false : item.selected === false;
       if (shouldToggle) {
         dispatch(toggleCartItemSelection(item.id));
@@ -83,7 +82,6 @@ const Cart = () => {
               My Shopping Cart
             </h2>
             
-            {/* Select All Checkbox */}
             {cartItems.length > 0 && (
               <button
                 onClick={handleSelectAll}
@@ -105,7 +103,7 @@ const Cart = () => {
               <CartItem
                 key={item.id}
                 item={item}
-                onIncrease={() => dispatch(updateCartItem(item.id, item.quantity + 1))}
+                onIncrease={() => handleIncrease(item)} // ✅ Use validated handler
                 onDecrease={() => {
                   if (item.quantity > 1) {
                     dispatch(updateCartItem(item.id, item.quantity - 1));

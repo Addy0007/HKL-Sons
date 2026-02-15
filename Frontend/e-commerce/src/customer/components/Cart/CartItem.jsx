@@ -5,8 +5,11 @@ import { Add, Remove, Delete } from "@mui/icons-material";
 const CartItem = ({ item, onIncrease, onDecrease, onRemove, onToggleSelection }) => {
   const { product, size, quantity, selected = true } = item;
 
-  // Debug log to see the actual value
-  console.log(`CartItem ${item.id}: selected =`, selected, typeof selected);
+  // ✅ Get max available quantity from product
+  const maxQuantity = product.quantity || 0;
+  const isAtMaxQuantity = quantity >= maxQuantity;
+
+  console.log(`CartItem ${item.id}: quantity=${quantity}, maxQuantity=${maxQuantity}`);
 
   const handleCheckboxChange = (e) => {
     console.log("Checkbox clicked, current selected:", selected);
@@ -22,7 +25,7 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, onToggleSelection })
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row gap-5">
 
-          {/* ✅ Selection Checkbox */}
+          {/* Selection Checkbox */}
           <div className="flex items-start">
             <Checkbox
               checked={selected === true}
@@ -53,6 +56,18 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, onToggleSelection })
             <p className="text-gray-600 text-sm">Size: {size}</p>
             <p className="text-gray-500 text-sm">Seller: {product.brand}</p>
 
+            {/* ✅ Stock availability indicator */}
+            {maxQuantity > 0 && maxQuantity <= 5 && (
+              <p className="text-orange-600 text-xs font-medium">
+                ⚠️ Only {maxQuantity} left in stock
+              </p>
+            )}
+            {maxQuantity === 0 && (
+              <p className="text-red-600 text-xs font-medium">
+                ❌ Out of stock
+              </p>
+            )}
+
             {/* Price */}
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <p className={`font-semibold text-lg ${!selected ? "text-gray-500" : "text-gray-900"}`}>
@@ -71,7 +86,11 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, onToggleSelection })
             {/* Quantity Control */}
             <div className="flex items-center border border-gray-300 rounded-md overflow-hidden shadow-sm w-fit">
               {quantity > 0 && (
-                <IconButton size="small" onClick={onDecrease} disabled={!selected}>
+                <IconButton 
+                  size="small" 
+                  onClick={onDecrease} 
+                  disabled={!selected}
+                >
                   <Remove fontSize="small" />
                 </IconButton>
               )}
@@ -82,10 +101,24 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, onToggleSelection })
                 {quantity}
               </div>
 
-              <IconButton size="small" onClick={onIncrease} disabled={!selected}>
-                <Add fontSize="small" />
+              {/* ✅ Disable Add button when at max quantity */}
+              <IconButton 
+                size="small" 
+                onClick={onIncrease} 
+                disabled={!selected || isAtMaxQuantity || maxQuantity === 0}
+                title={isAtMaxQuantity ? "Maximum quantity reached" : ""}
+              >
+                <Add 
+                  fontSize="small" 
+                  className={isAtMaxQuantity ? "text-gray-400" : ""}
+                />
               </IconButton>
             </div>
+
+            {/* ✅ Show current/max quantity */}
+            <span className="text-xs text-gray-500">
+              {quantity}/{maxQuantity}
+            </span>
 
             {/* Remove */}
             <button
@@ -101,6 +134,12 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, onToggleSelection })
         {!selected && (
           <p className="text-xs text-orange-600 italic pl-1">
             ℹ️ This item will remain in your cart but won't be included in checkout
+          </p>
+        )}
+        
+        {isAtMaxQuantity && quantity > 0 && (
+          <p className="text-xs text-orange-600 italic pl-1">
+            ⚠️ Maximum available quantity in cart
           </p>
         )}
         

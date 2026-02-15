@@ -42,7 +42,6 @@ export const navigation = {
       ],
     },
 
-    // ⭐ NEW CATEGORY – Lifestyle
     {
       id: 'lifestyle',
       name: 'Lifestyle',
@@ -60,10 +59,5 @@ export const navigation = {
         },
       ],
     },
-  ],
-
-  pages: [
-    { name: 'Company', href: '#' },
-    { name: 'Stores', href: '#' },
   ],
 };

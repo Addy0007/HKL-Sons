@@ -56,6 +56,7 @@ public class AppConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         // All other API endpoints require authentication
+                        .requestMatchers("/api/categories/**").permitAll()
                         .requestMatchers("/api/**").authenticated()
 
                         .anyRequest().permitAll()

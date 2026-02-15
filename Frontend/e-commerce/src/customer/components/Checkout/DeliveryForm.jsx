@@ -209,9 +209,6 @@ const DeliveryForm = ({
       {pincodeStatus === "deliverable" && (
         <p className="text-green-600 text-sm">✅ Delivery available</p>
       )}
-      {(pincodeStatus === "not-deliverable" || pincodeStatus === "not-found") && (
-        <p className="text-red-600 text-sm">🚫 We cannot deliver here</p>
-      )}
 
       <input
         type="text"

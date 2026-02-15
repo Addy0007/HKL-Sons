@@ -48,6 +48,8 @@ public class User {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<Order> orders = new ArrayList<>();
 
 }

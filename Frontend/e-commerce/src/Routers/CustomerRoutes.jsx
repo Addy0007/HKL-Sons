@@ -15,10 +15,16 @@ import ResetPassword from "../customer/components/Signin/ResetPassword";
 
 import RequireAuth from "./RequireAuth";
 
-// ✅ New checkout step components
+// ✅ Checkout step components
 import CheckoutAddress from '../customer/components/Checkout/CheckoutAddress';
 import CheckoutSummary from '../customer/components/Checkout/CheckoutSummary';
 import PaymentSuccess from '../customer/components/Payment/PaymentSuccess';
+
+// ✅ Footer page components
+import About from '../customer/components/Pages/About';
+import Privacy from '../customer/components/Pages/Privacy';
+import Terms from '../customer/components/Pages/Terms';
+import Claim from '../customer/components/Pages/Claim';
 
 const CustomerRoutes = () => {
   return (
@@ -36,8 +42,8 @@ const CustomerRoutes = () => {
           <Route path="/products" element={<Product />} />
           <Route path="/productDetails" element={<ProductDetails />} />
           <Route path="/payment/:orderId" element={<PaymentSuccess />} />
-          <Route path="/product/:productId" element={<ProductDetails />} />
           <Route path="/:levelOne/:levelTwo/:levelThree" element={<ProductList />} />
+          <Route path="/product/:productId" element={<ProductDetails />} />
 
           {/* ✅ Checkout Step 1 */}
           <Route 
@@ -68,6 +74,11 @@ const CustomerRoutes = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
+          {/* ✅ Footer pages */}
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/claim" element={<Claim />} />
           
         </Routes>
       </main>

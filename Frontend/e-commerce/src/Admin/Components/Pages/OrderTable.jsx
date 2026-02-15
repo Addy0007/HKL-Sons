@@ -19,7 +19,6 @@ const statusColors = {
   PLACED: "bg-teal-600",
 };
 
-// NEXT STATUS logic
 const getNextStatuses = (current) => {
   switch (current) {
     case "PENDING":
@@ -31,7 +30,7 @@ const getNextStatuses = (current) => {
     case "SHIPPED":
       return ["DELIVERED"];
     default:
-      return []; // Delivered or Cancelled
+      return [];
   }
 };
 
@@ -43,7 +42,6 @@ const OrderTable = () => {
     dispatch(getAllOrders());
   }, [dispatch]);
 
-  // STATUS UPDATE HANDLER
   const handleStatusChange = (order, nextStatus) => {
     if (!nextStatus) return;
 
@@ -76,11 +74,12 @@ const OrderTable = () => {
         <table className="w-full text-sm">
           <thead className="bg-gray-100 text-left">
             <tr>
-              <th className="p-3">Image</th>
-              <th className="p-3">Title</th>
               <th className="p-3">Order ID</th>
-              <th className="p-3">Price</th>
+              <th className="p-3">Customer</th>
+              <th className="p-3">Items</th>
+              <th className="p-3">Total Price</th>
               <th className="p-3">Status</th>
+              <th className="p-3">Date</th>
               <th className="p-3">Update</th>
               <th className="p-3">Delete</th>
             </tr>
@@ -88,43 +87,75 @@ const OrderTable = () => {
 
           <tbody>
             {orders?.map((order) => {
-              const item = order.orderItems?.[0] || {};
-              const product = item.product || {};
-
-              const image = product.imageUrl || "/no-image.png";
-              const title = product.title || "No Title";
+              const itemCount = order.orderItems?.length || 0;
+              const customerName = order.shippingAddress 
+                ? `${order.shippingAddress.firstName} ${order.shippingAddress.lastName}`
+                : "N/A";
 
               return (
                 <tr key={order.id} className="border-b hover:bg-gray-50 transition">
-                  {/* IMAGE */}
+                  {/* ORDER ID */}
                   <td className="p-3">
-                    <img
-                      src={image}
-                      alt="product"
-                      className="h-12 w-12 rounded object-cover bg-gray-200"
-                    />
-                  </td>
-
-                  {/* TITLE */}
-                  <td className="p-3 max-w-[200px]">
-                    <div className="font-medium">
-                      {title.slice(0, 40)}
-                      {title.length > 40 ? "..." : ""}
+                    <div className="font-semibold text-blue-600">
+                      {order.orderId || `#${order.id}`}
                     </div>
                   </td>
 
-                  {/* ORDER-ID */}
-                  <td className="p-3">{order.orderId}</td>
+                  {/* CUSTOMER */}
+                  <td className="p-3">
+                    <div className="font-medium text-gray-900">{customerName}</div>
+                    <div className="text-xs text-gray-500">
+                      {order.shippingAddress?.mobile}
+                    </div>
+                  </td>
 
-                  {/* PRICE */}
-                  <td className="p-3 font-semibold">
-                    ₹{order.totalPrice?.toLocaleString() || 0}
+                  {/* ITEMS - EXPANDABLE */}
+                  <td className="p-3">
+                    <details className="cursor-pointer">
+                      <summary className="font-semibold text-emerald-600 hover:text-emerald-700">
+                        {itemCount} {itemCount === 1 ? "item" : "items"}
+                      </summary>
+                      <div className="mt-2 space-y-2 pl-2 border-l-2 border-gray-200">
+                        {order.orderItems?.map((item, idx) => (
+                          <div key={idx} className="flex gap-2 items-start">
+                            <img
+                              src={item.product?.imageUrl || "/no-image.png"}
+                              alt="product"
+                              className="h-10 w-10 rounded object-cover bg-gray-200 flex-shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="text-xs font-medium text-gray-900 truncate">
+                                {item.product?.title || "No Title"}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Size: {item.size} | Qty: {item.quantity}
+                              </div>
+                              <div className="text-xs font-semibold text-gray-700">
+                                ₹{item.price?.toLocaleString() || 0}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  </td>
+
+                  {/* TOTAL PRICE */}
+                  <td className="p-3">
+                    <div className="font-bold text-lg text-gray-900">
+                      ₹{order.totalDiscountedPrice?.toLocaleString() || order.totalPrice?.toLocaleString() || 0}
+                    </div>
+                    {order.discount > 0 && (
+                      <div className="text-xs text-green-600">
+                        Saved ₹{order.discount?.toLocaleString()}
+                      </div>
+                    )}
                   </td>
 
                   {/* STATUS */}
                   <td className="p-3">
                     <span
-                      className={`px-3 py-1 text-white rounded-full text-xs ${
+                      className={`px-3 py-1 text-white rounded-full text-xs font-semibold whitespace-nowrap ${
                         statusColors[order.orderStatus] || "bg-gray-500"
                       }`}
                     >
@@ -132,14 +163,27 @@ const OrderTable = () => {
                     </span>
                   </td>
 
-                  {/* DROPDOWN UPDATE STATUS */}
+                  {/* DATE */}
+                  <td className="p-3">
+                    <div className="text-sm text-gray-600">
+                      {order.orderDate 
+                        ? new Date(order.orderDate).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "N/A"}
+                    </div>
+                  </td>
+
+                  {/* UPDATE STATUS */}
                   <td className="p-3">
                     {getNextStatuses(order.orderStatus).length === 0 ? (
-                      <span className="text-gray-400">No Action</span>
+                      <span className="text-gray-400 text-xs">No Action</span>
                     ) : (
                       <select
                         onChange={(e) => handleStatusChange(order, e.target.value)}
-                        className="border px-2 py-1 rounded"
+                        className="border px-2 py-1 rounded text-sm"
                       >
                         <option value="">Update...</option>
                         {getNextStatuses(order.orderStatus).map((next) => (
@@ -154,8 +198,12 @@ const OrderTable = () => {
                   {/* DELETE */}
                   <td className="p-3">
                     <button
-                      onClick={() => dispatch(deleteOrder(order.id))}
-                      className="border border-red-400 text-red-500 px-3 py-1 rounded hover:bg-red-50 transition"
+                      onClick={() => {
+                        if (window.confirm(`Delete order ${order.orderId || order.id}?`)) {
+                          dispatch(deleteOrder(order.id));
+                        }
+                      }}
+                      className="border border-red-400 text-red-500 px-3 py-1 rounded hover:bg-red-50 transition text-xs font-medium"
                     >
                       DELETE
                     </button>
@@ -166,6 +214,12 @@ const OrderTable = () => {
           </tbody>
         </table>
       </div>
+
+      {orders?.length === 0 && (
+        <div className="text-center py-10 text-gray-500">
+          No orders found
+        </div>
+      )}
     </div>
   );
 };

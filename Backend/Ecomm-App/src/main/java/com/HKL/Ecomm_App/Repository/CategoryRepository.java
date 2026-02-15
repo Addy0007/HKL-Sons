@@ -1,22 +1,20 @@
-package com.HKL.Ecomm_App.Repository;
+    package com.HKL.Ecomm_App.Repository;
 
-import com.HKL.Ecomm_App.Model.Category;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+    import com.HKL.Ecomm_App.Model.Category;
+    import org.springframework.data.jpa.repository.JpaRepository;
+    import org.springframework.data.jpa.repository.Query;
+    import org.springframework.data.repository.query.Param;
 
-public interface CategoryRepository extends JpaRepository<Category, Long> {
+    import java.util.List;
+    import java.util.Optional;
 
-    Category findByName(String name);
+    public interface CategoryRepository extends JpaRepository<Category, Long> {
 
-    @Query("""
-    SELECT c FROM Category c 
-    WHERE c.name = :name 
-    AND (:parentCategoryName IS NULL AND c.parentCategory IS NULL 
-         OR c.parentCategory.name = :parentCategoryName)
-""")
-    Category findByNameAndParent(
-            @Param("name") String name,
-            @Param("parentCategoryName") String parentCategoryName
-    );
-}
+
+        Optional<Category> findByNameIgnoreCaseAndParentCategory(String name, Category parent);
+        List<Category> findByLevel(int level);
+        List<Category> findByParentCategory(Category parent);
+        List<Category> findByParentCategoryIsNull();
+
+
+    }

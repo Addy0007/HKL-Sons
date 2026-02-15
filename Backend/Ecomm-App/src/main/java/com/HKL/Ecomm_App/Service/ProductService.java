@@ -37,5 +37,6 @@ public interface ProductService {
 
     void reduceStockAfterPurchase(List<OrderItem> orderItems);
     Product findProductEntityById(Long id) throws ProductException;
-
+    List<ProductDTO> findByHierarchy(String first, String second, String third);
+    List<ProductDTO> searchProducts(String query);
 }

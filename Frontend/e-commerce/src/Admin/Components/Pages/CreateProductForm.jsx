@@ -15,11 +15,16 @@ import {
   IconButton,
   InputAdornment,
   Autocomplete,
+  Paper,
 } from "@mui/material";
-import { Add, Delete } from "@mui/icons-material";
+import { Add, Delete, CloudUpload, Image as ImageIcon } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import { createProduct } from "../../../State/Admin/Action";
 import { navigation } from "../../../customer/components/Navigation/NavigationConfig";
+
+// 🔥 CLOUDINARY CONFIGURATION
+const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dilhn8hzs/image/upload";
+const CLOUDINARY_UPLOAD_PRESET = "ecommerce_products";
 
 // Predefined options
 const COLORS = [
@@ -75,6 +80,24 @@ const CreateProductForm = () => {
     sizes: [],
   });
 
+  // 🔥 NEW: Image upload states
+  const [imageFiles, setImageFiles] = useState({
+    mainImage: null,
+    additionalImages: [null, null, null],
+  });
+
+  const [imagePreviews, setImagePreviews] = useState({
+    mainImage: "",
+    additionalImages: ["", "", ""],
+  });
+
+  const [uploadingStates, setUploadingStates] = useState({
+    mainImage: false,
+    additionalImage0: false,
+    additionalImage1: false,
+    additionalImage2: false,
+  });
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -116,6 +139,16 @@ const CreateProductForm = () => {
         thirdLevelCategory: "",
         sizes: [],
       });
+
+      // Reset image states
+      setImageFiles({
+        mainImage: null,
+        additionalImages: [null, null, null],
+      });
+      setImagePreviews({
+        mainImage: "",
+        additionalImages: ["", "", ""],
+      });
     }
   }, [product]);
 
@@ -128,6 +161,184 @@ const CreateProductForm = () => {
       });
     }
   }, [error]);
+
+  // 🔥 NEW: Upload image to Cloudinary
+  const uploadToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+    formData.append("folder", "products");
+
+    try {
+      const response = await fetch(CLOUDINARY_URL, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await response.json();
+      return data.secure_url; // Returns the Cloudinary URL
+    } catch (error) {
+      console.error("❌ Cloudinary upload error:", error);
+      throw error;
+    }
+  };
+
+  // 🔥 NEW: Handle main image selection and upload
+  const handleMainImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setSnackbar({
+        open: true,
+        message: "Please select a valid image file (PNG, JPG, JPEG)",
+        severity: "error",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setSnackbar({
+        open: true,
+        message: "Image size should be less than 5MB",
+        severity: "error",
+      });
+      return;
+    }
+
+    // Set preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreviews((prev) => ({
+        ...prev,
+        mainImage: reader.result,
+      }));
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to Cloudinary
+    setUploadingStates((prev) => ({ ...prev, mainImage: true }));
+    try {
+      const imageUrl = await uploadToCloudinary(file);
+      setProductData((prev) => ({
+        ...prev,
+        imageUrl: imageUrl,
+      }));
+      setSnackbar({
+        open: true,
+        message: "Main image uploaded successfully!",
+        severity: "success",
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: "Failed to upload main image. Please try again.",
+        severity: "error",
+      });
+    } finally {
+      setUploadingStates((prev) => ({ ...prev, mainImage: false }));
+    }
+  };
+
+  // 🔥 NEW: Handle additional image selection and upload
+  const handleAdditionalImageChange = async (index, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setSnackbar({
+        open: true,
+        message: "Please select a valid image file (PNG, JPG, JPEG)",
+        severity: "error",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setSnackbar({
+        open: true,
+        message: "Image size should be less than 5MB",
+        severity: "error",
+      });
+      return;
+    }
+
+    // Set preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const newPreviews = [...imagePreviews.additionalImages];
+      newPreviews[index] = reader.result;
+      setImagePreviews((prev) => ({
+        ...prev,
+        additionalImages: newPreviews,
+      }));
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to Cloudinary
+    const uploadKey = `additionalImage${index}`;
+    setUploadingStates((prev) => ({ ...prev, [uploadKey]: true }));
+    try {
+      const imageUrl = await uploadToCloudinary(file);
+      const newImages = [...productData.additionalImages];
+      newImages[index] = imageUrl;
+      setProductData((prev) => ({
+        ...prev,
+        additionalImages: newImages,
+      }));
+      setSnackbar({
+        open: true,
+        message: `Additional image ${index + 1} uploaded successfully!`,
+        severity: "success",
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: `Failed to upload additional image ${index + 1}. Please try again.`,
+        severity: "error",
+      });
+    } finally {
+      setUploadingStates((prev) => ({ ...prev, [uploadKey]: false }));
+    }
+  };
+
+  // 🔥 NEW: Remove uploaded image
+  const removeMainImage = () => {
+    setProductData((prev) => ({ ...prev, imageUrl: "" }));
+    setImagePreviews((prev) => ({ ...prev, mainImage: "" }));
+    setImageFiles((prev) => ({ ...prev, mainImage: null }));
+  };
+
+  const removeAdditionalImage = (index) => {
+    const newImages = [...productData.additionalImages];
+    newImages[index] = "";
+    setProductData((prev) => ({
+      ...prev,
+      additionalImages: newImages,
+    }));
+
+    const newPreviews = [...imagePreviews.additionalImages];
+    newPreviews[index] = "";
+    setImagePreviews((prev) => ({
+      ...prev,
+      additionalImages: newPreviews,
+    }));
+
+    const newFiles = [...imageFiles.additionalImages];
+    newFiles[index] = null;
+    setImageFiles((prev) => ({
+      ...prev,
+      additionalImages: newFiles,
+    }));
+  };
 
   // Compute dependent dropdown options
   const selectedTopCategory = navigation?.categories?.find(
@@ -147,15 +358,6 @@ const CreateProductForm = () => {
     setProductData((prev) => ({
       ...prev,
       [name]: value,
-    }));
-  };
-
-  const handleAdditionalImageChange = (index, value) => {
-    const newImages = [...productData.additionalImages];
-    newImages[index] = value;
-    setProductData((prev) => ({
-      ...prev,
-      additionalImages: newImages,
     }));
   };
 
@@ -205,35 +407,63 @@ const CreateProductForm = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const highlightsString = productData.highlights
-      .filter((h) => h.trim() !== "")
-      .join(", ");
+  // Validate that main image is uploaded
+  if (!productData.imageUrl) {
+    setSnackbar({
+      open: true,
+      message: "Please upload a main product image",
+      severity: "error",
+    });
+    return;
+  }
 
-    const filteredImages = productData.additionalImages.filter(
-      (img) => img.trim() !== ""
-    );
+  const highlightsString = productData.highlights
+    .filter((h) => h.trim() !== "")
+    .join(", ");
 
-    const sizesSet = productData.sizes
-      .filter((s) => s.name && s.quantity >= 0)
-      .map((s) => ({ name: s.name, quantity: parseInt(s.quantity) || 0 }));
+  const filteredImages = productData.additionalImages.filter(
+    (img) => img.trim() !== ""
+  );
 
-    const submitData = {
-      ...productData,
-      highlights: highlightsString,
-      additionalImages: filteredImages,
-      size: sizesSet,
-      price: parseInt(productData.price) || 0,
-      discountedPrice: parseInt(productData.discountedPrice) || 0,
-      discountPercent: parseInt(productData.discountPercent) || 0,
-      quantity: parseInt(productData.quantity) || 0,
-    };
+  const sizesSet = productData.sizes
+    .filter((s) => s.name && s.quantity >= 0)
+    .map((s) => ({ name: s.name, quantity: parseInt(s.quantity) || 0 }));
 
-    console.log("📦 Submitting product:", submitData);
-    await dispatch(createProduct(submitData));
+  const submitData = {
+    imageUrl: productData.imageUrl,
+    brand: productData.brand,
+    title: productData.title,
+    color: productData.color,
+    discountedPrice: parseInt(productData.discountedPrice) || 0,
+    price: parseInt(productData.price) || 0,
+    discountPercent: parseInt(productData.discountPercent) || 0,
+    size: sizesSet,
+    quantity: parseInt(productData.quantity) || 0,
+    topLevelCategory: productData.topLevelCategory,
+    secondLevelCategory: productData.secondLevelCategory,
+    thirdLevelCategory: productData.thirdLevelCategory,
+    description: productData.description,
+    highlights: highlightsString,
+    additionalImages: filteredImages,
+    material: productData.material,
+    careInstructions: productData.careInstructions,
+    countryOfOrigin: productData.countryOfOrigin,
+    manufacturer: productData.manufacturer,
   };
+
+  console.log("📦 SUBMITTING PRODUCT - FULL PAYLOAD:");
+  console.log(JSON.stringify(submitData, null, 2));
+  
+  try {
+    await dispatch(createProduct(submitData));
+  } catch (error) {
+    console.error("🔥 CAUGHT ERROR IN FORM:", error);
+  }
+};
+
 
   return (
     <Box maxWidth="900px" mx="auto" py={3} px={2}>
@@ -244,46 +474,166 @@ const CreateProductForm = () => {
       <Card elevation={2} sx={{ borderRadius: 3 }}>
         <CardContent sx={{ p: 4 }}>
           <form onSubmit={handleSubmit}>
-            {/* MEDIA */}
+            {/* 🔥 UPDATED: MEDIA SECTION WITH IMAGE UPLOAD */}
             <Typography variant="h6" fontWeight={600} mb={1}>
               📸 Product Media
             </Typography>
             <Divider sx={{ mb: 2 }} />
 
-            <TextField
-              fullWidth
-              label="Main Image URL"
-              name="imageUrl"
-              value={productData.imageUrl}
-              onChange={handleChange}
-              placeholder="https://example.com/main-image.jpg"
-              required
-              margin="normal"
-            />
+            {/* Main Image Upload */}
+            <Box mb={3}>
+              <Typography variant="subtitle2" color="text.secondary" mb={1}>
+                Main Product Image *
+              </Typography>
 
-            <Typography
-              variant="subtitle2"
-              color="text.secondary"
-              mt={2}
-              mb={1}
-            >
-              Additional Images (3 images maximum)
+              {!imagePreviews.mainImage ? (
+                <Button
+                  component="label"
+                  variant="outlined"
+                  startIcon={uploadingStates.mainImage ? <CircularProgress size={20} /> : <CloudUpload />}
+                  disabled={uploadingStates.mainImage}
+                  fullWidth
+                  sx={{
+                    py: 3,
+                    borderStyle: "dashed",
+                    borderWidth: 2,
+                    "&:hover": {
+                      borderStyle: "dashed",
+                      borderWidth: 2,
+                    },
+                  }}
+                >
+                  {uploadingStates.mainImage ? "Uploading..." : "Click to Upload Main Image"}
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/png, image/jpeg, image/jpg"
+                    onChange={handleMainImageChange}
+                  />
+                </Button>
+              ) : (
+                <Paper
+                  elevation={2}
+                  sx={{
+                    p: 2,
+                    position: "relative",
+                    borderRadius: 2,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      position: "relative",
+                      width: "100%",
+                      height: 200,
+                      borderRadius: 2,
+                      overflow: "hidden",
+                      backgroundColor: "#f5f5f5",
+                    }}
+                  >
+                    <img
+                      src={imagePreviews.mainImage}
+                      alt="Main product"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                      }}
+                    />
+                  </Box>
+                  <Box display="flex" justifyContent="space-between" mt={2}>
+                    <Typography variant="caption" color="success.main">
+                      ✓ Main image uploaded
+                    </Typography>
+                    <Button
+                      size="small"
+                      color="error"
+                      onClick={removeMainImage}
+                      startIcon={<Delete />}
+                    >
+                      Remove
+                    </Button>
+                  </Box>
+                </Paper>
+              )}
+            </Box>
+
+            {/* Additional Images Upload */}
+            <Typography variant="subtitle2" color="text.secondary" mb={1}>
+              Additional Images (Optional - Maximum 3)
             </Typography>
 
-            {productData.additionalImages.map((img, index) => (
-              <TextField
-                key={index}
-                fullWidth
-                size="small"
-                label={`Image ${index + 2} URL`}
-                value={img}
-                onChange={(e) =>
-                  handleAdditionalImageChange(index, e.target.value)
-                }
-                placeholder={`https://example.com/image-${index + 2}.jpg`}
-                margin="dense"
-              />
-            ))}
+            <Grid container spacing={2}>
+              {[0, 1, 2].map((index) => (
+                <Grid item xs={12} sm={4} key={index}>
+                  {!imagePreviews.additionalImages[index] ? (
+                    <Button
+                      component="label"
+                      variant="outlined"
+                      startIcon={
+                        uploadingStates[`additionalImage${index}`] ? (
+                          <CircularProgress size={16} />
+                        ) : (
+                          <ImageIcon />
+                        )
+                      }
+                      disabled={uploadingStates[`additionalImage${index}`]}
+                      fullWidth
+                      sx={{
+                        py: 2,
+                        borderStyle: "dashed",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      {uploadingStates[`additionalImage${index}`]
+                        ? "Uploading..."
+                        : `Image ${index + 2}`}
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/png, image/jpeg, image/jpg"
+                        onChange={(e) => handleAdditionalImageChange(index, e)}
+                      />
+                    </Button>
+                  ) : (
+                    <Paper elevation={1} sx={{ p: 1, position: "relative" }}>
+                      <Box
+                        sx={{
+                          width: "100%",
+                          height: 120,
+                          borderRadius: 1,
+                          overflow: "hidden",
+                          backgroundColor: "#f5f5f5",
+                        }}
+                      >
+                        <img
+                          src={imagePreviews.additionalImages[index]}
+                          alt={`Additional ${index + 1}`}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "contain",
+                          }}
+                        />
+                      </Box>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => removeAdditionalImage(index)}
+                        sx={{
+                          position: "absolute",
+                          top: 4,
+                          right: 4,
+                          backgroundColor: "white",
+                          "&:hover": { backgroundColor: "#ffebee" },
+                        }}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Paper>
+                  )}
+                </Grid>
+              ))}
+            </Grid>
 
             {/* BASIC INFO */}
             <Typography variant="h6" fontWeight={600} mt={4} mb={1}>
@@ -446,71 +796,88 @@ const CreateProductForm = () => {
 
               {/* SECOND LEVEL */}
               <Grid item xs={12} sm={4}>
-                <TextField
-                  select
-                  fullWidth
-                  label="Second Level Category"
-                  name="secondLevelCategory"
+                <Autocomplete
+                  freeSolo
+                  options={secondLevelOptions.map((section) => section.id)}
+                  getOptionLabel={(option) => {
+                    const section = secondLevelOptions.find((s) => s.id === option);
+                    return section ? section.name : option;
+                  }}
                   value={productData.secondLevelCategory}
-                  onChange={(e) => {
-                    const value = e.target.value;
+                  onChange={(e, newValue) => {
                     setProductData((prev) => ({
                       ...prev,
-                      secondLevelCategory: value,
+                      secondLevelCategory: newValue || "",
                       thirdLevelCategory: "",
                     }));
                   }}
-                  required
+                  onInputChange={(e, newInputValue) => {
+                    // Allow typing custom values
+                    if (e?.type === 'change') {
+                      setProductData((prev) => ({
+                        ...prev,
+                        secondLevelCategory: newInputValue,
+                        thirdLevelCategory: "",
+                      }));
+                    }
+                  }}
                   disabled={!productData.topLevelCategory}
-                  helperText={
-                    productData.topLevelCategory
-                      ? `${secondLevelOptions.length} options available`
-                      : "Select top category first"
-                  }
-                >
-                  {secondLevelOptions.length > 0 ? (
-                    secondLevelOptions.map((section) => (
-                      <MenuItem key={section.id} value={section.id}>
-                        {section.name}
-                      </MenuItem>
-                    ))
-                  ) : (
-                    <MenuItem value="" disabled>
-                      No sections available
-                    </MenuItem>
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Second Level Category"
+                      name="secondLevelCategory"
+                      required
+                      helperText={
+                        productData.topLevelCategory
+                          ? `${secondLevelOptions.length} existing or type new`
+                          : "Select top category first"
+                      }
+                    />
                   )}
-                </TextField>
+                />
               </Grid>
 
               {/* THIRD LEVEL */}
               <Grid item xs={12} sm={4}>
-                <TextField
-                  select
-                  fullWidth
-                  label="Third Level Category"
-                  name="thirdLevelCategory"
+                <Autocomplete
+                  freeSolo
+                  options={thirdLevelOptions.map((item) => item.id)}
+                  getOptionLabel={(option) => {
+                    const item = thirdLevelOptions.find((i) => i.id === option);
+                    return item ? item.name : option;
+                  }}
                   value={productData.thirdLevelCategory}
-                  onChange={handleChange}
-                  required
+                  onChange={(e, newValue) => {
+                    setProductData((prev) => ({
+                      ...prev,
+                      thirdLevelCategory: newValue || "",
+                    }));
+                  }}
+                  onInputChange={(e, newInputValue) => {
+                    // Allow typing custom values
+                    if (e?.type === 'change') {
+                      setProductData((prev) => ({
+                        ...prev,
+                        thirdLevelCategory: newInputValue,
+                      }));
+                    }
+                  }}
                   disabled={!productData.secondLevelCategory}
-                  helperText={
-                    productData.secondLevelCategory
-                      ? `${thirdLevelOptions.length} items available`
-                      : "Select second category first"
-                  }
-                >
-                  {thirdLevelOptions.length > 0 ? (
-                    thirdLevelOptions.map((item) => (
-                      <MenuItem key={item.id} value={item.id}>
-                        {item.name}
-                      </MenuItem>
-                    ))
-                  ) : (
-                    <MenuItem value="" disabled>
-                      No items available
-                    </MenuItem>
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Third Level Category"
+                      name="thirdLevelCategory"
+                      required
+                      helperText={
+                        productData.secondLevelCategory
+                          ? `${thirdLevelOptions.length} existing or type new`
+                          : "Select second category first"
+                      }
+                    />
                   )}
-                </TextField>
+                />
               </Grid>
             </Grid>
 
@@ -696,7 +1063,7 @@ const CreateProductForm = () => {
               color="primary"
               size="large"
               sx={{ mt: 4, py: 1.5, fontSize: "16px", fontWeight: 600 }}
-              disabled={loading}
+              disabled={loading || Object.values(uploadingStates).some((state) => state)}
             >
               {loading ? (
                 <>

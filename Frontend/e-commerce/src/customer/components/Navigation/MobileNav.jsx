@@ -6,9 +6,21 @@ import {
   DialogPanel,
 } from "@headlessui/react";
 import { XMarkIcon, ChevronRightIcon, UserCircleIcon } from "@heroicons/react/24/outline";
-import { navigation } from "./NavigationConfig";
+import { useCategories } from "../../../hooks/useCategories";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+
+/* ✅ Format for UI only */
+const formatLabel = (text) => {
+  if (!text) return "";
+  return text
+    .toLowerCase()
+    .replace(/-/g, " ")
+    .trim()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
 
 export default function MobileNav({
   open,
@@ -22,10 +34,11 @@ export default function MobileNav({
   handleCategoryClick,
 }) {
   const navigate = useNavigate();
+  const categories = useCategories();
   const [expandedCategory, setExpandedCategory] = useState(null);
 
-  const toggleCategory = (categoryId) => {
-    setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
+  const toggleCategory = (slug) => {
+    setExpandedCategory(expandedCategory === slug ? null : slug);
   };
 
   return (
@@ -34,11 +47,9 @@ export default function MobileNav({
 
       <div className="fixed inset-0 flex">
         <DialogPanel className="relative mr-16 flex w-full max-w-xs flex-col bg-white shadow-xl">
-          
-          {/* Header with User Info */}
+
           <div className="bg-gradient-to-r from-teal-700 to-teal-600 px-6 py-6">
             <button
-              type="button"
               onClick={() => setOpen(false)}
               className="absolute top-4 right-4 p-2 text-white/80 hover:text-white"
             >
@@ -50,8 +61,8 @@ export default function MobileNav({
                 <div className="w-12 h-12 bg-white text-teal-700 rounded-full flex items-center justify-center font-semibold text-lg">
                   {getInitial(user)}
                 </div>
-                <div className="flex-1">
-                  <p className="text-white font-semibold text-base">{getUserName()}</p>
+                <div>
+                  <p className="text-white font-semibold">{getUserName()}</p>
                   <p className="text-teal-100 text-sm">{user?.email}</p>
                 </div>
               </div>
@@ -59,59 +70,56 @@ export default function MobileNav({
               <div className="flex items-center gap-3 mt-2">
                 <UserCircleIcon className="w-12 h-12 text-white" />
                 <div>
-                  <p className="text-white font-semibold text-base">Welcome!</p>
+                  <p className="text-white font-semibold">Welcome!</p>
                   <p className="text-teal-100 text-sm">Sign in to continue</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto">
 
-            {/* Categories */}
             <div className="py-2">
-              {navigation.categories.map((category) => (
-                <div key={category.id} className="border-b border-gray-100">
+              {categories.map((category) => (
+                <div key={category.slug} className="border-b border-gray-100">
                   <button
-                    onClick={() => toggleCategory(category.id)}
+                    onClick={() => toggleCategory(category.slug)}
                     className="flex items-center justify-between w-full px-6 py-4 text-left hover:bg-gray-50"
                   >
                     <span className="text-base font-semibold text-gray-900">
-                      {category.name}
+                      {formatLabel(category.name)}
                     </span>
-                    <ChevronRightIcon 
-                      className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${
-                        expandedCategory === category.id ? 'rotate-90' : ''
+                    <ChevronRightIcon
+                      className={`h-5 w-5 text-gray-400 transition-transform ${
+                        expandedCategory === category.slug ? "rotate-90" : ""
                       }`}
                     />
                   </button>
 
-                  {/* Expanded Category Items */}
-                  {expandedCategory === category.id && (
+                  {expandedCategory === category.slug && (
                     <div className="bg-gray-50 px-6 py-3">
-                      {category.sections.map((section) => (
-                        <div key={section.id} className="mb-4 last:mb-0">
-                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                            {section.name}
+                      {category.children?.map((section) => (
+                        <div key={section.slug} className="mb-4">
+                          <p className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                            {formatLabel(section.name)}
                           </p>
                           <ul className="space-y-2">
-                            {section.items.map((item) => (
-                              <li key={item.id}>
+                            {section.children?.map((item) => (
+                              <li key={item.slug}>
                                 <button
                                   onClick={() => {
                                     handleCategoryClick(
-                                      category.id,
-                                      section.id,
-                                      item.id,
+                                      category.slug,
+                                      section.slug,
+                                      item.slug,
                                       null
                                     );
                                     setOpen(false);
                                     setExpandedCategory(null);
                                   }}
-                                  className="text-sm text-gray-700 hover:text-teal-700 hover:translate-x-1 transform transition-all duration-150 block w-full text-left py-1.5"
+                                  className="text-sm text-gray-700 hover:text-teal-700 block w-full text-left py-1.5"
                                 >
-                                  {item.name}
+                                  {formatLabel(item.name)}
                                 </button>
                               </li>
                             ))}
@@ -124,75 +132,46 @@ export default function MobileNav({
               ))}
             </div>
 
-            {/* Pages */}
-            <div className="border-b border-gray-100">
-              {navigation.pages.map((page) => (
-                <a
-                  key={page.name}
-                  href={page.href}
-                  className="block px-6 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-teal-700"
-                  onClick={() => setOpen(false)}
+            {jwt ? (
+              <>
+                <button
+                  onClick={() => { navigate("/profile"); setOpen(false); }}
+                  className="block w-full text-left px-6 py-4 hover:bg-gray-50"
                 >
-                  {page.name}
-                </a>
-              ))}
-            </div>
+                  My Profile
+                </button>
 
-            {/* User Actions */}
-            <div className="py-2">
-              {jwt ? (
-                <>
-                  <button
-                    onClick={() => {
-                      navigate("/profile");
-                      setOpen(false);
-                    }}
-                    className="block w-full text-left px-6 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-teal-700"
-                  >
-                    My Profile
-                  </button>
+                <button
+                  onClick={() => { navigate("/account/order"); setOpen(false); }}
+                  className="block w-full text-left px-6 py-4 hover:bg-gray-50"
+                >
+                  My Orders
+                </button>
 
-                  <button
-                    onClick={() => {
-                      navigate("/account/order");
-                      setOpen(false);
-                    }}
-                    className="block w-full text-left px-6 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-teal-700"
-                  >
-                    My Orders
-                  </button>
+                <button
+                  onClick={handleSignOut}
+                  className="block w-full text-left px-6 py-4 text-red-600 hover:bg-red-50"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <div className="px-6 py-4 space-y-3">
+                <button
+                  onClick={() => { navigate("/login"); setOpen(false); }}
+                  className="w-full py-3 bg-teal-700 text-white rounded-lg"
+                >
+                  Sign In
+                </button>
 
-                  <button
-                    onClick={handleSignOut}
-                    className="block w-full text-left px-6 py-4 text-base font-medium text-red-600 hover:bg-red-50"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <div className="px-6 py-4 space-y-3">
-                  <button
-                    onClick={() => {
-                      navigate("/login");
-                      setOpen(false);
-                    }}
-                    className="w-full py-3 px-4 bg-teal-700 text-white font-semibold rounded-lg hover:bg-teal-800 transition-colors shadow-sm"
-                  >
-                    Sign In
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      navigate("/signup");
-                      setOpen(false);
-                    }}
-                    className="w-full py-3 px-4 border-2 border-teal-700 text-teal-700 font-semibold rounded-lg hover:bg-teal-50 transition-colors"
-                  >
-                    Create Account
-                  </button>
-                </div>
-              )}
-            </div>
+                <button
+                  onClick={() => { navigate("/signup"); setOpen(false); }}
+                  className="w-full py-3 border-2 border-teal-700 text-teal-700 rounded-lg"
+                >
+                  Create Account
+                </button>
+              </div>
+            )}
 
           </div>
         </DialogPanel>

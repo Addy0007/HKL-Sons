@@ -54,4 +54,25 @@ public class ProductController {
             throws ProductException {
         return ResponseEntity.ok(productService.findProductById(productId));
     }
+
+    @GetMapping("/products/{first}/{second}/{third}")
+    public ResponseEntity<List<ProductDTO>> getByHierarchy(
+            @PathVariable String first,
+            @PathVariable String second,
+            @PathVariable String third
+    ) {
+        List<ProductDTO> products =
+                productService.findByHierarchy(first, second, third);
+
+        return ResponseEntity.ok(products);
+    }
+    @GetMapping("/products/search")
+    public ResponseEntity<List<ProductDTO>> searchProducts(
+            @RequestParam(name = "q", defaultValue = "") String query
+    ) {
+        if (query.isBlank()) return ResponseEntity.ok(List.of());
+        List<ProductDTO> results = productService.searchProducts(query.trim());
+        return ResponseEntity.ok(results);
+    }
+
 }

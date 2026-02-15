@@ -20,38 +20,40 @@ const HomePage = () => {
 
   const [loading, setLoading] = useState(true);
 
-  const fetchProducts = async (category, setterFn) => {
-    try {
-      const { data } = await api.get(
-        `/api/products?category=${category}&pageSize=10`
-      );
-      setterFn(data.content || []);
-    } catch (err) {
-      console.log(`Error fetching ${category}:`, err);
-      setterFn([]);
-    }
-  };
+const fetchProducts = async (first, second, third, setterFn) => {
+  try {
+    const { data } = await api.get(
+      `/api/products/${first}/${second}/${third}`
+    );
+    setterFn(data || []);
+  } catch (err) {
+    console.log(`Error fetching ${third}:`, err);
+    setterFn([]);
+  }
+};
+
 
   useEffect(() => {
     const loadAll = async () => {
       try {
-        await Promise.all([
-          // Men
-          fetchProducts("kurtas", setMenKurtas),
-          fetchProducts("shirts", setMenShirts),
-          fetchProducts("jeans", setMenJeans),
-          fetchProducts("shoes", setMenShoes),
+await Promise.all([
+  // Men
+  fetchProducts("men", "clothing", "kurtas", setMenKurtas),
+  fetchProducts("men", "clothing", "shirts", setMenShirts),
+  fetchProducts("men", "clothing", "jeans", setMenJeans),
+  fetchProducts("men", "footwear", "shoes", setMenShoes),
 
-          // Women
-          fetchProducts("sarees", setWomenSarees),
-          fetchProducts("sweaters", setWomenSweaters),
+  // Women
+  fetchProducts("women", "clothing", "sarees", setWomenSarees),
+  fetchProducts("women", "clothing", "sweaters", setWomenSweaters),
 
-          // Lifestyle
-          fetchProducts("artifacts", setArtifacts),
-          fetchProducts("candles", setCandles),
-          fetchProducts("bags", setBags),
-          fetchProducts("home-decor", setHomeDecor),
-        ]);
+  // Lifestyle
+  fetchProducts("lifestyle", "decor", "artifacts", setArtifacts),
+  fetchProducts("lifestyle", "decor", "candles", setCandles),
+  fetchProducts("lifestyle", "decor", "bags", setBags),
+  fetchProducts("lifestyle", "decor", "home-decor", setHomeDecor),
+]);
+
       } finally {
         setLoading(false);
       }
