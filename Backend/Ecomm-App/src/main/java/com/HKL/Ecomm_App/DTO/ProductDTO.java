@@ -42,4 +42,7 @@ public class ProductDTO {
     // ==================== METADATA ====================
     private CategoryDTO category;
     private LocalDateTime createdAt;
+
+    private Boolean isFeatured;
+    private Integer featuredOrder;
 }

@@ -12,6 +12,7 @@ import OrderDetails from '../customer/components/Order/OrderDetails';
 import SignIn from '../customer/components/Signin/SignIn';
 import ForgotPassword from "../customer/components/Signin/ForgotPassword";
 import ResetPassword from "../customer/components/Signin/ResetPassword";
+import Profile from "../customer/components/Navigation/Profile";   
 
 import RequireAuth from "./RequireAuth";
 
@@ -30,10 +31,11 @@ const CustomerRoutes = () => {
   return (
     <div>
       <Navigation />
-      
+
       <main className="flex-grow pt-20">
         <Routes>
-          <Route path="/" element={<HomePage />} /> 
+          <Route path="/" element={<HomePage />} />
+
           <Route path="/login" element={<SignIn />} />
           <Route path="/signup" element={<SignIn />} />
           <Route path="/signin" element={<SignIn />} />
@@ -46,23 +48,23 @@ const CustomerRoutes = () => {
           <Route path="/product/:productId" element={<ProductDetails />} />
 
           {/* ✅ Checkout Step 1 */}
-          <Route 
-            path="/checkout/address" 
+          <Route
+            path="/checkout/address"
             element={
               <RequireAuth>
                 <CheckoutAddress />
               </RequireAuth>
-            } 
+            }
           />
 
           {/* ✅ Checkout Step 2 */}
-          <Route 
-            path="/checkout/summary" 
+          <Route
+            path="/checkout/summary"
             element={
               <RequireAuth>
                 <CheckoutSummary />
               </RequireAuth>
-            } 
+            }
           />
 
           {/* ✅ If user types /checkout manually → redirect to /checkout/address */}
@@ -71,15 +73,25 @@ const CustomerRoutes = () => {
           <Route path="/account/order" element={<Order />} />
           <Route path="/account/order/:orderId" element={<OrderDetails />} />
 
+          {/* ✅ Profile - protected */}
+          <Route
+            path="/profile"
+            element={
+              <RequireAuth>
+                <Profile />
+              </RequireAuth>
+            }
+          />
+
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          
+
           {/* ✅ Footer pages */}
           <Route path="/about" element={<About />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/claim" element={<Claim />} />
-          
+
         </Routes>
       </main>
 

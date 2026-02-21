@@ -58,20 +58,9 @@ public class PaymentController {
         return userService.findUserByEmail(email);
     }
 
-    // 🔹 Create Pending Order
-    @PostMapping("/orders/pending")
-    public ResponseEntity<?> createPendingOrder(@RequestBody Address address) {
-
-        try {
-            User user = getLoggedUser();
-            Order pending = orderService.createPendingOrder(user, address);
-            return ResponseEntity.ok(pending);
-
-        } catch (UserException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ApiResponse(e.getMessage(), false));
-        }
-    }
+    // ❌ REMOVED - This endpoint is now in OrderController
+    // The OrderController handles order creation with coupon support
+    // Use POST /api/orders/pending instead
 
     // 🔹 Create Razorpay Order
     @PostMapping("/payments/razorpay-order/{orderId}")
@@ -89,6 +78,7 @@ public class PaymentController {
 
             RazorpayClient razorpay = new RazorpayClient(apiKey, apiSecret);
 
+            // Use totalDiscountedPrice which includes coupon discount
             int amount = (int) Math.round(order.getTotalDiscountedPrice() * 100);
 
             JSONObject options = new JSONObject();
@@ -165,14 +155,30 @@ public class PaymentController {
         }
     }
 
-    // 🔹 COD Order
+    // 🔹 COD Order (with coupon support)
     @PostMapping("/orders/cod")
-    public ResponseEntity<?> placeOrderCOD(@RequestBody Address address) {
+    public ResponseEntity<?> placeOrderCOD(@RequestBody Map<String, Object> requestBody) {
 
         try {
             User user = getLoggedUser();
-            Order order = orderService.createPendingOrder(user, address);
 
+            // Extract address
+            @SuppressWarnings("unchecked")
+            Map<String, Object> addressMap = (Map<String, Object>) requestBody.get("address");
+            Address address = mapToAddress(addressMap);
+
+            // Extract coupon code (optional)
+            String couponCode = (String) requestBody.get("couponCode");
+
+            // Create pending order with coupon
+            Order order;
+            if (couponCode != null && !couponCode.trim().isEmpty()) {
+                order = orderService.createPendingOrder(user, address, couponCode.trim());
+            } else {
+                order = orderService.createPendingOrder(user, address);
+            }
+
+            // Mark as COD and placed
             order.setOrderStatus(OrderStatus.PLACED);
             order.getPaymentDetails().setPaymentMethod(PaymentMethod.CASH_ON_DELIVERY);
             order.getPaymentDetails().setStatus(PaymentStatus.SUCCESS);
@@ -188,5 +194,24 @@ public class PaymentController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ApiResponse(e.getMessage(), false));
         }
+    }
+
+    // Helper method to map address
+    private Address mapToAddress(Map<String, Object> addressMap) {
+        if (addressMap == null) {
+            return null;
+        }
+
+        Address address = new Address();
+        address.setFirstName((String) addressMap.get("firstName"));
+        address.setLastName((String) addressMap.get("lastName"));
+        address.setStreetAddress((String) addressMap.get("streetAddress"));
+        address.setCity((String) addressMap.get("city"));
+        address.setDistrict((String) addressMap.get("district"));
+        address.setState((String) addressMap.get("state"));
+        address.setZipCode((String) addressMap.get("zipCode"));
+        address.setMobile((String) addressMap.get("mobile"));
+
+        return address;
     }
 }

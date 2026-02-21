@@ -1,4 +1,7 @@
 // src/components/Navigation/NavigationConfig.js
+// ⚠️  This file is used ONLY by CreateProductForm for admin dropdowns.
+// The actual navbar reads from /api/categories/tree (backend DB).
+// Keep this in sync with your DB categories manually.
 
 export const navigation = {
   categories: [
@@ -8,11 +11,10 @@ export const navigation = {
       featured: [],
       sections: [
         {
-          id: 'clothing',
-          name: 'Clothing',
+          id: 'coming-soon',
+          name: 'Coming Soon',
           items: [
-            { name: 'Sarees', id: 'sarees' },
-            { name: 'Sweaters', id: 'sweaters' },
+            { name: 'Coming Soon', id: 'coming-soon' },
           ],
         },
       ],
@@ -27,16 +29,10 @@ export const navigation = {
           id: 'clothing',
           name: 'Clothing',
           items: [
-            { name: 'Kurtas', id: 'kurtas' },
-            { name: 'Shirts', id: 'shirts' },
+            { name: 'Jacket', id: 'jacket' },
+            { name: 'Hoodie', id: 'hoodie' },
             { name: 'Jeans', id: 'jeans' },
-          ],
-        },
-        {
-          id: 'footwear',
-          name: 'Footwear',
-          items: [
-            { name: 'Shoes', id: 'shoes' },
+            { name: 'Joggers', id: 'joggers' },
           ],
         },
       ],
@@ -55,6 +51,26 @@ export const navigation = {
             { name: 'Candles', id: 'candles' },
             { name: 'Bags', id: 'bags' },
             { name: 'Home Decor', id: 'home-decor' },
+            { name: 'Wall Decor', id: 'wall-decor' },
+          ],
+        },
+      ],
+    },
+
+    {
+      id: 'hemp',
+      name: 'Hemp',
+      featured: [],
+      sections: [
+        {
+          id: 'bags',
+          name: 'Bags',
+          items: [
+            { name: 'Hand Bags', id: 'hand-bags' },
+            { name: 'Pouches', id: 'pouches' },
+            { name: 'Sling', id: 'sling' },
+            { name: 'Backpack', id: 'backpack' },
+            { name: 'Laptop Bag', id: 'laptop-bag' },
           ],
         },
       ],

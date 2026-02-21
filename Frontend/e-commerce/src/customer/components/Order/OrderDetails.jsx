@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { MapPin, CheckCircle, Truck, Package } from "lucide-react";
 import api from "../../../Config/apiConfig";
 
 const OrderDetails = () => {
   const { orderId } = useParams();
+  const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -310,42 +311,48 @@ const OrderDetails = () => {
           </h2>
 
           <div className="divide-y divide-gray-100">
-            {order.orderItems.map((product) => (
+            {order.orderItems.map((item) => (
               <div
-                key={product.id}
+                key={item.id}
                 className="py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
               >
                 <div className="flex items-start gap-3 sm:gap-4 flex-1">
                   <img
-                    src={product.imageUrl}
-                    alt={product.productName}
+                    src={item.imageUrl}
+                    alt={item.productName}
                     className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover border border-gray-100"
                   />
                   <div className="flex-1">
                     <h3 className="text-sm sm:text-base font-semibold text-gray-900 line-clamp-2">
-                      {product.productName}
+                      {item.productName}
                     </h3>
                     <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
                       <span>
                         Size:{" "}
-                        <span className="font-medium">{product.size}</span>
+                        <span className="font-medium">{item.size}</span>
                       </span>
                       <span>
                         Qty:{" "}
-                        <span className="font-medium">{product.quantity}</span>
+                        <span className="font-medium">{item.quantity}</span>
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-gray-500">
                       Sold by: <span className="font-medium">HKLSons</span>
                     </p>
                     <p className="mt-1.5 text-sm sm:text-base font-bold text-gray-900">
-                      ₹{product.price}
+                      ₹{item.price}
                     </p>
                   </div>
                 </div>
 
                 <div className="sm:self-center sm:text-right">
-                  <button className="w-full sm:w-auto text-xs sm:text-sm mt-1 sm:mt-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/product/${item.productId}`);
+                    }}
+                    className="w-full sm:w-auto text-xs sm:text-sm mt-1 sm:mt-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium"
+                  >
                     Rate &amp; Review
                   </button>
                 </div>

@@ -96,4 +96,14 @@ public class Product {
 
         return urls;
     }
+
+    // ADD THESE FIELDS TO YOUR EXISTING Product.java entity
+
+    @Column(name = "is_featured")
+    private Boolean isFeatured = false;
+
+    @Column(name = "featured_order")
+    private Integer featuredOrder = 0;
+
+
 }

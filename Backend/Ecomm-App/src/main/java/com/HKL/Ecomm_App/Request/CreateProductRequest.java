@@ -66,4 +66,7 @@ public class CreateProductRequest {
 
     @NotEmpty(message = "At least one size is required")
     private Set<Size> size = new HashSet<>();
+
+    private Boolean isFeatured;
+    private Integer featuredOrder;
 }

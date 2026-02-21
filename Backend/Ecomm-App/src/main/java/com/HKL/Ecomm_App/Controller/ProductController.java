@@ -75,4 +75,10 @@ public class ProductController {
         return ResponseEntity.ok(results);
     }
 
+    @GetMapping("/products/featured")
+    public ResponseEntity<List<ProductDTO>> getFeaturedProducts() {
+        List<ProductDTO> featured = productService.getFeaturedProducts();
+        return ResponseEntity.ok(featured);
+    }
+
 }

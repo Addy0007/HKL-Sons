@@ -1,11 +1,13 @@
 package com.HKL.Ecomm_App.Service;
 
+import com.HKL.Ecomm_App.Exception.CouponException;
 import com.HKL.Ecomm_App.Exception.OrderException;
 import com.HKL.Ecomm_App.Exception.UserException;
 import com.HKL.Ecomm_App.Model.*;
 import com.HKL.Ecomm_App.Repository.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,9 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
     private final CartItemRepository cartItemRepository;
     private final CartRepository cartRepository;
+
+    @Autowired
+    private CouponService couponService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -116,11 +121,16 @@ public class OrderServiceImpl implements OrderService {
     }
 
     // =====================================================================================
-    // 🟦 CREATE ORDER (Full cart checkout)
+    // 🟦 CREATE ORDER (Full cart checkout) - WITH COUPON SUPPORT
     // =====================================================================================
     @Override
     @Transactional
     public Order createOrder(User user, Address shippingAddress) throws UserException {
+        return createOrder(user, shippingAddress, null);
+    }
+
+    @Transactional
+    public Order createOrder(User user, Address shippingAddress, String couponCode) throws UserException {
 
         shippingAddress.setUser(user);
         Address savedAddress = addressRepository.save(shippingAddress);
@@ -163,8 +173,37 @@ public class OrderServiceImpl implements OrderService {
         createdOrder.getPaymentDetails().setStatus(PaymentStatus.PENDING);
         createdOrder.setCreatedAt(LocalDateTime.now());
 
-        // 🔥 Set ORDER ID here
+        // 🔥 Set ORDER ID
         createdOrder.setOrderId(generateOrderId(user));
+
+        // ✅ Check if this is user's first order
+        boolean isFirstOrder = couponService.isFirstTimeUser(user);
+        createdOrder.setIsFirstOrder(isFirstOrder);
+
+        // ✅ Apply coupon if provided
+        double couponDiscount = 0.0;
+        if (couponCode != null && !couponCode.trim().isEmpty()) {
+            try {
+                double orderAmount = cart.getTotalDiscountedPrice();
+
+                CouponService.CouponValidationResult result =
+                        couponService.validateAndCalculateDiscount(couponCode, user, orderAmount);
+
+                if (result.isValid()) {
+                    couponDiscount = result.getDiscountAmount();
+                    createdOrder.setAppliedCoupon(result.getCoupon());
+                    createdOrder.setCouponCode(couponCode.toUpperCase());
+                    createdOrder.setCouponDiscount(couponDiscount);
+
+                    // Update total price with coupon discount
+                    double finalPrice = createdOrder.getTotalDiscountedPrice() - couponDiscount;
+                    createdOrder.setTotalDiscountedPrice(Math.max(0, finalPrice));
+                }
+            } catch (CouponException e) {
+                System.err.println("Coupon validation failed: " + e.getMessage());
+                // Continue without coupon
+            }
+        }
 
         Order savedOrder = orderRepository.save(createdOrder);
         entityManager.flush();
@@ -174,7 +213,17 @@ public class OrderServiceImpl implements OrderService {
             orderItemRepository.save(item);
         }
 
-        // clear cart
+        // ✅ Record coupon usage if coupon was applied
+        if (savedOrder.getAppliedCoupon() != null) {
+            couponService.applyCouponToOrder(
+                    savedOrder.getAppliedCoupon(),
+                    user,
+                    savedOrder,
+                    couponDiscount
+            );
+        }
+
+        // Clear cart
         List<CartItem> deleteItems = cartItemRepository.findByCartId(cart.getId());
         if (!deleteItems.isEmpty()) {
             cartItemRepository.deleteAll(deleteItems);
@@ -195,11 +244,16 @@ public class OrderServiceImpl implements OrderService {
     }
 
     // =====================================================================================
-    // 🟩 CREATE PENDING ORDER (selected items checkout)
+    // 🟩 CREATE PENDING ORDER (selected items checkout) - WITH COUPON SUPPORT
     // =====================================================================================
     @Override
     @Transactional
     public Order createPendingOrder(User user, Address shippingAddress) throws UserException {
+        return createPendingOrder(user, shippingAddress, null);
+    }
+
+    @Transactional
+    public Order createPendingOrder(User user, Address shippingAddress, String couponCode) throws UserException {
 
         shippingAddress.setUser(user);
         Address savedAddress = addressRepository.save(shippingAddress);
@@ -249,8 +303,37 @@ public class OrderServiceImpl implements OrderService {
         order.getPaymentDetails().setStatus(PaymentStatus.PENDING);
         order.setOrderDate(LocalDateTime.now());
 
-        // 🔥 Set ORDER ID here
+        // 🔥 Set ORDER ID
         order.setOrderId(generateOrderId(user));
+
+        // ✅ Check if this is user's first order
+        boolean isFirstOrder = couponService.isFirstTimeUser(user);
+        order.setIsFirstOrder(isFirstOrder);
+
+        // ✅ Apply coupon if provided
+        double couponDiscount = 0.0;
+        if (couponCode != null && !couponCode.trim().isEmpty()) {
+            try {
+                double orderAmount = totalDiscounted;
+
+                CouponService.CouponValidationResult result =
+                        couponService.validateAndCalculateDiscount(couponCode, user, orderAmount);
+
+                if (result.isValid()) {
+                    couponDiscount = result.getDiscountAmount();
+                    order.setAppliedCoupon(result.getCoupon());
+                    order.setCouponCode(couponCode.toUpperCase());
+                    order.setCouponDiscount(couponDiscount);
+
+                    // Update total price with coupon discount
+                    double finalPrice = order.getTotalDiscountedPrice() - couponDiscount;
+                    order.setTotalDiscountedPrice(Math.max(0, finalPrice));
+                }
+            } catch (CouponException e) {
+                System.err.println("Coupon validation failed: " + e.getMessage());
+                // Continue without coupon
+            }
+        }
 
         Order savedOrder = orderRepository.save(order);
 
@@ -259,15 +342,30 @@ public class OrderServiceImpl implements OrderService {
             orderItemRepository.save(item);
         }
 
+        // ✅ Record coupon usage if coupon was applied
+        if (savedOrder.getAppliedCoupon() != null) {
+            couponService.applyCouponToOrder(
+                    savedOrder.getAppliedCoupon(),
+                    user,
+                    savedOrder,
+                    couponDiscount
+            );
+        }
+
         return savedOrder;
     }
 
     // =====================================================================================
-    // 🟧 CREATE ORDER (selected items only)
+    // 🟧 CREATE ORDER (selected items only) - WITH COUPON SUPPORT
     // =====================================================================================
     @Override
     @Transactional
     public Order createOrderFromSelectedCartItems(User user, Address shippingAddress) throws UserException {
+        return createOrderFromSelectedCartItems(user, shippingAddress, null);
+    }
+
+    @Transactional
+    public Order createOrderFromSelectedCartItems(User user, Address shippingAddress, String couponCode) throws UserException {
 
         Cart cart = cartService.findUserCart(user.getId());
 
@@ -281,7 +379,11 @@ public class OrderServiceImpl implements OrderService {
         }
 
         double totalPrice = selectedItems.stream()
-                .mapToDouble(CartItem::getDiscountedPrice)
+                .mapToDouble(item -> item.getPrice() * item.getQuantity())
+                .sum();
+
+        double totalDiscountedPrice = selectedItems.stream()
+                .mapToDouble(item -> item.getDiscountedPrice() * item.getQuantity())
                 .sum();
 
         Order order = new Order();
@@ -291,10 +393,41 @@ public class OrderServiceImpl implements OrderService {
         order.getPaymentDetails().setStatus(PaymentStatus.PENDING);
         order.setOrderDate(LocalDateTime.now());
         order.setTotalPrice(totalPrice);
+        order.setTotalDiscountedPrice(totalDiscountedPrice);
+        order.setDiscount(totalPrice - totalDiscountedPrice);
         order.setTotalItem(selectedItems.size());
 
-        // 🔥 Set ORDER ID here
+        // 🔥 Set ORDER ID
         order.setOrderId(generateOrderId(user));
+
+        // ✅ Check if this is user's first order
+        boolean isFirstOrder = couponService.isFirstTimeUser(user);
+        order.setIsFirstOrder(isFirstOrder);
+
+        // ✅ Apply coupon if provided
+        double couponDiscount = 0.0;
+        if (couponCode != null && !couponCode.trim().isEmpty()) {
+            try {
+                double orderAmount = totalDiscountedPrice;
+
+                CouponService.CouponValidationResult result =
+                        couponService.validateAndCalculateDiscount(couponCode, user, orderAmount);
+
+                if (result.isValid()) {
+                    couponDiscount = result.getDiscountAmount();
+                    order.setAppliedCoupon(result.getCoupon());
+                    order.setCouponCode(couponCode.toUpperCase());
+                    order.setCouponDiscount(couponDiscount);
+
+                    // Update total price with coupon discount
+                    double finalPrice = order.getTotalDiscountedPrice() - couponDiscount;
+                    order.setTotalDiscountedPrice(Math.max(0, finalPrice));
+                }
+            } catch (CouponException e) {
+                System.err.println("Coupon validation failed: " + e.getMessage());
+                // Continue without coupon
+            }
+        }
 
         Order savedOrder = orderRepository.save(order);
 
@@ -307,6 +440,16 @@ public class OrderServiceImpl implements OrderService {
             orderItem.setQuantity(cartItem.getQuantity());
             orderItem.setSize(cartItem.getSize());
             orderItemService.saveOrderItem(orderItem);
+        }
+
+        // ✅ Record coupon usage if coupon was applied
+        if (savedOrder.getAppliedCoupon() != null) {
+            couponService.applyCouponToOrder(
+                    savedOrder.getAppliedCoupon(),
+                    user,
+                    savedOrder,
+                    couponDiscount
+            );
         }
 
         return savedOrder;

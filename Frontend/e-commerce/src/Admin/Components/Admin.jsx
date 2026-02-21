@@ -24,7 +24,8 @@ import {
   Users,
   Receipt,
   PlusSquare,
-  UserRoundCog
+  UserRoundCog,
+  Ticket,
 } from "lucide-react";
 
 import Dashboard from "./Pages/Dashboard";
@@ -32,11 +33,11 @@ import CreateProductForm from "./Pages/CreateProductForm";
 import ProductsTable from "./Pages/ProductsTable";
 import OrderTable from "./Pages/OrderTable";
 import CustomerTable from "./Pages/CustomerTable";
-
+import CouponManagement from "./Pages/CouponManagement";
+import EditProductForm from "./Pages/EditProductForm"; 
 console.log("🧪 Admin.jsx loaded");
 console.log("🧪 CreateProductForm:", CreateProductForm);
 console.log("🧪 CreateProductForm type:", typeof CreateProductForm);
-
 
 const drawerWidth = 240;
 
@@ -45,6 +46,7 @@ const menu = [
   { name: "Products", path: "/admin/products", icon: <ShoppingBag size={20} /> },
   { name: "Customers", path: "/admin/customers", icon: <Users size={20} /> },
   { name: "Orders", path: "/admin/orders", icon: <Receipt size={20} /> },
+  { name: "Coupons", path: "/admin/coupons", icon: <Ticket size={20} /> },
   { name: "Add Product", path: "/admin/product/create", icon: <PlusSquare size={20} /> },
 ];
 
@@ -165,7 +167,9 @@ export default function Admin() {
           <Route path="/products" element={<ProductsTable />} />
           <Route path="/orders" element={<OrderTable />} />
           <Route path="/customers" element={<CustomerTable />} />
+          <Route path="/coupons" element={<CouponManagement />} />
           <Route path="/product/create" element={<CreateProductForm />} />
+          <Route path="/products/edit/:productId" element={<EditProductForm />} />
         </Routes>
       </Box>
     </Box>

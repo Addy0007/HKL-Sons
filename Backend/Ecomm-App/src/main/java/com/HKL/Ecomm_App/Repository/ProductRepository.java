@@ -54,4 +54,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     ORDER BY p.title ASC
     """)
     List<Product> searchByKeyword(@Param("q") String q);
+
+    List<Product> findByIsFeaturedTrueOrderByFeaturedOrderAsc();
 }

@@ -6,6 +6,7 @@ import com.HKL.Ecomm_App.Mapper.ProductMapper;
 import com.HKL.Ecomm_App.Model.*;
 import com.HKL.Ecomm_App.Repository.CategoryRepository;
 import com.HKL.Ecomm_App.Repository.ProductRepository;
+import com.HKL.Ecomm_App.Repository.ProductImageRepository;
 import com.HKL.Ecomm_App.Request.CreateProductRequest;
 import com.HKL.Ecomm_App.Request.UpdateProductRequest;
 import jakarta.transaction.Transactional;
@@ -22,13 +23,16 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ProductImageRepository productImageRepository;
     private final UserService userService;
 
     public ProductServiceImpl(ProductRepository productRepository,
                               CategoryRepository categoryRepository,
+                              ProductImageRepository productImageRepository,
                               UserService userService) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        this.productImageRepository = productImageRepository;
         this.userService = userService;
     }
 
@@ -40,7 +44,6 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private Category findOrCreateCategory(String name, Category parent, int level) {
-
         String normalized = normalize(name);
 
         return categoryRepository
@@ -94,6 +97,10 @@ public class ProductServiceImpl implements ProductService {
         product.setManufacturer(req.getManufacturer());
         product.setSizes(req.getSize());
 
+        // 🌟 SET FEATURED FIELDS
+        product.setIsFeatured(req.getIsFeatured() != null ? req.getIsFeatured() : false);
+        product.setFeaturedOrder(req.getFeaturedOrder() != null ? req.getFeaturedOrder() : 0);
+
         Product savedProduct = productRepository.save(product);
 
         // -------- HANDLE IMAGES --------
@@ -142,8 +149,9 @@ public class ProductServiceImpl implements ProductService {
         return "Product deleted successfully";
     }
 
-    // ========================= UPDATE PRODUCT ========================= //
+    // ========================= UPDATE PRODUCT (SIMPLE) ========================= //
 
+    @Override
     @Transactional
     public ProductDTO updateProduct(Long productId, UpdateProductRequest req) throws ProductException {
 
@@ -179,6 +187,75 @@ public class ProductServiceImpl implements ProductService {
         return ProductMapper.toDTO(productRepository.save(product));
     }
 
+    // ========================= UPDATE PRODUCT (FULL) ========================= //
+    @Transactional
+    public ProductDTO updateProductFull(Long productId, CreateProductRequest req) throws ProductException {
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ProductException("Product not found with id: " + productId));
+
+        // Update basic fields
+        product.setTitle(req.getTitle());
+        product.setBrand(req.getBrand());
+        product.setColor(req.getColor());
+        product.setDescription(req.getDescription());
+        product.setImageUrl(req.getImageUrl());
+        product.setPrice(req.getPrice());
+        product.setDiscountedPrice(req.getDiscountedPrice());
+        product.setDiscountPercent(req.getDiscountPercent());
+        product.setQuantity(req.getQuantity());
+
+        if (req.getHighlights() != null)       product.setHighlights(req.getHighlights());
+        if (req.getMaterial() != null)         product.setMaterial(req.getMaterial());
+        if (req.getCareInstructions() != null) product.setCareInstructions(req.getCareInstructions());
+        if (req.getCountryOfOrigin() != null)  product.setCountryOfOrigin(req.getCountryOfOrigin());
+        if (req.getManufacturer() != null)     product.setManufacturer(req.getManufacturer());
+
+        product.setIsFeatured(req.getIsFeatured() != null ? req.getIsFeatured() : false);
+        product.setFeaturedOrder(req.getFeaturedOrder() != null ? req.getFeaturedOrder() : 0);
+
+        // Category
+        Category topLevel    = findOrCreateCategory(req.getTopLevelCategory(), null, 1);
+        Category secondLevel = findOrCreateCategory(req.getSecondLevelCategory(), topLevel, 2);
+        Category thirdLevel  = findOrCreateCategory(req.getThirdLevelCategory(), secondLevel, 3);
+        product.setCategory(thirdLevel);
+
+        // ✅ FIX 1: Sizes — clear existing Set and addAll into it, NEVER call setSizes()
+        product.getSizes().clear();
+        if (req.getSize() != null && !req.getSize().isEmpty()) {
+            product.getSizes().addAll(req.getSize());
+        }
+
+        // ✅ FIX 2: Images — clear existing List and add into it, NEVER call setImages()
+        product.getImages().clear();
+        productRepository.saveAndFlush(product); // flush deletes before re-inserting
+
+        if (req.getAdditionalImages() != null && !req.getAdditionalImages().isEmpty()) {
+
+            if (req.getImageUrl() != null && !req.getImageUrl().isEmpty()) {
+                ProductImage mainImage = new ProductImage();
+                mainImage.setImageUrl(req.getImageUrl());
+                mainImage.setDisplayOrder(0);
+                mainImage.setAltText(product.getTitle());
+                mainImage.setProduct(product);
+                product.getImages().add(mainImage);
+            }
+
+            for (int i = 0; i < req.getAdditionalImages().size(); i++) {
+                String imageUrl = req.getAdditionalImages().get(i);
+                if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+                    ProductImage productImage = new ProductImage();
+                    productImage.setImageUrl(imageUrl);
+                    productImage.setDisplayOrder(i + 1);
+                    productImage.setAltText(product.getTitle() + " - View " + (i + 2));
+                    productImage.setProduct(product);
+                    product.getImages().add(productImage);
+                }
+            }
+        }
+
+        return ProductMapper.toDTO(productRepository.save(product));
+    }
     // ========================= FIND BY ID ========================= //
 
     @Override
@@ -282,7 +359,6 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<ProductDTO> findByHierarchy(String first, String second, String third) {
-
         return productRepository
                 .findByFullHierarchy(
                         normalize(first),
@@ -293,16 +369,25 @@ public class ProductServiceImpl implements ProductService {
                 .map(ProductMapper::toDTO)
                 .toList();
     }
+
     @Override
     public List<ProductDTO> searchProducts(String query) {
         String q = query.toLowerCase();
 
-        // Search by title OR brand OR category name, limit to 8 results
         return productRepository
-                .searchByKeyword(q)   // we define this query below
+                .searchByKeyword(q)
                 .stream()
                 .limit(8)
-                .map(ProductMapper::toDTO)   // use your existing mapper method
+                .map(ProductMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProductDTO> getFeaturedProducts() {
+        List<Product> featured = productRepository.findByIsFeaturedTrueOrderByFeaturedOrderAsc();
+
+        return featured.stream()
+                .map(ProductMapper::toDTO)
                 .collect(Collectors.toList());
     }
 

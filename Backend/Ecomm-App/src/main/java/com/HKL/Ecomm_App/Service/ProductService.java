@@ -39,4 +39,8 @@ public interface ProductService {
     Product findProductEntityById(Long id) throws ProductException;
     List<ProductDTO> findByHierarchy(String first, String second, String third);
     List<ProductDTO> searchProducts(String query);
+
+    List<ProductDTO> getFeaturedProducts();
+
+    ProductDTO updateProductFull(Long productId, CreateProductRequest req) throws ProductException;
 }

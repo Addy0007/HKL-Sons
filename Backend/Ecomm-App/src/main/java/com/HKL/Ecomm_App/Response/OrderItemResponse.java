@@ -7,6 +7,7 @@ import lombok.Data;
 public class OrderItemResponse {
 
     private Long id;
+    private Long productId;   // ← ADDED
     private String productName;
     private String imageUrl;
     private String size;
@@ -17,6 +18,7 @@ public class OrderItemResponse {
         OrderItemResponse res = new OrderItemResponse();
 
         res.setId(item.getId());
+        res.setProductId(item.getProduct().getId());   // ← ADDED
         res.setProductName(item.getProduct().getTitle());
         res.setImageUrl(item.getProduct().getImageUrl());
         res.setSize(item.getSize());

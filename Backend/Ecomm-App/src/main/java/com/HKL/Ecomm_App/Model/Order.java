@@ -56,4 +56,19 @@ public class Order {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coupon_id")
+    private Coupon appliedCoupon; // The coupon that was applied to this order
+
+    @Column(name = "coupon_code")
+    private String couponCode; // Store coupon code for reference even if coupon is deleted
+
+    @Column(name = "coupon_discount")
+    private Double couponDiscount = 0.0; // Discount amount from coupon in rupees
+
+    @Column(name = "is_first_order")
+    private Boolean isFirstOrder = false; // Track if this was user's first order
+
 }

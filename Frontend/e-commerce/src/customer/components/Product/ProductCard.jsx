@@ -45,7 +45,10 @@ const ProductCard = ({ product }) => {
           className="h-full w-full object-cover object-center"
           src={imageUrl}
           alt={title}
-          onError={(e) => (e.target.src = "https://via.placeholder.com/300")}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "https://placehold.co/300x400?text=No+Image";
+          }}
           loading="lazy"
         />
 

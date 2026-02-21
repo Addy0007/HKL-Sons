@@ -27,6 +27,8 @@ public class ProductMapper {
         dto.setDiscountedPrice(product.getDiscountedPrice());
         dto.setDiscountPercent(product.getDiscountPercent());
         dto.setBrand(product.getBrand());
+        dto.setIsFeatured(product.getIsFeatured());
+        dto.setFeaturedOrder(product.getFeaturedOrder());
 
         // ==================== IMAGES ====================
         // ✅ BACKWARD COMPATIBLE: Keep imageUrl as main image

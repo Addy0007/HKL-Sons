@@ -43,21 +43,44 @@ public class AdminProductController {
         return new ResponseEntity<>(dto, HttpStatus.CREATED);
     }
 
-    // ==================== UPDATE PRODUCT ====================
+    // ==================== UPDATE PRODUCT (PARTIAL) ====================
     @PutMapping("/{productId}/update")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProductDTO> updateProduct(
+    public ResponseEntity<ProductDTO> updateProductPartial(
             @RequestBody UpdateProductRequest req,
             @PathVariable Long productId
     ) throws ProductException {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        System.out.println("\n🔐 UPDATE PRODUCT Request:");
+        System.out.println("\n🔐 UPDATE PRODUCT (PARTIAL) Request:");
         System.out.println("   User: " + auth.getName());
         System.out.println("   Product ID: " + productId);
 
         ProductDTO dto = productService.updateProduct(productId, req);
         return new ResponseEntity<>(dto, HttpStatus.OK);
+    }
+
+    // ==================== UPDATE PRODUCT (FULL) ====================
+    @PutMapping("/{productId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductDTO> updateProductFull(
+            @PathVariable Long productId,
+            @Valid @RequestBody CreateProductRequest req
+    ) throws ProductException {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("\n🔐 UPDATE PRODUCT (FULL) Request:");
+        System.out.println("   User: " + auth.getName());
+        System.out.println("   Product ID: " + productId);
+        System.out.println("   Featured: " + req.getIsFeatured());
+        System.out.println("   Featured Order: " + req.getFeaturedOrder());
+
+        // ✅ FIXED: Call updateProductFull instead of updateProduct
+        ProductDTO updatedProduct = productService.updateProductFull(productId, req);
+
+        System.out.println("✅ Product updated successfully");
+
+        return ResponseEntity.ok(updatedProduct);
     }
 
     // ==================== DELETE PRODUCT ====================

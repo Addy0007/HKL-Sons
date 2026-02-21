@@ -19,16 +19,19 @@ import {
   Tooltip,
   Alert,
   Snackbar,
+  Box,
 } from "@mui/material";
+
+import { Delete, Refresh, Edit } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { findProducts } from "../../../State/Product/Action";
-import { Delete, Refresh } from "@mui/icons-material";
 import { api } from "../../../Config/apiConfig";
 import { debugAuth } from "../../../utils/authDebug";
 
 const ProductsTable = () => {
   const dispatch = useDispatch();
-  
+   const navigate = useNavigate();
   // ✅ Get auth state from Redux
   const { jwt, user } = useSelector((state) => state.auth);
   
@@ -204,148 +207,136 @@ const ProductsTable = () => {
       {/* Table */}
       <TableContainer component={Paper}>
         <Table sx={{ minWidth: 650 }} aria-label="products table">
-          <TableHead>
-            <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-              <TableCell><strong>ID</strong></TableCell>
-              <TableCell><strong>Image</strong></TableCell>
-              <TableCell><strong>Name</strong></TableCell>
-              <TableCell align="right"><strong>Price</strong></TableCell>
-              <TableCell align="right"><strong>Discounted</strong></TableCell>
-              <TableCell align="center"><strong>Discount</strong></TableCell>
-              <TableCell><strong>Category</strong></TableCell>
-              <TableCell align="center"><strong>Stock</strong></TableCell>
-              <TableCell align="center"><strong>Actions</strong></TableCell>
-            </TableRow>
-          </TableHead>
+ <TableHead>
+    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+      <TableCell><strong>ID</strong></TableCell>
+      <TableCell><strong>Image</strong></TableCell>
+      <TableCell><strong>Name</strong></TableCell>
+      <TableCell align="right"><strong>Price</strong></TableCell>
+      <TableCell align="right"><strong>Discounted</strong></TableCell>
+      <TableCell align="center"><strong>Discount</strong></TableCell>
+      <TableCell><strong>Category</strong></TableCell>
+      <TableCell align="center"><strong>Stock</strong></TableCell>
+      <TableCell align="center"><strong>Featured</strong></TableCell> {/* ← ADD THIS */}
+      <TableCell align="center"><strong>Actions</strong></TableCell>
+    </TableRow>
+  </TableHead>
           <TableBody>
-            {loading && (
-              <TableRow>
-                <TableCell colSpan={9} align="center">
-                  <div style={{ padding: '40px' }}>
-                    <div className="spinner" style={{
-                      border: '4px solid #f3f3f3',
-                      borderTop: '4px solid #3498db',
-                      borderRadius: '50%',
-                      width: '40px',
-                      height: '40px',
-                      animation: 'spin 1s linear infinite',
-                      margin: '0 auto'
-                    }}></div>
-                    <p style={{ marginTop: '16px', color: '#666' }}>Loading products...</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-            
-            {error && !loading && (
-              <TableRow>
-                <TableCell colSpan={9} align="center">
-                  <div style={{ color: 'red', padding: '20px' }}>
-                    <strong>Error:</strong> {error}
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-            
-            {!loading && !error && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={9} align="center">
-                  <div style={{ padding: '40px', color: '#999' }}>
-                    <p>No products found</p>
-                    <p style={{ fontSize: '14px' }}>Check your filters or add products</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-            
-            {!loading &&
-              !error &&
-              rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  sx={{ 
-                    "&:last-child td, &:last-child th": { border: 0 },
-                    "&:hover": { backgroundColor: '#fafafa' }
-                  }}
-                >
-                  <TableCell component="th" scope="row">
-                    <strong>{row.id}</strong>
-                  </TableCell>
-                  
-                  <TableCell>
-                    <img 
-                      src={row.imageUrl} 
-                      alt={row.title}
-                      style={{ 
-                        width: '60px', 
-                        height: '60px', 
-                        objectFit: 'cover',
-                        borderRadius: '4px',
-                        border: '1px solid #e0e0e0'
-                      }}
-                      onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/60?text=No+Image';
-                      }}
-                    />
-                  </TableCell>
-                  
-                  <TableCell>
-                    <div>
-                      <strong>{row.title}</strong>
-                      <br />
-                      <span style={{ fontSize: '12px', color: '#666' }}>
-                        {row.brand}
-                      </span>
-                    </div>
-                  </TableCell>
-                  
-                  <TableCell align="right">
-                    <span style={{ textDecoration: 'line-through', color: '#999' }}>
-                      ₹{row.price}
-                    </span>
-                  </TableCell>
-                  
-                  <TableCell align="right">
-                    <strong style={{ color: '#2e7d32' }}>₹{row.discountedPrice}</strong>
-                  </TableCell>
-                  
-                  <TableCell align="center">
-                    <Chip 
-                      label={`${row.discountPercent}% OFF`} 
-                      color="success" 
-                      size="small"
-                      sx={{ fontWeight: 'bold' }}
-                    />
-                  </TableCell>
-                  
-                  <TableCell>
-                    <span style={{ fontSize: '13px' }}>
-                      {getCategoryPath(row.category)}
-                    </span>
-                  </TableCell>
-                  
-                  <TableCell align="center">
-                    <Chip 
-                      label={row.quantity}
-                      color={row.quantity > 5 ? "success" : row.quantity > 0 ? "warning" : "error"}
-                      size="small"
-                      sx={{ fontWeight: 'bold', minWidth: '50px' }}
-                    />
-                  </TableCell>
-                  
-                  <TableCell align="center">
-                    <Tooltip title="Delete product">
-                      <IconButton 
-                        color="error" 
-                        size="small"
-                        onClick={() => handleDeleteClick(row)}
-                      >
-                        <Delete />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
+  {!loading &&
+    !error &&
+    rows.map((row) => (
+      <TableRow
+        key={row.id}
+        sx={{ 
+          "&:last-child td, &:last-child th": { border: 0 },
+          "&:hover": { backgroundColor: '#fafafa' }
+        }}
+      >
+        <TableCell component="th" scope="row">
+          <strong>{row.id}</strong>
+        </TableCell>
+        
+        <TableCell>
+          <img 
+            src={row.imageUrl} 
+            alt={row.title}
+            style={{ 
+              width: '60px', 
+              height: '60px', 
+              objectFit: 'cover',
+              borderRadius: '4px',
+              border: '1px solid #e0e0e0'
+            }}
+            onError={(e) => {
+              e.target.src = 'https://via.placeholder.com/60?text=No+Image';
+            }}
+          />
+        </TableCell>
+        
+        <TableCell>
+          <div>
+            <strong>{row.title}</strong>
+            <br />
+            <span style={{ fontSize: '12px', color: '#666' }}>
+              {row.brand}
+            </span>
+          </div>
+        </TableCell>
+        
+        <TableCell align="right">
+          <span style={{ textDecoration: 'line-through', color: '#999' }}>
+            ₹{row.price}
+          </span>
+        </TableCell>
+        
+        <TableCell align="right">
+          <strong style={{ color: '#2e7d32' }}>₹{row.discountedPrice}</strong>
+        </TableCell>
+        
+        <TableCell align="center">
+          <Chip 
+            label={`${row.discountPercent}% OFF`} 
+            color="success" 
+            size="small"
+            sx={{ fontWeight: 'bold' }}
+          />
+        </TableCell>
+        
+        <TableCell>
+          <span style={{ fontSize: '13px' }}>
+            {getCategoryPath(row.category)}
+          </span>
+        </TableCell>
+        
+        <TableCell align="center">
+          <Chip 
+            label={row.quantity}
+            color={row.quantity > 5 ? "success" : row.quantity > 0 ? "warning" : "error"}
+            size="small"
+            sx={{ fontWeight: 'bold', minWidth: '50px' }}
+          />
+        </TableCell>
+        
+        {/* ← ADD THIS FEATURED CELL */}
+        <TableCell align="center">
+          {row.isFeatured ? (
+            <Chip 
+              icon={<span>⭐</span>}
+              label={`#${row.featuredOrder}`}
+              color="warning"
+              size="small"
+              sx={{ fontWeight: 'bold' }}
+            />
+          ) : (
+            <span style={{ color: '#999', fontSize: '12px' }}>—</span>
+          )}
+        </TableCell>
+        
+        {/* ← UPDATE ACTIONS CELL */}
+        <TableCell align="center">
+          <Box display="flex" gap={1} justifyContent="center">
+            <Tooltip title="Edit product">
+              <IconButton 
+                color="primary" 
+                size="small"
+                onClick={() => navigate(`/admin/products/edit/${row.id}`)}
+              >
+                <Edit />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete product">
+              <IconButton 
+                color="error" 
+                size="small"
+                onClick={() => handleDeleteClick(row)}
+              >
+                <Delete />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </TableCell>
+      </TableRow>
+    ))}
           </TableBody>
         </Table>
 
