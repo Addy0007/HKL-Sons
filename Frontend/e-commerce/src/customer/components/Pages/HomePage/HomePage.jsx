@@ -4,56 +4,55 @@ import HomeSectionCorosel from "../../HomeSectionCorosel/HomeSectionCorosel";
 import { api } from "../../../../Config/apiConfig";
 
 const HomePage = () => {
-  const [menKurtas, setMenKurtas] = useState([]);
-  const [menShirts, setMenShirts] = useState([]);
-  const [menJeans, setMenJeans] = useState([]);
-  const [menShoes, setMenShoes] = useState([]);
-
-  const [womenSarees, setWomenSarees] = useState([]);
-  const [womenSweaters, setWomenSweaters] = useState([]);
-
-  // lifestyle
-  const [artifacts, setArtifacts] = useState([]);
-  const [candles, setCandles] = useState([]);
-  const [bags, setBags] = useState([]);
-  const [homeDecor, setHomeDecor] = useState([]);
-
+  const [sections, setSections] = useState([]); // { title, products }[]
+  const [featured, setFeatured] = useState([]);
   const [loading, setLoading] = useState(true);
-
-const fetchProducts = async (first, second, third, setterFn) => {
-  try {
-    const { data } = await api.get(
-      `/api/products/${first}/${second}/${third}`
-    );
-    setterFn(data || []);
-  } catch (err) {
-    console.log(`Error fetching ${third}:`, err);
-    setterFn([]);
-  }
-};
-
 
   useEffect(() => {
     const loadAll = async () => {
       try {
-await Promise.all([
-  // Men
-  fetchProducts("men", "clothing", "kurtas", setMenKurtas),
-  fetchProducts("men", "clothing", "shirts", setMenShirts),
-  fetchProducts("men", "clothing", "jeans", setMenJeans),
-  fetchProducts("men", "footwear", "shoes", setMenShoes),
+        // Step 1: Fetch category tree
+        const { data: tree } = await api.get("/api/categories/tree");
 
-  // Women
-  fetchProducts("women", "clothing", "sarees", setWomenSarees),
-  fetchProducts("women", "clothing", "sweaters", setWomenSweaters),
+        // Step 2: Build list of all level-3 categories with their path
+        const leafCategories = [];
+        tree.forEach((l1) => {
+          (l1.children || []).forEach((l2) => {
+            (l2.children || []).forEach((l3) => {
+              leafCategories.push({
+                title: `${capitalize(l1.name)} ${capitalize(l3.name)}`,
+                path: `${l1.slug}/${l2.slug}/${l3.slug}`,
+              });
+            });
+          });
+        });
 
-  // Lifestyle
-  fetchProducts("lifestyle", "decor", "artifacts", setArtifacts),
-  fetchProducts("lifestyle", "decor", "candles", setCandles),
-  fetchProducts("lifestyle", "decor", "bags", setBags),
-  fetchProducts("lifestyle", "decor", "home-decor", setHomeDecor),
-]);
+        // Step 3: Fetch products for each leaf category in parallel
+        const results = await Promise.all(
+          leafCategories.map(async ({ title, path }) => {
+            try {
+              const { data } = await api.get(`/api/products/${path}`);
+              const products = data?.content || data || [];
+              return { title, products };
+            } catch {
+              return { title, products: [] };
+            }
+          })
+        );
 
+        // Step 4: Fetch featured products
+        try {
+          const { data } = await api.get("/api/products/featured");
+          setFeatured(data || []);
+        } catch {
+          setFeatured([]);
+        }
+
+        // Step 5: Only keep sections that have products
+        setSections(results.filter((s) => s.products.length > 0));
+
+      } catch (err) {
+        console.error("Failed to load homepage:", err);
       } finally {
         setLoading(false);
       }
@@ -67,17 +66,13 @@ await Promise.all([
       <MainCorosel />
 
       {loading ? (
-        // 🔹 Simple skeleton loader while data is fetched
         <div className="py-10 px-4 sm:px-6 lg:px-8 space-y-8">
-          {[1, 2, 3].map((section) => (
-            <div key={section} className="space-y-4">
+          {[1, 2, 3].map((s) => (
+            <div key={s} className="space-y-4">
               <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
               <div className="flex gap-4">
-                {[1, 2, 3, 4].map((card) => (
-                  <div
-                    key={card}
-                    className="w-[15rem] h-[18rem] bg-gray-100 rounded-xl animate-pulse"
-                  />
+                {[1, 2, 3, 4].map((c) => (
+                  <div key={c} className="w-[15rem] h-[18rem] bg-gray-100 rounded-xl animate-pulse" />
                 ))}
               </div>
             </div>
@@ -85,25 +80,29 @@ await Promise.all([
         </div>
       ) : (
         <div className="space-y-8">
-          <HomeSectionCorosel data={menKurtas} sectionTitle="Men's Kurtas" />
-          <HomeSectionCorosel data={menShirts} sectionTitle="Men's Shirts" />
-          <HomeSectionCorosel data={menJeans} sectionTitle="Men's Jeans" />
-          <HomeSectionCorosel data={menShoes} sectionTitle="Men's Shoes" />
+          {/* Featured always first */}
+          <HomeSectionCorosel data={featured} sectionTitle="✨ Featured Products" />
 
-          <HomeSectionCorosel data={womenSarees} sectionTitle="Women's Sarees" />
-          <HomeSectionCorosel
-            data={womenSweaters}
-            sectionTitle="Women's Sweaters"
-          />
+          {/* Dynamic sections — only shows categories that have products */}
+          {sections.map(({ title, products }) => (
+            <HomeSectionCorosel key={title} data={products} sectionTitle={title} />
+          ))}
 
-          <HomeSectionCorosel data={artifacts} sectionTitle="Artifacts" />
-          <HomeSectionCorosel data={candles} sectionTitle="Candles" />
-          <HomeSectionCorosel data={bags} sectionTitle="Bags" />
-          <HomeSectionCorosel data={homeDecor} sectionTitle="Home Decor" />
+          {/* Nothing to show yet */}
+          {sections.length === 0 && featured.length === 0 && (
+            <div className="text-center py-24 text-gray-400">
+              <p className="text-4xl mb-4">🛍️</p>
+              <p className="text-lg font-medium">Products coming soon!</p>
+              <p className="text-sm mt-1">Check back later for new arrivals.</p>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 };
+
+const capitalize = (str) =>
+  str ? str.charAt(0).toUpperCase() + str.slice(1).replace(/-/g, " ") : "";
 
 export default HomePage;
