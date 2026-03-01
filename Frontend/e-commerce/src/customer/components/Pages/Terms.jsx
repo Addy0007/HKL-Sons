@@ -5,122 +5,97 @@ import "./LegalPages.css";
 const Terms = () => {
   return (
     <div className="legal-page-container">
-      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
-        <Box className="legal-paper" sx={{ p: { xs: 3, sm: 5, md: 8 } }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 5, sm: 7, md: 10 } }}>
+        <Box className="legal-paper" sx={{ p: { xs: 2.5, sm: 4, md: 7 } }}>
+
           <Typography
             className="legal-heading"
-            sx={{ fontSize: { xs: "2rem", sm: "2.75rem", md: "3.5rem" }, mb: 2 }}
+            sx={{ fontSize: { xs: "1.9rem", sm: "2.6rem", md: "3.4rem" }, mb: 1.5 }}
           >
-            Terms and Conditions
+            Terms &amp; Conditions
           </Typography>
 
-          <Typography className="legal-date" sx={{ mb: 5 }}>
+          <Typography className="legal-date" sx={{ mb: 4 }}>
             Last Updated: February 15, 2026
           </Typography>
 
           <Typography className="legal-body legal-paragraph">
-            Welcome to HKL Sons. By accessing and using our website, you agree to be bound 
-            by these Terms and Conditions.
+            By accessing and using HklandSons, you agree to the following terms and conditions.
+            Please read them carefully before using our platform.
           </Typography>
 
           <div className="legal-divider" />
 
-          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.4rem", md: "1.75rem" } }}>
-            1. Use of Website
+          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.2rem", sm: "1.4rem", md: "1.75rem" } }}>
+            1. Product Condition Transparency
           </Typography>
 
           <Typography className="legal-body legal-paragraph">
-            You agree to use our website only for lawful purposes and in a way that does not 
-            infringe the rights of, restrict, or inhibit anyone else's use of the website.
+            Thrifted products are pre-owned. Buyers acknowledge that minor wear is part of
+            sustainable reuse unless otherwise specified.
           </Typography>
 
-          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.4rem", md: "1.75rem" } }}>
-            2. Product Information
-          </Typography>
-
-          <Typography className="legal-body legal-paragraph">
-            We strive to provide accurate product descriptions and pricing. However, we do not 
-            warrant that product descriptions, pricing, or other content is accurate, complete, 
-            reliable, current, or error-free.
-          </Typography>
-
-          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.4rem", md: "1.75rem" } }}>
-            3. Orders and Payment
+          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.2rem", sm: "1.4rem", md: "1.75rem" } }}>
+            2. Pricing
           </Typography>
 
           <Typography className="legal-body legal-paragraph">
-            By placing an order, you are offering to purchase a product. All orders are subject 
-            to acceptance and availability. We reserve the right to refuse any order.
+            Prices may vary based on condition, rarity, or availability — especially for
+            one-of-a-kind thrift items.
+          </Typography>
+
+          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.2rem", sm: "1.4rem", md: "1.75rem" } }}>
+            3. Order Acceptance
+          </Typography>
+
+          <Typography className="legal-body legal-paragraph">
+            We reserve the right to cancel orders due to:
           </Typography>
 
           <ul className="legal-list">
-            <li className="legal-list-item">
-              Payment must be received before your order is processed
-            </li>
-            <li className="legal-list-item">
-              Prices are subject to change without notice
-            </li>
-            <li className="legal-list-item">
-              We accept major credit cards and other payment methods as displayed at checkout
-            </li>
+            <li className="legal-list-item">Pricing errors</li>
+            <li className="legal-list-item">Stock unavailability</li>
+            <li className="legal-list-item">Suspected fraudulent activity</li>
           </ul>
 
-          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.4rem", md: "1.75rem" } }}>
-            4. Shipping and Delivery
+          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.2rem", sm: "1.4rem", md: "1.75rem" } }}>
+            4. Intellectual Property
           </Typography>
 
           <Typography className="legal-body legal-paragraph">
-            We will make every effort to deliver your order within the timeframe specified. 
-            However, delivery times are estimates and we are not liable for delays caused by 
-            circumstances beyond our control.
+            All website content, branding, logos, and materials belong to HklandSons and
+            may not be used without prior written permission.
           </Typography>
 
-          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.4rem", md: "1.75rem" } }}>
-            5. Returns and Refunds
-          </Typography>
-
-          <Typography className="legal-body legal-paragraph">
-            Please refer to our Return Policy for information about returns and refunds. 
-            Items must be returned in their original condition within the specified timeframe.
-          </Typography>
-
-          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.4rem", md: "1.75rem" } }}>
-            6. Intellectual Property
+          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.2rem", sm: "1.4rem", md: "1.75rem" } }}>
+            5. Limitation of Liability
           </Typography>
 
           <Typography className="legal-body legal-paragraph">
-            All content on this website, including text, graphics, logos, and images, is the 
-            property of HKL Sons and is protected by copyright laws.
+            HklandSons is not liable for:
           </Typography>
 
-          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.4rem", md: "1.75rem" } }}>
-            7. Limitation of Liability
-          </Typography>
+          <ul className="legal-list">
+            <li className="legal-list-item">Minor wear inherent in thrift products</li>
+            <li className="legal-list-item">Courier delays</li>
+            <li className="legal-list-item">Indirect or incidental damages</li>
+          </ul>
 
-          <Typography className="legal-body legal-paragraph">
-            HKL Sons shall not be liable for any indirect, incidental, special, or consequential 
-            damages arising out of or in connection with the use of our website or products.
-          </Typography>
-
-          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.4rem", md: "1.75rem" } }}>
-            8. Changes to Terms
+          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.2rem", sm: "1.4rem", md: "1.75rem" } }}>
+            6. Governing Law
           </Typography>
 
           <Typography className="legal-body legal-paragraph">
-            We reserve the right to modify these Terms and Conditions at any time. Changes will 
-            be effective immediately upon posting to the website.
+            These terms are governed under the laws of <strong>India</strong>.
           </Typography>
 
           <div className="legal-divider" />
 
-          <Typography className="legal-subheading" sx={{ fontSize: { xs: "1.4rem", md: "1.75rem" } }}>
-            Contact Information
+          <Typography className="legal-body legal-paragraph">
+            For any questions regarding these Terms &amp; Conditions, reach us at{" "}
+            <strong>support-hklandsons@gmail.com</strong>
           </Typography>
 
-          <Typography className="legal-body legal-paragraph">
-            If you have any questions about these Terms and Conditions, please contact us at 
-            support@hklsons.com
-          </Typography>
         </Box>
       </Container>
     </div>
