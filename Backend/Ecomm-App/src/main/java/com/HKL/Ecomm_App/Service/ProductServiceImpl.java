@@ -297,7 +297,7 @@ public class ProductServiceImpl implements ProductService {
             default -> Sort.by(Sort.Direction.DESC, "createdAt");
         };
 
-        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE, sortBy);
+        Pageable pageable = PageRequest.of(0, 500, sortBy);
 
         Page<Product> result = productRepository.filterProducts(
                 (category == null || category.isBlank()) ? null : normalize(category),

@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -23,24 +25,25 @@ public class CategoryController {
     // ── GET /api/categories/tree ───────────────────────────────────
     @GetMapping("/tree")
     public List<CategoryTreeDTO> getCategoryTree() {
-        List<Category> topCategories = categoryRepository.findByParentCategoryIsNull();
-        return topCategories.stream()
-                .map(this::buildTree)
-                .toList();
+        List<Category> all = categoryRepository.findAll();
+
+        Map<Long, CategoryTreeDTO> dtoMap = new LinkedHashMap<>();
+        for (Category c : all) {
+            dtoMap.put(c.getId(), new CategoryTreeDTO(c.getId(), c.getName(), c.getLevel()));
+        }
+
+        List<CategoryTreeDTO> roots = new ArrayList<>();
+        for (Category c : all) {
+            if (c.getParentCategory() == null) {
+                roots.add(dtoMap.get(c.getId()));
+            } else {
+                CategoryTreeDTO parent = dtoMap.get(c.getParentCategory().getId());
+                if (parent != null) parent.addChild(dtoMap.get(c.getId()));
+            }
+        }
+        return roots;
     }
 
-    private CategoryTreeDTO buildTree(Category category) {
-        CategoryTreeDTO dto = new CategoryTreeDTO(
-                category.getId(),    // ← pass id
-                category.getName(),
-                category.getLevel()  // ← pass level
-        );
-        List<Category> children = categoryRepository.findByParentCategory(category);
-        for (Category child : children) {
-            dto.addChild(buildTree(child));
-        }
-        return dto;
-    }
 
     // ── GET /api/categories/path/{categoryId} ──────────────────────
     @GetMapping("/path/{categoryId}")
