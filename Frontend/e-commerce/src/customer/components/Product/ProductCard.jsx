@@ -1,5 +1,6 @@
 import "./ProductCard.css";
 import { useNavigate } from "react-router-dom";
+import { optimizeImage } from "../../../utils/optimizeImage";
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
@@ -43,7 +44,8 @@ const ProductCard = ({ product }) => {
       <div className="aspect-[3/4] w-full overflow-hidden relative">
         <img
           className="h-full w-full object-cover object-center"
-          src={imageUrl}
+          src={optimizeImage(imageUrl, 500)}
+
           alt={title}
           onError={(e) => {
             e.target.onerror = null;

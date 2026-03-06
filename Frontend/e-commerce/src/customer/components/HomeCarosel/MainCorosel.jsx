@@ -3,6 +3,7 @@ import AliceCarousel from "react-alice-carousel";
 import "react-alice-carousel/lib/alice-carousel.css";
 import { useNavigate } from "react-router-dom";
 import api from "../../../Config/apiConfig";
+import { optimizeImage } from "../../../utils/optimizeImage";
 
 const MainCorosel = () => {
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ const MainCorosel = () => {
       {/* ========== MOBILE VIEW ========== */}
       <div className="block lg:hidden relative">
         <img
-          src={product.imageUrl}
+          src={optimizeImage(product.imageUrl, 900)}
           alt={product.title}
           draggable="false"
           onError={(e) => {
@@ -123,7 +124,7 @@ const MainCorosel = () => {
         {/* Right side - Image: object-contain so full image is always visible */}
         <div className="w-1/2 h-full bg-gray-100 flex items-center justify-center overflow-hidden">
           <img
-            src={product.imageUrl}
+            src={optimizeImage(product.imageUrl, 900)}
             alt={product.title}
             draggable="false"
             onError={(e) => {

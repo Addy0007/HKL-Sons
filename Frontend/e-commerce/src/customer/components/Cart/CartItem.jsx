@@ -1,6 +1,7 @@
 import React from "react";
 import { IconButton, Checkbox } from "@mui/material";
 import { Add, Remove, Delete } from "@mui/icons-material";
+import { optimizeImage } from "../../../utils/optimizeImage";
 
 const CartItem = ({ item, onIncrease, onDecrease, onRemove, onToggleSelection }) => {
   const { product, size, quantity, selected = true } = item;
@@ -43,7 +44,7 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, onToggleSelection })
               className={`w-full h-full object-cover object-top rounded-md border ${
                 !selected ? "opacity-60" : ""
               }`}
-              src={product.imageUrl}
+              src={optimizeImage(product.imageUrl, 300)}
               alt={product.title}
             />
           </div>

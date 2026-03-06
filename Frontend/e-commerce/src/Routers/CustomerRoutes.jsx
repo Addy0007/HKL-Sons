@@ -1,31 +1,33 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import HomePage from '../customer/components/Pages/HomePage/HomePage';
-import Navigation from '../customer/components/Navigation/Navigation';
-import Footer from '../customer/components/Footer/Footer';
-import Cart from '../customer/components/Cart/Cart';
-import Product from '../customer/components/Product/Product';
-import ProductList from '../customer/components/Product/ProductList';
-import ProductDetails from '../customer/components/ProductDetails/ProductDetails';
-import Order from '../customer/components/Order/Order';
-import OrderDetails from '../customer/components/Order/OrderDetails';
-import SignIn from '../customer/components/Signin/SignIn';
-import ForgotPassword from "../customer/components/Signin/ForgotPassword";
-import ResetPassword from "../customer/components/Signin/ResetPassword";
-import Profile from "../customer/components/Navigation/Profile";   
-
+import React, { lazy } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import RequireAuth from "./RequireAuth";
 
-// ✅ Checkout step components
-import CheckoutAddress from '../customer/components/Checkout/CheckoutAddress';
-import CheckoutSummary from '../customer/components/Checkout/CheckoutSummary';
-import PaymentSuccess from '../customer/components/Payment/PaymentSuccess';
+const HomePage = lazy(() => import('../customer/components/Pages/HomePage/HomePage'));
+const Cart = lazy(() => import('../customer/components/Cart/Cart'));
+const Product = lazy(() => import('../customer/components/Product/Product'));
+const ProductList = lazy(() => import('../customer/components/Product/ProductList'));
+const ProductDetails = lazy(() => import('../customer/components/ProductDetails/ProductDetails'));
+const Order = lazy(() => import('../customer/components/Order/Order'));
+const OrderDetails = lazy(() => import('../customer/components/Order/OrderDetails'));
 
-// ✅ Footer page components
-import About from '../customer/components/Pages/About';
-import Privacy from '../customer/components/Pages/Privacy';
-import Terms from '../customer/components/Pages/Terms';
-import Claim from '../customer/components/Pages/Claim';
+const SignIn = lazy(() => import('../customer/components/Signin/SignIn'));
+const ForgotPassword = lazy(() => import('../customer/components/Signin/ForgotPassword'));
+const ResetPassword = lazy(() => import('../customer/components/Signin/ResetPassword'));
+
+const CheckoutAddress = lazy(() => import('../customer/components/Checkout/CheckoutAddress'));
+const CheckoutSummary = lazy(() => import('../customer/components/Checkout/CheckoutSummary'));
+const PaymentSuccess = lazy(() => import('../customer/components/Payment/PaymentSuccess'));
+
+const About = lazy(() => import('../customer/components/Pages/About'));
+const Privacy = lazy(() => import('../customer/components/Pages/Privacy'));
+const Terms = lazy(() => import('../customer/components/Pages/Terms'));
+const Claim = lazy(() => import('../customer/components/Pages/Claim'));
+
+const Profile = lazy(() => import('../customer/components/Navigation/Profile'));
+
+import Navigation from '../customer/components/Navigation/Navigation';
+import Footer from '../customer/components/Footer/Footer';
+
 
 const CustomerRoutes = () => {
   return (

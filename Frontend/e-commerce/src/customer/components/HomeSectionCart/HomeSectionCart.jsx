@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { optimizeImage } from "../../../utils/optimizeImage";
 
 const HomeSectionCart = ({ product }) => {
   const navigate = useNavigate();
@@ -18,7 +19,8 @@ const HomeSectionCart = ({ product }) => {
       <div className="h-[13rem] w-[10rem] flex items-center justify-center bg-gray-50">
         <img
           className="object-cover object-top w-full h-full"
-          src={product.imageUrl}
+          src={optimizeImage(product.imageUrl, 400)}
+
           alt={product.title || "Product image"}
           loading="lazy"
         />

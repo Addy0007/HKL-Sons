@@ -6,6 +6,8 @@ import { findProductById } from '../../../State/Product/Action';
 import { addItemToCart } from '../../../State/Cart/Action';
 import ProductReviewSection from './ProductReviewSection';
 import "./LoginPrompt.css";
+import { optimizeImage } from "../../../utils/optimizeImage";
+
 
 const placeholderImage = 'https://via.placeholder.com/600x800?text=No+Image';
 
@@ -171,7 +173,7 @@ export default function ProductDetails() {
           <div className="flex flex-col gap-4">
             <div className="w-full bg-gray-100 rounded-xl overflow-hidden aspect-square flex items-center justify-center">
               <img
-                src={images[selectedImage].src}
+                src={optimizeImage(images[selectedImage].src, 900)}
                 alt={images[selectedImage].alt}
                 className="w-full h-full object-cover"
                 onError={(e) => e.target.src = placeholderImage}
@@ -190,7 +192,7 @@ export default function ProductDetails() {
                     )}
                   >
                     <img
-                      src={img.src}
+                      src={optimizeImage(img.src, 200)}
                       alt={img.alt}
                       className="w-full h-full object-cover"
                       onError={(e) => e.target.src = placeholderImage}

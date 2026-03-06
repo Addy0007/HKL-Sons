@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MapPin, CheckCircle, Truck, Package } from "lucide-react";
 import api from "../../../Config/apiConfig";
+import { optimizeImage } from "../../../utils/optimizeImage";
 
 const OrderDetails = () => {
   const { orderId } = useParams();
@@ -318,7 +319,8 @@ const OrderDetails = () => {
               >
                 <div className="flex items-start gap-3 sm:gap-4 flex-1">
                   <img
-                    src={item.imageUrl}
+                    src={optimizeImage(item.imageUrl, 200)}
+
                     alt={item.productName}
                     className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover border border-gray-100"
                   />
