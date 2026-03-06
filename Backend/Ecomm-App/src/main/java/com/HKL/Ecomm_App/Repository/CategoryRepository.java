@@ -13,7 +13,6 @@
 
         Optional<Category> findByNameIgnoreCaseAndParentCategory(String name, Category parent);
         List<Category> findByLevel(int level);
-
         List<Category> findByParentCategory(Category parent);
         List<Category> findByParentCategoryIsNull();
 

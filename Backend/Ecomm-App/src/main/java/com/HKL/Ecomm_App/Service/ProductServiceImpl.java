@@ -276,10 +276,7 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ProductException("Product not found"));
     }
 
-
-
-// ========================= FILTER + PAGINATION (FIXED) ========================= //
-
+    // ========================= FILTER + PAGINATION ========================= //
 
     @Override
     public Page<ProductDTO> getAllProducts(String category,
@@ -295,36 +292,50 @@ public class ProductServiceImpl implements ProductService {
 
         Sort sortBy = switch (sort == null ? "" : sort) {
             case "price_high" -> Sort.by(Sort.Direction.DESC, "discountedPrice");
-            case "price_low"  -> Sort.by(Sort.Direction.ASC,  "discountedPrice");
-            case "discount"   -> Sort.by(Sort.Direction.DESC, "discountPercent");
-            default           -> Sort.by(Sort.Direction.DESC, "createdAt");
+            case "price_low" -> Sort.by(Sort.Direction.ASC, "discountedPrice");
+            case "discount" -> Sort.by(Sort.Direction.DESC, "discountPercent");
+            default -> Sort.by(Sort.Direction.DESC, "createdAt");
         };
 
-        // ✅ Real page — DB does the pagination, not Java
-        Pageable pageable = PageRequest.of(pageNumber, pageSize, sortBy);
-
-        // ✅ Collapse multi-value filters to single value for JPQL compatibility
-        // (If you need multi-color/size support later, switch to Specification or QueryDSL)
-        String colorParam = (colors == null || colors.isEmpty()) ? null : normalize(colors.get(0));
-        String sizeParam  = (sizes  == null || sizes.isEmpty())  ? null : normalize(sizes.get(0));
-        String stockParam = (stock  == null || stock.isBlank())  ? null : stock;
-        String catParam   = (category == null || category.isBlank()) ? null : normalize(category);
+        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE, sortBy);
 
         Page<Product> result = productRepository.filterProducts(
-                catParam,
-                minPrice,
-                maxPrice,
-                minDiscount,
-                colorParam,
-                sizeParam,
-                stockParam,
-                pageable
+                (category == null || category.isBlank()) ? null : normalize(category),
+                minPrice, maxPrice, minDiscount, pageable
         );
 
-        return result.map(ProductMapper::toDTO);
+        List<Product> allProducts = result.getContent();
+
+        List<Product> filtered = allProducts.stream()
+                .filter(p -> colors.isEmpty() ||
+                        (p.getColor() != null &&
+                                colors.contains(p.getColor().toLowerCase())))
+                .filter(p -> sizes.isEmpty() ||
+                        p.getSizes().stream().anyMatch(sz ->
+                                sz.getName() != null &&
+                                        sizes.contains(sz.getName().toLowerCase()) &&
+                                        sz.getQuantity() > 0))
+                .filter(p -> {
+                    if (stock == null) return true;
+                    boolean hasStock = p.getQuantity() > 0 ||
+                            p.getSizes().stream().anyMatch(sz -> sz.getQuantity() > 0);
+                    return stock.equalsIgnoreCase("in_stock") ? hasStock : !hasStock;
+                })
+                .toList();
+
+        int start = pageNumber * pageSize;
+        int end = Math.min(start + pageSize, filtered.size());
+        start = Math.min(start, filtered.size());
+
+        List<ProductDTO> finalPage = filtered.subList(start, end)
+                .stream()
+                .map(ProductMapper::toDTO)
+                .toList();
+
+        return new PageImpl<>(finalPage,
+                PageRequest.of(pageNumber, pageSize, sortBy),
+                filtered.size());
     }
-
-
 
     // ========================= REDUCE STOCK ========================= //
 

@@ -6,7 +6,9 @@ import com.HKL.Ecomm_App.Repository.CategoryRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -21,30 +23,10 @@ public class CategoryController {
     // ── GET /api/categories/tree ───────────────────────────────────
     @GetMapping("/tree")
     public List<CategoryTreeDTO> getCategoryTree() {
-
-        // ✅ Single query — fetch ALL categories at once
-        List<Category> all = categoryRepository.findAll();
-
-        // Build a map of id → DTO for fast lookup
-        Map<Long, CategoryTreeDTO> dtoMap = new LinkedHashMap<>();
-        for (Category c : all) {
-            dtoMap.put(c.getId(), new CategoryTreeDTO(c.getId(), c.getName(), c.getLevel()));
-        }
-
-        // Wire up children in memory (zero extra DB calls)
-        List<CategoryTreeDTO> roots = new ArrayList<>();
-        for (Category c : all) {
-            if (c.getParentCategory() == null) {
-                roots.add(dtoMap.get(c.getId()));
-            } else {
-                CategoryTreeDTO parent = dtoMap.get(c.getParentCategory().getId());
-                if (parent != null) {
-                    parent.addChild(dtoMap.get(c.getId()));
-                }
-            }
-        }
-
-        return roots;
+        List<Category> topCategories = categoryRepository.findByParentCategoryIsNull();
+        return topCategories.stream()
+                .map(this::buildTree)
+                .toList();
     }
 
     private CategoryTreeDTO buildTree(Category category) {
