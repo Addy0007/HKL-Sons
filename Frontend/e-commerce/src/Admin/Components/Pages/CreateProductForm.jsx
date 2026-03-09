@@ -30,7 +30,6 @@ const COLORS = ["Red","Blue","Green","Yellow","Black","White","Pink","Purple","O
 const SIZES  = ["XS","S","M","L","XL","XXL","Free Size","UK 6","UK 7","UK 8","UK 9","UK 10"];
 
 // ─── Helper: flatten tree → map by level ─────────────────────────────────────
-// API returns: [{ id, name, level, slug, children: [...] }]
 function flatByLevel(tree) {
   const level1 = [], level2 = [], level3 = [];
   tree.forEach((l1) => {
@@ -47,11 +46,10 @@ function flatByLevel(tree) {
 
 // ─── Add category to backend ──────────────────────────────────────────────────
 async function addCategoryToBackend(name, level, parentDbId) {
-  console.log("Adding category:", { name, level, parentDbId });
   const slug = name.toLowerCase().replace(/\s+/g, "-");
   const payload = { name: slug, level, parentCategoryId: parentDbId ?? null };
   const { data } = await api.post("/api/categories", payload);
-  return data; // expects { id, name, level, slug, ... }
+  return data;
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
@@ -60,16 +58,14 @@ const CreateProductForm = () => {
   const { loading, error, product } = useSelector((state) => state.adminProduct);
 
   // ── Category state ──────────────────────────────────────────────────────────
-  const [catTree, setCatTree]     = useState([]);
+  const [catTree, setCatTree]       = useState([]);
   const [catLoading, setCatLoading] = useState(true);
-  const [cats, setCats]           = useState({ level1: [], level2: [], level3: [] });
+  const [cats, setCats]             = useState({ level1: [], level2: [], level3: [] });
 
-  // selected
-  const [selL1, setSelL1] = useState(null); // { id(slug), name, dbId }
+  const [selL1, setSelL1] = useState(null);
   const [selL2, setSelL2] = useState(null);
   const [selL3, setSelL3] = useState(null);
 
-  // "add new" input visibility
   const [addingL1, setAddingL1] = useState(false);
   const [addingL2, setAddingL2] = useState(false);
   const [addingL3, setAddingL3] = useState(false);
@@ -89,9 +85,10 @@ const CreateProductForm = () => {
   };
   const [productData, setProductData] = useState(emptyForm);
 
-  const [imagePreviews, setImagePreviews] = useState({ mainImage: "", additionalImages: ["","",""] });
-  const [uploadingStates, setUploadingStates] = useState({ mainImage: false, additionalImage0: false, additionalImage1: false, additionalImage2: false });
-
+  const [imagePreviews, setImagePreviews]   = useState({ mainImage: "", additionalImages: ["","",""] });
+  const [uploadingStates, setUploadingStates] = useState({
+    mainImage: false, additionalImage0: false, additionalImage1: false, additionalImage2: false,
+  });
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   // ── Fetch categories ────────────────────────────────────────────────────────
@@ -110,7 +107,6 @@ const CreateProductForm = () => {
 
   useEffect(() => { fetchCategories(); }, []);
 
-  // ── Derived filtered lists ──────────────────────────────────────────────────
   const filteredL2 = selL1 ? cats.level2.filter(c => c.parentSlug === selL1.id) : [];
   const filteredL3 = selL2 ? cats.level3.filter(c => c.parentSlug === selL2.id) : [];
 
@@ -221,13 +217,19 @@ const CreateProductForm = () => {
   };
 
   // ── Form helpers ────────────────────────────────────────────────────────────
-  const handleChange = (e) => setProductData(p => ({ ...p, [e.target.name]: e.target.value }));
-  const addHighlight    = () => setProductData(p => ({ ...p, highlights: [...p.highlights, ""] }));
-  const removeHighlight = (i) => setProductData(p => ({ ...p, highlights: p.highlights.filter((_, idx) => idx !== i) }));
-  const handleHighlightChange = (i, v) => { const arr = [...productData.highlights]; arr[i] = v; setProductData(p => ({ ...p, highlights: arr })); };
+  const handleChange       = (e) => setProductData(p => ({ ...p, [e.target.name]: e.target.value }));
+  const addHighlight       = () => setProductData(p => ({ ...p, highlights: [...p.highlights, ""] }));
+  const removeHighlight    = (i) => setProductData(p => ({ ...p, highlights: p.highlights.filter((_, idx) => idx !== i) }));
+  const handleHighlightChange = (i, v) => {
+    const arr = [...productData.highlights]; arr[i] = v;
+    setProductData(p => ({ ...p, highlights: arr }));
+  };
   const addSize    = () => setProductData(p => ({ ...p, sizes: [...p.sizes, { name: "", quantity: 0 }] }));
   const removeSize = (i) => setProductData(p => ({ ...p, sizes: p.sizes.filter((_, idx) => idx !== i) }));
-  const handleSizeChange = (i, field, value) => { const arr = [...productData.sizes]; arr[i][field] = value; setProductData(p => ({ ...p, sizes: arr })); };
+  const handleSizeChange = (i, field, value) => {
+    const arr = [...productData.sizes]; arr[i][field] = value;
+    setProductData(p => ({ ...p, sizes: arr }));
+  };
 
   // ── Reset after success ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -246,34 +248,53 @@ const CreateProductForm = () => {
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!productData.imageUrl) { showSnack("Please upload a main product image", "error"); return; }
-    if (!selL1 || !selL2 || !selL3) { showSnack("Please select all 3 category levels", "error"); return; }
+    if (!productData.imageUrl)        { showSnack("Please upload a main product image", "error"); return; }
+    if (!selL1 || !selL2 || !selL3)  { showSnack("Please select all 3 category levels", "error"); return; }
 
     const submitData = {
-      imageUrl: productData.imageUrl,
-      brand: productData.brand,
-      title: productData.title,
-      color: productData.color,
-      discountedPrice: parseInt(productData.discountedPrice) || 0,
-      price: parseInt(productData.price) || 0,
-      discountPercent: parseInt(productData.discountPercent) || 0,
-      size: productData.sizes.filter(s => s.name && s.quantity >= 0).map(s => ({ name: s.name, quantity: parseInt(s.quantity) || 0 })),
-      quantity: parseInt(productData.quantity) || 0,
-      topLevelCategory: selL1.id,
+      imageUrl:          productData.imageUrl,
+      brand:             productData.brand,
+      title:             productData.title,
+      color:             productData.color,
+      discountedPrice:   parseInt(productData.discountedPrice) || 0,
+      price:             parseInt(productData.price) || 0,
+      discountPercent:   parseInt(productData.discountPercent) || 0,
+      // ✅ Backend field is "size" (Set<Size>)
+      size: productData.sizes
+        .filter(s => s.name && s.quantity >= 0)
+        .map(s => ({ name: s.name, quantity: parseInt(s.quantity) || 0 })),
+      quantity:          parseInt(productData.quantity) || 0,
+      // ✅ Send slugs — backend uses findOrCreateCategory by name
+      topLevelCategory:    selL1.id,
       secondLevelCategory: selL2.id,
-      thirdLevelCategory: selL3.id,
-      description: productData.description,
-      highlights: productData.highlights.filter(h => h.trim()).join(", "),
-      additionalImages: productData.additionalImages.filter(img => img.trim()),
-      material: productData.material,
-      careInstructions: productData.careInstructions,
-      countryOfOrigin: productData.countryOfOrigin,
-      manufacturer: productData.manufacturer,
+      thirdLevelCategory:  selL3.id,
+      description:       productData.description,
+      // ✅ Join highlights array → comma-separated string (matches String field in backend)
+      highlights:        productData.highlights.filter(h => h.trim()).join(", "),
+      // ✅ Only send non-empty additional images
+      additionalImages:  productData.additionalImages.filter(img => img.trim()),
+      material:          productData.material,
+      careInstructions:  productData.careInstructions,
+      countryOfOrigin:   productData.countryOfOrigin,
+      manufacturer:      productData.manufacturer,
     };
 
     try { await dispatch(createProduct(submitData)); }
     catch (err) { console.error("Submit error:", err); }
   };
+
+  // ─── Helper tip box ───────────────────────────────────────────────────────
+  const TipBox = ({ children }) => (
+    <Box sx={{
+      mt: 0.5, mb: 1, px: 1.5, py: 1,
+      bgcolor: "#f0fdf4", border: "1px solid #bbf7d0",
+      borderRadius: 1.5,
+    }}>
+      <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+        {children}
+      </Typography>
+    </Box>
+  );
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -293,15 +314,17 @@ const CreateProductForm = () => {
             <Box mb={3}>
               <Typography variant="subtitle2" color="text.secondary" mb={1}>Main Product Image *</Typography>
               {!imagePreviews.mainImage ? (
-                <Button component="label" variant="outlined" startIcon={uploadingStates.mainImage ? <CircularProgress size={20}/> : <CloudUpload/>}
-                  disabled={uploadingStates.mainImage} fullWidth sx={{ py: 3, borderStyle:"dashed", borderWidth:2 }}>
+                <Button component="label" variant="outlined"
+                  startIcon={uploadingStates.mainImage ? <CircularProgress size={20}/> : <CloudUpload/>}
+                  disabled={uploadingStates.mainImage} fullWidth
+                  sx={{ py: 3, borderStyle: "dashed", borderWidth: 2 }}>
                   {uploadingStates.mainImage ? "Uploading..." : "Click to Upload Main Image"}
                   <input type="file" hidden accept="image/png,image/jpeg,image/jpg" onChange={handleMainImageChange}/>
                 </Button>
               ) : (
-                <Paper elevation={2} sx={{ p:2, borderRadius:2 }}>
-                  <Box sx={{ width:"100%", height:200, borderRadius:2, overflow:"hidden", backgroundColor:"#f5f5f5" }}>
-                    <img src={imagePreviews.mainImage} alt="Main" style={{ width:"100%", height:"100%", objectFit:"contain" }}/>
+                <Paper elevation={2} sx={{ p: 2, borderRadius: 2 }}>
+                  <Box sx={{ width: "100%", height: 200, borderRadius: 2, overflow: "hidden", backgroundColor: "#f5f5f5" }}>
+                    <img src={imagePreviews.mainImage} alt="Main" style={{ width: "100%", height: "100%", objectFit: "contain" }}/>
                   </Box>
                   <Box display="flex" justifyContent="space-between" mt={2}>
                     <Typography variant="caption" color="success.main">✓ Main image uploaded</Typography>
@@ -319,17 +342,19 @@ const CreateProductForm = () => {
                     <Button component="label" variant="outlined" fullWidth
                       startIcon={uploadingStates[`additionalImage${index}`] ? <CircularProgress size={16}/> : <ImageIcon/>}
                       disabled={uploadingStates[`additionalImage${index}`]}
-                      sx={{ py:2, borderStyle:"dashed", fontSize:"0.875rem" }}>
+                      sx={{ py: 2, borderStyle: "dashed", fontSize: "0.875rem" }}>
                       {uploadingStates[`additionalImage${index}`] ? "Uploading..." : `Image ${index + 2}`}
-                      <input type="file" hidden accept="image/png,image/jpeg,image/jpg" onChange={(e) => handleAdditionalImageChange(index, e)}/>
+                      <input type="file" hidden accept="image/png,image/jpeg,image/jpg"
+                        onChange={(e) => handleAdditionalImageChange(index, e)}/>
                     </Button>
                   ) : (
-                    <Paper elevation={1} sx={{ p:1, position:"relative" }}>
-                      <Box sx={{ width:"100%", height:120, borderRadius:1, overflow:"hidden", backgroundColor:"#f5f5f5" }}>
-                        <img src={imagePreviews.additionalImages[index]} alt={`Additional ${index+1}`} style={{ width:"100%", height:"100%", objectFit:"contain" }}/>
+                    <Paper elevation={1} sx={{ p: 1, position: "relative" }}>
+                      <Box sx={{ width: "100%", height: 120, borderRadius: 1, overflow: "hidden", backgroundColor: "#f5f5f5" }}>
+                        <img src={imagePreviews.additionalImages[index]} alt={`Additional ${index+1}`}
+                          style={{ width: "100%", height: "100%", objectFit: "contain" }}/>
                       </Box>
                       <IconButton size="small" color="error" onClick={() => removeAdditionalImage(index)}
-                        sx={{ position:"absolute", top:4, right:4, backgroundColor:"white" }}>
+                        sx={{ position: "absolute", top: 4, right: 4, backgroundColor: "white" }}>
                         <Delete fontSize="small"/>
                       </IconButton>
                     </Paper>
@@ -338,13 +363,14 @@ const CreateProductForm = () => {
               ))}
             </Grid>
 
-            {/* ── CATEGORIES (Live from DB) ── */}
+            {/* ── CATEGORIES ── */}
             <Typography variant="h6" fontWeight={600} mb={1}>📂 Categories</Typography>
             <Divider sx={{ mb: 2 }} />
 
             {catLoading ? (
               <Box display="flex" alignItems="center" gap={2} mb={3}>
-                <CircularProgress size={20}/> <Typography variant="body2">Loading categories from database...</Typography>
+                <CircularProgress size={20}/>
+                <Typography variant="body2">Loading categories from database...</Typography>
               </Box>
             ) : (
               <Grid container spacing={2} mb={2}>
@@ -496,7 +522,7 @@ const CreateProductForm = () => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth type="number" label="Total Quantity" name="quantity"
-                  inputProps={{ min:0 }} value={productData.quantity} onChange={handleChange} required/>
+                  inputProps={{ min: 0 }} value={productData.quantity} onChange={handleChange} required/>
               </Grid>
             </Grid>
 
@@ -506,30 +532,45 @@ const CreateProductForm = () => {
             <Grid container spacing={2}>
               <Grid item xs={12} sm={4}>
                 <TextField fullWidth type="number" label="Original Price" name="price" value={productData.price}
-                  onChange={handleChange} required InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}/>
+                  onChange={handleChange} required
+                  InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}/>
               </Grid>
               <Grid item xs={12} sm={4}>
                 <TextField fullWidth type="number" label="Discounted Price" name="discountedPrice" value={productData.discountedPrice}
-                  onChange={handleChange} required InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}/>
+                  onChange={handleChange} required
+                  InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}/>
               </Grid>
               <Grid item xs={12} sm={4}>
                 <TextField fullWidth type="number" label="Discount %" name="discountPercent" value={productData.discountPercent}
-                  onChange={handleChange} required InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }}/>
+                  onChange={handleChange} required
+                  InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }}/>
               </Grid>
             </Grid>
 
-            {/* ── DESCRIPTION ── */}
+            {/* ── DESCRIPTION & DETAILS ── */}
             <Typography variant="h6" fontWeight={600} mt={4} mb={1}>📄 Description & Details</Typography>
             <Divider sx={{ mb: 2 }} />
-            <TextField fullWidth multiline rows={4} label="Product Description" name="description"
-              value={productData.description} onChange={handleChange} required margin="normal"/>
+
+            <TextField
+              fullWidth multiline rows={5}
+              label="Product Description"
+              name="description"
+              value={productData.description}
+              onChange={handleChange}
+              required
+              margin="normal"
+              placeholder="e.g. Stay cozy while making a bold style statement with this Bohemian Tribal Pattern Zip-Up Hoodie..."
+            />
 
             <Typography variant="subtitle2" mt={2} mb={1}>Product Highlights</Typography>
             {productData.highlights.map((h, i) => (
               <Box key={i} display="flex" gap={1} mb={1}>
-                <TextField fullWidth size="small" value={h} onChange={e => handleHighlightChange(i, e.target.value)}
-                  placeholder="e.g., Premium quality fabric"
-                  InputProps={{ startAdornment: <InputAdornment position="start">✓</InputAdornment> }}/>
+                <TextField
+                  fullWidth size="small" value={h}
+                  onChange={e => handleHighlightChange(i, e.target.value)}
+                  placeholder="e.g. Unique tribal-inspired geometric design"
+                  InputProps={{ startAdornment: <InputAdornment position="start">✓</InputAdornment> }}
+                />
                 {productData.highlights.length > 1 && (
                   <IconButton color="error" onClick={() => removeHighlight(i)} size="small"><Delete/></IconButton>
                 )}
@@ -539,20 +580,68 @@ const CreateProductForm = () => {
               Add Highlight
             </Button>
 
+            {/* ── MATERIAL & CARE ── */}
             <Grid container spacing={2} mt={2}>
+
+              {/* ✅ FIXED: Material — multiline with bullet point guidance */}
               <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Material" name="material" value={productData.material} onChange={handleChange} placeholder="e.g., 100% Cotton"/>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={5}
+                  label="Material"
+                  name="material"
+                  value={productData.material}
+                  onChange={handleChange}
+                  placeholder={`• Premium Cotton Blend Fabric\n• Soft Brushed Inner Lining for Warmth\n• 60% Cotton, 40% Polyester`}
+                  helperText="Use • to separate points (each • becomes a bullet on the product page)"
+                />
               </Grid>
+
+              {/* ✅ FIXED: Care Instructions — multiline with bullet point guidance */}
               <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Country of Origin" name="countryOfOrigin" value={productData.countryOfOrigin} onChange={handleChange}/>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={5}
+                  label="Care Instructions"
+                  name="careInstructions"
+                  value={productData.careInstructions}
+                  onChange={handleChange}
+                  placeholder={`• Machine wash cold with similar colors\n• Do not bleach\n• Tumble dry low or hang dry\n• Iron on low if needed`}
+                  helperText="Use • to separate points (each • becomes a bullet on the product page)"
+                />
               </Grid>
+
               <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Manufacturer" name="manufacturer" value={productData.manufacturer} onChange={handleChange}/>
+                <TextField
+                  fullWidth
+                  label="Country of Origin"
+                  name="countryOfOrigin"
+                  value={productData.countryOfOrigin}
+                  onChange={handleChange}
+                />
               </Grid>
+
               <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Care Instructions" name="careInstructions" value={productData.careInstructions} onChange={handleChange} placeholder="e.g., Machine wash cold"/>
+                <TextField
+                  fullWidth
+                  label="Manufacturer"
+                  name="manufacturer"
+                  value={productData.manufacturer}
+                  onChange={handleChange}
+                  placeholder="e.g. HKL Textiles Pvt. Ltd."
+                />
               </Grid>
+
             </Grid>
+
+            {/* Tip for material/care fields */}
+            <TipBox>
+              💡 <strong>Tip for Material & Care fields:</strong> Start each point with <strong>•</strong> (bullet character).
+              Example: <em>• 100% Cotton • Machine wash cold • Do not bleach</em>.
+              Each bullet will display as a separate line on the product page.
+            </TipBox>
 
             {/* ── SIZES ── */}
             <Typography variant="h6" fontWeight={600} mt={4} mb={1}>📏 Size Variants</Typography>
@@ -565,8 +654,9 @@ const CreateProductForm = () => {
                     renderInput={(params) => <TextField {...params} label="Size" required size="small"/>}/>
                 </Grid>
                 <Grid item xs={5}>
-                  <TextField fullWidth type="number" label="Quantity" inputProps={{ min:0 }}
-                    value={size.quantity} onChange={e => handleSizeChange(i, "quantity", e.target.value)} required size="small"/>
+                  <TextField fullWidth type="number" label="Quantity" inputProps={{ min: 0 }}
+                    value={size.quantity} onChange={e => handleSizeChange(i, "quantity", e.target.value)}
+                    required size="small"/>
                 </Grid>
                 <Grid item xs={2}>
                   <IconButton color="error" onClick={() => removeSize(i)} size="small"><Delete/></IconButton>
@@ -578,19 +668,27 @@ const CreateProductForm = () => {
             </Button>
 
             {/* ── SUBMIT ── */}
-            <Button fullWidth type="submit" variant="contained" color="primary" size="large"
+            <Button
+              fullWidth type="submit" variant="contained" color="primary" size="large"
               sx={{ mt: 4, py: 1.5, fontSize: "16px", fontWeight: 600 }}
-              disabled={loading || Object.values(uploadingStates).some(Boolean) || addingCat}>
-              {loading ? <><CircularProgress size={24} sx={{ mr:2, color:"white" }}/>Creating Product...</> : "✨ Create Product"}
+              disabled={loading || Object.values(uploadingStates).some(Boolean) || addingCat}
+            >
+              {loading
+                ? <><CircularProgress size={24} sx={{ mr: 2, color: "white" }}/>Creating Product...</>
+                : "✨ Create Product"
+              }
             </Button>
 
           </form>
         </CardContent>
       </Card>
 
-      <Snackbar open={snackbar.open} autoHideDuration={5000}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={5000}
         onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical:"bottom", horizontal:"right" }}>
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
         <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
       </Snackbar>
     </Box>

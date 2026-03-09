@@ -252,33 +252,60 @@ export default function ProductDetails() {
             </div>
 
             {/* PRODUCT DETAILS */}
-            {(product.material || product.careInstructions || product.countryOfOrigin) && (
-              <div className="mt-8">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Product Details</h3>
-                <dl className="space-y-2 text-sm text-gray-700">
-                  {product.material && (
-                    <>
-                      <dt className="font-medium inline">Material: </dt>
-                      <dd className="inline">{product.material}</dd>
-                      <br />
-                    </>
-                  )}
-                  {product.careInstructions && (
-                    <>
-                      <dt className="font-medium inline">Care: </dt>
-                      <dd className="inline">{product.careInstructions}</dd>
-                      <br />
-                    </>
-                  )}
-                  {product.countryOfOrigin && (
-                    <>
-                      <dt className="font-medium inline">Origin: </dt>
-                      <dd className="inline">{product.countryOfOrigin}</dd>
-                    </>
-                  )}
-                </dl>
-              </div>
-            )}
+                {(product.material || product.careInstructions || product.countryOfOrigin || product.manufacturer) && (
+  <div className="mt-8">
+    <h3 className="text-sm font-semibold text-gray-900 mb-3">Product Details</h3>
+    <dl className="space-y-4 text-sm text-gray-700">
+
+      {product.material && (
+        <div>
+          <dt className="font-semibold text-gray-900 mb-1">Material</dt>
+          <dd>
+            <ul className="space-y-1">
+              {product.material.split('•').map(s => s.trim()).filter(Boolean).map((point, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-0.5">•</span>
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          </dd>
+        </div>
+      )}
+
+      {product.careInstructions && (
+        <div>
+          <dt className="font-semibold text-gray-900 mb-1">Care Instructions</dt>
+          <dd>
+            <ul className="space-y-1">
+              {product.careInstructions.split('•').map(s => s.trim()).filter(Boolean).map((point, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-0.5">•</span>
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          </dd>
+        </div>
+      )}
+
+      {product.countryOfOrigin && (
+        <div>
+          <dt className="font-semibold text-gray-900 mb-1">Country of Origin</dt>
+          <dd>{product.countryOfOrigin}</dd>
+        </div>
+      )}
+
+      {product.manufacturer && (
+        <div>
+          <dt className="font-semibold text-gray-900 mb-1">Manufacturer</dt>
+          <dd>{product.manufacturer}</dd>
+        </div>
+      )}
+
+    </dl>
+  </div>
+)}
 
             {/* SIZE SELECTOR */}
             <div className="mt-8">

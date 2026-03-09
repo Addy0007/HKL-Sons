@@ -18,7 +18,7 @@ public class Product {
 
     private String title;
 
-    @Column(length = 2000) // ✅ Increased length for detailed descriptions
+    @Column(length = 5000) // ✅ Increased length for detailed descriptions
     private String description;
 
     private int quantity;
@@ -43,19 +43,19 @@ public class Product {
     private List<ProductImage> images = new ArrayList<>();
 
     // ✅ NEW: Additional product details
-    @Column(length = 1000)
+    @Column(length = 2000)
     private String highlights; // Comma-separated or JSON string
 
-    @Column(name = "material")
+    @Column(name = "material", length = 500)
     private String material; // e.g., "Cotton", "Polyester"
 
-    @Column(name = "care_instructions", length = 500)
+    @Column(name = "care_instructions", length = 1000)
     private String careInstructions; // e.g., "Machine wash cold"
 
     @Column(name = "country_of_origin")
     private String countryOfOrigin;
 
-    @Column(name = "manufacturer")
+    @Column(name = "manufacturer", length = 500)
     private String manufacturer;
 
     @ElementCollection
