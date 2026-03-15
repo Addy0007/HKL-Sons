@@ -4,7 +4,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) =
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredOptions = options.filter(option =>
+  const filteredOptions = options.filter((option) =>
     option?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -26,7 +26,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) =
         onFocus={() => setIsOpen(true)}
         placeholder={placeholder}
         disabled={disabled}
-        className="border rounded-md p-3 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
+        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B] disabled:bg-[#EDE9E0] disabled:cursor-not-allowed"
       />
       {isOpen && !disabled && (
         <>
@@ -37,19 +37,19 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) =
               setSearchTerm("");
             }}
           />
-          <div className="absolute z-20 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto">
+          <div className="absolute z-20 w-full mt-1 bg-[#F6F3EC] border border-[#C6A15B]/30 rounded-md shadow-lg max-h-60 overflow-y-auto">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option, index) => (
                 <div
                   key={index}
                   onClick={() => handleSelect(option)}
-                  className="p-3 hover:bg-emerald-50 cursor-pointer border-b last:border-b-0"
+                  className="p-3 hover:bg-[#1F3D2B]/5 cursor-pointer border-b border-[#C6A15B]/10 last:border-b-0 text-[#2C2C2C]"
                 >
                   {option}
                 </div>
               ))
             ) : (
-              <div className="p-3 text-gray-500">No results found</div>
+              <div className="p-3 text-[#3D3D3D]">No results found</div>
             )}
           </div>
         </>
@@ -64,12 +64,12 @@ const SearchablePincodeSelect = ({
   options,
   placeholder,
   onManualInput,
-  disabled
+  disabled,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredOptions = options.filter(option => option.includes(searchTerm));
+  const filteredOptions = options.filter((option) => option.includes(searchTerm));
 
   const handleSelect = (option) => {
     onChange(option);
@@ -96,7 +96,7 @@ const SearchablePincodeSelect = ({
         disabled={disabled}
         placeholder={placeholder}
         maxLength={6}
-        className="border rounded-md p-3 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
+        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B] disabled:bg-[#EDE9E0] disabled:cursor-not-allowed"
       />
       {isOpen && !disabled && options.length > 0 && (
         <>
@@ -107,19 +107,19 @@ const SearchablePincodeSelect = ({
               setSearchTerm("");
             }}
           />
-          <div className="absolute z-20 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto">
+          <div className="absolute z-20 w-full mt-1 bg-[#F6F3EC] border border-[#C6A15B]/30 rounded-md shadow-lg max-h-60 overflow-y-auto">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option, index) => (
                 <div
                   key={index}
                   onClick={() => handleSelect(option)}
-                  className="p-3 hover:bg-emerald-50 cursor-pointer border-b last:border-b-0"
+                  className="p-3 hover:bg-[#1F3D2B]/5 cursor-pointer border-b border-[#C6A15B]/10 last:border-b-0 text-[#2C2C2C]"
                 >
                   {option}
                 </div>
               ))
             ) : (
-              <div className="p-3 text-gray-500">No matching pincodes</div>
+              <div className="p-3 text-[#3D3D3D]">No matching pincodes</div>
             )}
           </div>
         </>
@@ -139,8 +139,8 @@ const DeliveryForm = ({
   onDistrictChange,
   handlePincodeInput,
   onContinue,
-  onSaveAddress,  // ✅ NEW prop
-  isSaving  // ✅ NEW prop
+  onSaveAddress, // ✅ NEW prop
+  isSaving, // ✅ NEW prop
 }) => {
   const isFormValid = () => {
     return (
@@ -158,14 +158,14 @@ const DeliveryForm = ({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-emerald-800">Delivery Address</h2>
+      <h2 className="text-xl font-semibold text-[#1F3D2B]">Delivery Address</h2>
 
       <input
         type="text"
         value={address.firstName}
         onChange={(e) => handleFieldChange("firstName", e.target.value)}
         placeholder="First Name"
-        className="border rounded-md p-3 w-full"
+        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B]"
       />
 
       <input
@@ -173,14 +173,14 @@ const DeliveryForm = ({
         value={address.lastName}
         onChange={(e) => handleFieldChange("lastName", e.target.value)}
         placeholder="Last Name"
-        className="border rounded-md p-3 w-full"
+        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B]"
       />
 
       <textarea
         value={address.streetAddress}
         onChange={(e) => handleFieldChange("streetAddress", e.target.value)}
         placeholder="House / Flat / Street Address"
-        className="border rounded-md p-3 w-full min-h-[80px]"
+        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B] min-h-[80px]"
       />
 
       <SearchableSelect
@@ -207,7 +207,7 @@ const DeliveryForm = ({
       />
 
       {pincodeStatus === "deliverable" && (
-        <p className="text-green-600 text-sm">✅ Delivery available</p>
+        <p className="text-[#1F3D2B] text-sm">✅ Delivery available</p>
       )}
 
       <input
@@ -215,7 +215,7 @@ const DeliveryForm = ({
         value={address.city}
         onChange={(e) => handleFieldChange("city", e.target.value)}
         placeholder="City"
-        className="border rounded-md p-3 w-full"
+        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B]"
       />
 
       <input
@@ -224,7 +224,7 @@ const DeliveryForm = ({
         onChange={(e) => handleFieldChange("mobile", e.target.value)}
         placeholder="Phone Number"
         maxLength={10}
-        className="border rounded-md p-3 w-full"
+        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B]"
       />
 
       {/* ✅ NEW: Two-button layout */}
@@ -232,13 +232,29 @@ const DeliveryForm = ({
         <button
           disabled={!isFormValid() || isSaving}
           onClick={onSaveAddress}
-          className="bg-emerald-600 text-white py-2 px-6 rounded-md hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center gap-2"
+          className="bg-[#1F3D2B] text-white py-2 px-6 rounded-md hover:bg-[#162d1f] disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center gap-2"
         >
           {isSaving ? (
             <>
-              <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               Saving...
             </>
@@ -250,13 +266,13 @@ const DeliveryForm = ({
         <button
           disabled={!isFormValid()}
           onClick={onContinue}
-          className="bg-emerald-700 text-white py-2 px-6 rounded-md hover:bg-emerald-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+          className="bg-[#1F3D2B] text-white py-2 px-6 rounded-md hover:bg-[#162d1f] disabled:bg-gray-400 disabled:cursor-not-allowed transition"
         >
           Continue to Summary →
         </button>
       </div>
 
-      <p className="text-xs text-gray-500 text-center pt-2">
+      <p className="text-xs text-[#555555] text-center pt-2">
         💡 Tip: Save your address to use it again in future orders
       </p>
     </div>

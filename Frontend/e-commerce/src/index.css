@@ -1,9 +1,57 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ─── Global Theme ─────────────────────────────────────────────────────────── */
+:root {
+  --color-bg: #F6F3EC;
+  --color-text: #2C2C2C;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+#root {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* ─── Override Tailwind background classes ──────────────────────────────────── */
+.bg-white {
+  background-color: var(--color-bg) !important;
+}
+
+.bg-gray-100 {
+  background-color: #EDE9E0 !important;
+}
+
+.bg-gray-50 {
+  background-color: #F0EDE6 !important;
+}
+
+/* ─── Override ALL Tailwind text-gray-* classes to Charcoal ────────────────── */
+.text-gray-100 { color: #888888 !important; }
+.text-gray-200 { color: #777777 !important; }
+.text-gray-300 { color: #666666 !important; }
+.text-gray-400 { color: #555555 !important; }
+.text-gray-500 { color: #555555 !important; }
+.text-gray-600 { color: #444444 !important; }
+.text-gray-700 { color: #3D3D3D !important; }
+.text-gray-800 { color: var(--color-text) !important; }
+.text-gray-900 { color: var(--color-text) !important; }
+.text-black    { color: var(--color-text) !important; }
+
+/* ─── Catch plain elements that inherit poorly ──────────────────────────────── */
+p, span, h1, h2, h3, h4, h5, h6, li, td, th, label, a {
+  color: inherit;
+}
+
+/* ─── Animations ───────────────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-3px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fadeIn {

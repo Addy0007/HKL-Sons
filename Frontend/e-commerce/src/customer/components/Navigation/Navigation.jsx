@@ -19,7 +19,6 @@ export default function Navigation() {
   const { jwt, user, isLoading } = useSelector((state) => state.auth);
   const { cartItems } = useSelector((state) => state.cart);
 
-  // Load user profile if jwt exists
   useEffect(() => {
     if (jwt && !user && !isLoading) {
       dispatch(getUser(jwt));
@@ -28,10 +27,8 @@ export default function Navigation() {
 
   const handleCategoryClick = (categoryId, sectionId, itemId, close) => {
     const url = `/${categoryId}/${sectionId}/${itemId}`;
-
     if (close) close();
     setOpen(false);
-
     navigate(url);
   };
 
@@ -55,9 +52,8 @@ export default function Navigation() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-[#D8C7A3] shadow-sm">
 
-        {/* Mobile Nav Sidebar */}
         <MobileNav
           open={open}
           setOpen={setOpen}
@@ -73,47 +69,44 @@ export default function Navigation() {
         {/* Top Promo Banner */}
         <div
           className="h-10 flex items-center justify-center text-white text-sm font-medium"
-          style={{ backgroundColor: "#3D8D7A" }}
+          style={{ backgroundColor: "#1F3D2B" }}
         >
           Free delivery on orders over ₹1000
         </div>
 
         {/* Main Navigation */}
-        <nav className="bg-[#FFFEC2]">
+        <nav className="bg-[#D8C7A3]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            
+
             {/* Mobile Header */}
             <div className="flex items-center justify-between h-16 lg:hidden">
-              {/* Menu Button */}
               <button
                 type="button"
-                className="p-2 -ml-2 text-gray-700"
+                className="p-2 -ml-2 text-[#C6A15B]"
                 onClick={() => setOpen(true)}
               >
                 <Bars3Icon className="h-6 w-6" />
               </button>
 
-              {/* Logo */}
               <div className="absolute left-1/2 -translate-x-1/2 cursor-pointer" onClick={() => navigate("/")}>
                 <img
-                      src="/web-app-manifest-192x192.png"
-                      className="h-8 w-8 rounded-full object-cover"
-                      alt="HKL Sons"
+                  src="/web-app-manifest-192x192.png"
+                  className="h-8 w-8 rounded-full object-cover"
+                  alt="HKL Sons"
                 />
               </div>
 
-              {/* Right Icons */}
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-                  className="p-2 text-gray-700"
+                  className="p-2 text-[#C6A15B]"
                 >
                   <MagnifyingGlassIcon className="h-6 w-6" />
                 </button>
 
                 <button
                   onClick={() => navigate("/cart")}
-                  className="relative p-2 text-gray-700"
+                  className="relative p-2 text-[#C6A15B]"
                 >
                   <ShoppingBagIcon className="h-6 w-6" />
                   {cartItems?.length > 0 && (
@@ -133,17 +126,15 @@ export default function Navigation() {
             )}
 
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex lg:items-center lg:h-16 border-b border-gray-200">
-              {/* Logo */}
+            <div className="hidden lg:flex lg:items-center lg:h-16 border-b border-[#C6A15B]/30">
               <div className="cursor-pointer" onClick={() => navigate("/")}>
                 <img
-                      src="/web-app-manifest-192x192.png"
-                      className="h-8 w-8 rounded-full object-cover"
-                      alt="HKL Sons"
+                  src="/web-app-manifest-192x192.png"
+                  className="h-8 w-8 rounded-full object-cover"
+                  alt="HKL Sons"
                 />
               </div>
 
-              {/* Desktop NavBar */}
               <DesktopNav
                 handleCategoryClick={handleCategoryClick}
                 getInitial={getInitial}
@@ -155,7 +146,7 @@ export default function Navigation() {
         </nav>
       </div>
 
-      {/* SPACER - Prevents content from going under fixed nav */}
+      {/* SPACER */}
       <div className="h-[104px]" />
     </>
   );

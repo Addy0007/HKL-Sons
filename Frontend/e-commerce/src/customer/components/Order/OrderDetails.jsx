@@ -34,8 +34,8 @@ const OrderDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center text-gray-600 text-sm">
+      <div className="min-h-screen flex items-center justify-center bg-[#F6F3EC]">
+        <div className="text-center text-[#3D3D3D] text-sm">
           Loading order details...
         </div>
       </div>
@@ -44,7 +44,7 @@ const OrderDetails = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#F6F3EC]">
         <div className="text-center text-red-600 text-sm px-4">{error}</div>
       </div>
     );
@@ -52,8 +52,8 @@ const OrderDetails = () => {
 
   if (!order) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center text-gray-600 text-sm px-4">
+      <div className="min-h-screen flex items-center justify-center bg-[#F6F3EC]">
+        <div className="text-center text-[#3D3D3D] text-sm px-4">
           No order found.
         </div>
       </div>
@@ -78,16 +78,15 @@ const OrderDetails = () => {
     CANCELLED: "bg-red-50 text-red-700 border border-red-200",
     RETURNED: "bg-orange-50 text-orange-700 border border-orange-200",
     SHIPPED: "bg-blue-50 text-blue-700 border border-blue-200",
-    OUT_FOR_DELIVERY:
-      "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    OUT_FOR_DELIVERY: "bg-[#1F3D2B]/10 text-[#1F3D2B] border border-[#1F3D2B]/20",
     CONFIRMED: "bg-purple-50 text-purple-700 border border-purple-200",
-    PLACED: "bg-gray-50 text-gray-700 border border-gray-200",
+    PLACED: "bg-[#EDE9E0] text-[#2C2C2C] border border-[#C6A15B]/20",
     PENDING: "bg-yellow-50 text-yellow-700 border border-yellow-200",
   };
 
   const statusClass =
     statusBadge[order.orderStatus] ||
-    "bg-gray-50 text-gray-700 border border-gray-200";
+    "bg-[#EDE9E0] text-[#2C2C2C] border border-[#C6A15B]/20";
 
   const orderDate = order.orderDate
     ? new Date(order.orderDate).toLocaleDateString("en-IN", {
@@ -99,31 +98,32 @@ const OrderDetails = () => {
 
   // ---- UI ----
   return (
-    <div className="min-h-screen bg-gray-50 px-3 py-4 sm:px-6 sm:py-6">
+    <div className="min-h-screen bg-[#F6F3EC] px-3 py-4 sm:px-6 sm:py-6">
       <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+
         {/* Page Title */}
         <div className="flex items-center justify-between">
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
+          <h1 className="text-xl sm:text-2xl font-semibold text-[#2C2C2C]">
             Order Details
           </h1>
         </div>
 
         {/* Order Summary Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5 flex flex-col gap-3">
+        <div className="bg-[#F6F3EC] rounded-xl shadow-sm border border-[#C6A15B]/20 p-4 sm:p-5 flex flex-col gap-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <p className="text-xs uppercase tracking-wide text-gray-500">
+              <p className="text-xs uppercase tracking-wide text-[#555555]">
                 Order ID
               </p>
-              <p className="text-sm sm:text-base font-semibold text-gray-900 break-all">
+              <p className="text-sm sm:text-base font-semibold text-[#2C2C2C] break-all">
                 #{order.id}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2 sm:items-center">
               {orderDate && (
-                <div className="text-xs sm:text-sm text-gray-600">
-                  <span className="font-medium text-gray-700">
+                <div className="text-xs sm:text-sm text-[#3D3D3D]">
+                  <span className="font-medium text-[#2C2C2C]">
                     Ordered on:
                   </span>{" "}
                   {orderDate}
@@ -138,51 +138,51 @@ const OrderDetails = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap text-xs sm:text-sm text-gray-600 gap-x-6 gap-y-1">
+          <div className="flex flex-wrap text-xs sm:text-sm text-[#3D3D3D] gap-x-6 gap-y-1">
             <p>
-              <span className="font-medium">Total Items:</span>{" "}
+              <span className="font-medium text-[#2C2C2C]">Total Items:</span>{" "}
               {order.orderItems?.length || 0}
             </p>
             <p>
-              <span className="font-medium">Amount:</span> ₹
+              <span className="font-medium text-[#2C2C2C]">Amount:</span> ₹
               {order.totalDiscountedPrice ?? order.totalPrice}
             </p>
           </div>
         </div>
 
         {/* Delivery Address */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5">
+        <div className="bg-[#F6F3EC] rounded-xl shadow-sm border border-[#C6A15B]/20 p-4 sm:p-5">
           <div className="flex items-center gap-2 mb-3">
-            <div className="p-2 rounded-md bg-blue-50 text-blue-600">
+            <div className="p-2 rounded-md bg-[#1F3D2B]/10 text-[#1F3D2B]">
               <MapPin size={18} />
             </div>
-            <h2 className="text-sm sm:text-base font-semibold text-gray-900">
+            <h2 className="text-sm sm:text-base font-semibold text-[#2C2C2C]">
               Delivery Address
             </h2>
           </div>
 
-          <div className="border border-blue-100 bg-blue-50/60 p-3 sm:p-4 rounded-lg text-xs sm:text-sm">
-            <p className="font-semibold text-gray-800 mb-0.5">
+          <div className="border border-[#1F3D2B]/20 bg-[#1F3D2B]/5 p-3 sm:p-4 rounded-lg text-xs sm:text-sm">
+            <p className="font-semibold text-[#2C2C2C] mb-0.5">
               {order.shippingAddress.firstName}{" "}
               {order.shippingAddress.lastName}
             </p>
-            <p className="text-gray-700">
+            <p className="text-[#3D3D3D]">
               {order.shippingAddress.streetAddress}
             </p>
-            <p className="text-gray-700">
+            <p className="text-[#3D3D3D]">
               {order.shippingAddress.city}, {order.shippingAddress.state} -{" "}
               {order.shippingAddress.zipCode}
             </p>
-            <p className="text-gray-700 mt-1.5">
-              <span className="font-medium">Phone:</span>{" "}
+            <p className="text-[#3D3D3D] mt-1.5">
+              <span className="font-medium text-[#2C2C2C]">Phone:</span>{" "}
               {order.shippingAddress.mobile}
             </p>
           </div>
         </div>
 
         {/* Order Status – Mobile (vertical list) */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5 sm:hidden">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">
+        <div className="bg-[#F6F3EC] rounded-xl shadow-sm border border-[#C6A15B]/20 p-4 sm:p-5 sm:hidden">
+          <h2 className="text-sm font-semibold text-[#2C2C2C] mb-4">
             Order Status
           </h2>
 
@@ -207,7 +207,7 @@ const OrderDetails = () => {
                           status === "completed"
                             ? "bg-green-500"
                             : status === "active"
-                            ? "bg-blue-500"
+                            ? "bg-[#1F3D2B]"
                             : "bg-gray-300 text-gray-600"
                         }`}
                     >
@@ -219,7 +219,7 @@ const OrderDetails = () => {
                         <Package size={18} />
                       )}
                     </div>
-                    <span className="text-xs font-medium text-gray-800">
+                    <span className="text-xs font-medium text-[#2C2C2C]">
                       {step.label}
                     </span>
                   </div>
@@ -229,8 +229,8 @@ const OrderDetails = () => {
                       status === "completed"
                         ? "text-green-600"
                         : status === "active"
-                        ? "text-blue-600"
-                        : "text-gray-400"
+                        ? "text-[#1F3D2B]"
+                        : "text-[#555555]"
                     }`}
                   >
                     {status === "completed"
@@ -246,8 +246,8 @@ const OrderDetails = () => {
         </div>
 
         {/* Order Status – Desktop/Tablet (horizontal tracker) */}
-        <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h2 className="text-sm sm:text-base font-semibold text-gray-900 mb-6">
+        <div className="hidden sm:block bg-[#F6F3EC] rounded-xl shadow-sm border border-[#C6A15B]/20 p-5">
+          <h2 className="text-sm sm:text-base font-semibold text-[#2C2C2C] mb-6">
             Order Status
           </h2>
 
@@ -272,7 +272,7 @@ const OrderDetails = () => {
                           status === "completed"
                             ? "bg-green-500 text-white"
                             : status === "active"
-                            ? "bg-blue-500 text-white"
+                            ? "bg-[#1F3D2B] text-white"
                             : "bg-gray-300 text-gray-600"
                         }`}
                     >
@@ -284,7 +284,7 @@ const OrderDetails = () => {
                         <Package size={20} />
                       )}
                     </div>
-                    <p className="text-xs mt-2 font-medium text-gray-800">
+                    <p className="text-xs mt-2 font-medium text-[#2C2C2C]">
                       {step.label}
                     </p>
                     {index < orderSteps.length - 1 && (
@@ -306,12 +306,12 @@ const OrderDetails = () => {
         </div>
 
         {/* Order Items */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5">
-          <h2 className="text-sm sm:text-base font-semibold text-gray-900 mb-4 sm:mb-5">
+        <div className="bg-[#F6F3EC] rounded-xl shadow-sm border border-[#C6A15B]/20 p-4 sm:p-5">
+          <h2 className="text-sm sm:text-base font-semibold text-[#2C2C2C] mb-4 sm:mb-5">
             Order Items
           </h2>
 
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-[#C6A15B]/10">
             {order.orderItems.map((item) => (
               <div
                 key={item.id}
@@ -320,15 +320,14 @@ const OrderDetails = () => {
                 <div className="flex items-start gap-3 sm:gap-4 flex-1">
                   <img
                     src={optimizeImage(item.imageUrl, 200)}
-
                     alt={item.productName}
-                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover border border-gray-100"
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover border border-[#C6A15B]/20"
                   />
                   <div className="flex-1">
-                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 line-clamp-2">
+                    <h3 className="text-sm sm:text-base font-semibold text-[#2C2C2C] line-clamp-2">
                       {item.productName}
                     </h3>
-                    <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
+                    <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#3D3D3D]">
                       <span>
                         Size:{" "}
                         <span className="font-medium">{item.size}</span>
@@ -338,10 +337,10 @@ const OrderDetails = () => {
                         <span className="font-medium">{item.quantity}</span>
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-[#555555]">
                       Sold by: <span className="font-medium">HKLSons</span>
                     </p>
-                    <p className="mt-1.5 text-sm sm:text-base font-bold text-gray-900">
+                    <p className="mt-1.5 text-sm sm:text-base font-bold text-[#2C2C2C]">
                       ₹{item.price}
                     </p>
                   </div>
@@ -353,7 +352,7 @@ const OrderDetails = () => {
                       e.stopPropagation();
                       navigate(`/product/${item.productId}`);
                     }}
-                    className="w-full sm:w-auto text-xs sm:text-sm mt-1 sm:mt-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium"
+                    className="w-full sm:w-auto text-xs sm:text-sm mt-1 sm:mt-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-[#1F3D2B] hover:bg-[#162d1f] text-white font-medium"
                   >
                     Rate &amp; Review
                   </button>
@@ -363,29 +362,30 @@ const OrderDetails = () => {
           </div>
 
           {/* Price Summary */}
-          <div className="mt-5 pt-4 border-t border-gray-100">
+          <div className="mt-5 pt-4 border-t border-[#C6A15B]/20">
             <div className="space-y-2 text-sm sm:text-base">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Subtotal</span>
-                <span className="font-semibold text-gray-900">
+                <span className="text-[#3D3D3D]">Subtotal</span>
+                <span className="font-semibold text-[#2C2C2C]">
                   ₹{order.totalPrice}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Discount</span>
+                <span className="text-[#3D3D3D]">Discount</span>
                 <span className="font-semibold text-green-600">
                   -₹{order.discount}
                 </span>
               </div>
-              <div className="flex justify-between items-center pt-3 border-t border-gray-100 text-sm sm:text-lg font-semibold">
-                <span className="text-gray-900">Total</span>
-                <span className="text-blue-600">
+              <div className="flex justify-between items-center pt-3 border-t border-[#C6A15B]/20 text-sm sm:text-lg font-semibold">
+                <span className="text-[#2C2C2C]">Total</span>
+                <span className="text-[#1F3D2B]">
                   ₹{order.totalDiscountedPrice}
                 </span>
               </div>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

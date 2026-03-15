@@ -15,7 +15,6 @@ import SearchBar from "./SearchBar";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../../State/Auth/Action";
 
-/* ✅ Format for UI only */
 const formatLabel = (text) => {
   if (!text) return "";
   return text
@@ -52,19 +51,18 @@ export default function DesktopNav({
           <Popover key={category.slug} className="flex">
             {({ close }) => (
               <>
-                <PopoverButton className="group relative flex items-center text-sm font-medium text-gray-700 hover:text-teal-700">
+                <PopoverButton className="group relative flex items-center text-sm font-medium text-[#2C2C2C] hover:text-[#1F3D2B]">
                   {formatLabel(category.name)}
                 </PopoverButton>
 
-                <PopoverPanel className="absolute inset-x-0 top-full text-sm bg-[#FFFEC2] shadow-lg">
+                {/* Dropdown panel */}
+                <PopoverPanel className="absolute inset-x-0 top-full text-sm bg-[#F6F3EC] shadow-lg border-t border-[#C6A15B]/30">
                   <div className="max-w-7xl mx-auto px-8 py-16 grid grid-cols-3 gap-10">
-
                     {category.children?.map((section) => (
                       <div key={section.slug}>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-[#2C2C2C]">
                           {formatLabel(section.name)}
                         </p>
-
                         <ul className="mt-4 space-y-3">
                           {section.children?.map((item) => (
                             <li key={item.slug}>
@@ -77,7 +75,7 @@ export default function DesktopNav({
                                     close
                                   )
                                 }
-                                className="text-gray-600 hover:text-teal-700"
+                                className="text-[#3D3D3D] hover:text-[#1F3D2B]"
                               >
                                 {formatLabel(item.name)}
                               </button>
@@ -86,7 +84,6 @@ export default function DesktopNav({
                         </ul>
                       </div>
                     ))}
-
                   </div>
                 </PopoverPanel>
               </>
@@ -100,21 +97,24 @@ export default function DesktopNav({
       <div className="ml-auto flex items-center">
         {jwt ? (
           isLoading || !user ? (
-            <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+            <div className="w-8 h-8 bg-[#C6A15B]/20 rounded-full animate-pulse" />
           ) : (
             <Menu as="div" className="relative ml-6">
               <MenuButton className="flex items-center gap-2">
-                <div className="w-9 h-9 bg-teal-700 text-white rounded-full flex items-center justify-center">
+                <div
+                  className="w-9 h-9 text-white rounded-full flex items-center justify-center font-medium"
+                  style={{ backgroundColor: "#1F3D2B" }}
+                >
                   {getInitial(user)}
                 </div>
-                <span className="text-sm">{getUserName()}</span>
+                <span className="text-sm text-[#2C2C2C]">{getUserName()}</span>
               </MenuButton>
 
-              <MenuItems className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg p-2 text-sm">
+              <MenuItems className="absolute right-0 mt-2 w-48 bg-[#F6F3EC] shadow-lg rounded-lg p-2 text-sm border border-[#C6A15B]/30">
                 <MenuItem>
                   <button
                     onClick={() => navigate("/profile")}
-                    className="p-2 w-full text-left hover:bg-gray-100"
+                    className="p-2 w-full text-left hover:bg-[#C6A15B]/10 rounded text-[#2C2C2C]"
                   >
                     My Profile
                   </button>
@@ -122,7 +122,7 @@ export default function DesktopNav({
                 <MenuItem>
                   <button
                     onClick={() => navigate("/account/order")}
-                    className="p-2 w-full text-left hover:bg-gray-100"
+                    className="p-2 w-full text-left hover:bg-[#C6A15B]/10 rounded text-[#2C2C2C]"
                   >
                     My Orders
                   </button>
@@ -130,7 +130,7 @@ export default function DesktopNav({
                 <MenuItem>
                   <button
                     onClick={handleSignOut}
-                    className="p-2 w-full text-left text-red-600 hover:bg-red-50"
+                    className="p-2 w-full text-left text-red-600 hover:bg-red-50 rounded"
                   >
                     Logout
                   </button>
@@ -142,13 +142,13 @@ export default function DesktopNav({
           <>
             <button
               onClick={() => navigate("/login")}
-              className="text-sm ml-6 font-medium text-gray-700 hover:text-teal-700"
+              className="text-sm ml-6 font-medium text-[#2C2C2C] hover:text-[#1F3D2B]"
             >
               Sign In
             </button>
             <button
               onClick={() => navigate("/signup")}
-              className="text-sm ml-4 font-medium text-gray-700 hover:text-teal-700"
+              className="text-sm ml-4 font-medium text-[#2C2C2C] hover:text-[#1F3D2B]"
             >
               Create Account
             </button>
@@ -159,8 +159,8 @@ export default function DesktopNav({
           onClick={() => navigate("/cart")}
           className="group ml-6 flex items-center"
         >
-          <ShoppingBagIcon className="w-6 h-6 text-gray-500 group-hover:text-gray-700" />
-          <span className="ml-2 text-sm font-medium">
+          <ShoppingBagIcon className="w-6 h-6 text-[#C6A15B] group-hover:text-[#a8843d]" />
+          <span className="ml-2 text-sm font-medium text-[#2C2C2C]">
             {cartItems?.length || 0}
           </span>
         </button>

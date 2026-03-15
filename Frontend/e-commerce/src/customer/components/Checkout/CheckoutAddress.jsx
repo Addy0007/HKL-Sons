@@ -10,7 +10,7 @@ import { CLEAR_CHECKOUT_ADDRESS } from "../../../State/Checkout/ActionType";
 const CheckoutAddress = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  
+
   const { user, isLoading } = useSelector((state) => state.auth);
   const { cart } = useSelector((state) => state);
   const savedAddress = useSelector((state) => state.checkout.address);
@@ -31,7 +31,7 @@ const CheckoutAddress = () => {
   const [pincodeStatus, setPincodeStatus] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
   const [isCartChecked, setIsCartChecked] = useState(false);
-  
+
   // ✅ NEW: State for save feedback
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
@@ -73,11 +73,10 @@ const CheckoutAddress = () => {
         headers: { Authorization: `Bearer ${jwt}` },
       });
       setSavedAddresses(
-  Array.isArray(res.data)
-    ? res.data.filter((addr) => addr.active !== false)
-    : []
-);
-
+        Array.isArray(res.data)
+          ? res.data.filter((addr) => addr.active !== false)
+          : []
+      );
     } catch (err) {
       setSavedAddresses([]);
     }
@@ -115,9 +114,9 @@ const CheckoutAddress = () => {
   useEffect(() => {
     const restore = async () => {
       if (!savedAddress || isInitialized || loadingStates) return;
-      
+
       setAddress(savedAddress);
-      
+
       try {
         const jwt = localStorage.getItem("jwt");
         if (savedAddress.state) {
@@ -129,7 +128,7 @@ const CheckoutAddress = () => {
         } else {
           setDistricts([]);
         }
-        
+
         if (savedAddress.district) {
           const pinRes = await axios.get(
             `/api/locations/pincodes/${savedAddress.district}`,
@@ -139,7 +138,7 @@ const CheckoutAddress = () => {
         } else {
           setPincodes([]);
         }
-        
+
         if (savedAddress.zipCode && savedAddress.zipCode.length === 6) {
           try {
             const lookup = await axios.get(
@@ -154,7 +153,7 @@ const CheckoutAddress = () => {
           setPincodeStatus("");
         }
       } catch {}
-      
+
       setIsInitialized(true);
     };
     restore();
@@ -173,9 +172,9 @@ const CheckoutAddress = () => {
     setPincodes([]);
     setPincodeStatus("");
     dispatch(saveCheckoutAddress(updated));
-    
+
     if (!stateName) return;
-    
+
     try {
       const jwt = localStorage.getItem("jwt");
       const res = await axios.get(`/api/locations/districts/${stateName}`, {
@@ -193,9 +192,9 @@ const CheckoutAddress = () => {
     setPincodes([]);
     setPincodeStatus("");
     dispatch(saveCheckoutAddress(updated));
-    
+
     if (!districtName) return;
-    
+
     try {
       const jwt = localStorage.getItem("jwt");
       const res = await axios.get(`/api/locations/pincodes/${districtName}`, {
@@ -207,71 +206,74 @@ const CheckoutAddress = () => {
     }
   };
 
- const handlePincodeInput = async (pin) => {
-  const updated = { ...address, zipCode: pin };
-  setAddress(updated);
-  
-  if (pin.length < 6) {
-    setPincodeStatus("");
-    dispatch(saveCheckoutAddress(updated));
-    return;
-  }
-  
-  try {
-    const jwt = localStorage.getItem("jwt");
-    const res = await axios.get(`/api/locations/lookup/${pin}`, {
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
-    
-    // ✅ UPDATED: Always deliverable now!
-    setPincodeStatus("deliverable");
-    
-    if (res.data.found) {
-      // Pincode exists - auto-fill state and district
-      const finalAddress = {
-        ...updated,
-        state: res.data.state || updated.state,
-        district: res.data.district || updated.district,
-      };
-      setAddress(finalAddress);
-      
-      // Load districts for the state
-      if (res.data.state) {
-        try {
-          const distRes = await axios.get(`/api/locations/districts/${res.data.state}`, {
-            headers: { Authorization: `Bearer ${jwt}` },
-          });
-          setDistricts(Array.isArray(distRes.data) ? distRes.data : []);
-        } catch {
-          setDistricts([]);
-        }
-      }
-      
-      // Load pincodes for the district
-      if (res.data.district) {
-        try {
-          const pinRes = await axios.get(`/api/locations/pincodes/${res.data.district}`, {
-            headers: { Authorization: `Bearer ${jwt}` },
-          });
-          setPincodes(Array.isArray(pinRes.data) ? pinRes.data : []);
-        } catch {
-          setPincodes([]);
-        }
-      }
-      
-      dispatch(saveCheckoutAddress(finalAddress));
-    } else {
-      // ✅ Pincode NOT found - user needs to enter state/district manually
-      // But it's still deliverable!
+  const handlePincodeInput = async (pin) => {
+    const updated = { ...address, zipCode: pin };
+    setAddress(updated);
+
+    if (pin.length < 6) {
+      setPincodeStatus("");
       dispatch(saveCheckoutAddress(updated));
-      // Don't auto-fill anything, let user type
+      return;
     }
-  } catch {
-    // ✅ Even on error, mark as deliverable
-    setPincodeStatus("deliverable");
-    dispatch(saveCheckoutAddress(updated));
-  }
-};
+
+    try {
+      const jwt = localStorage.getItem("jwt");
+      const res = await axios.get(`/api/locations/lookup/${pin}`, {
+        headers: { Authorization: `Bearer ${jwt}` },
+      });
+
+      // ✅ UPDATED: Always deliverable now!
+      setPincodeStatus("deliverable");
+
+      if (res.data.found) {
+        // Pincode exists - auto-fill state and district
+        const finalAddress = {
+          ...updated,
+          state: res.data.state || updated.state,
+          district: res.data.district || updated.district,
+        };
+        setAddress(finalAddress);
+
+        // Load districts for the state
+        if (res.data.state) {
+          try {
+            const jwt2 = localStorage.getItem("jwt");
+            const distRes = await axios.get(`/api/locations/districts/${res.data.state}`, {
+              headers: { Authorization: `Bearer ${jwt2}` },
+            });
+            setDistricts(Array.isArray(distRes.data) ? distRes.data : []);
+          } catch {
+            setDistricts([]);
+          }
+        }
+
+        // Load pincodes for the district
+        if (res.data.district) {
+          try {
+            const jwt3 = localStorage.getItem("jwt");
+            const pinRes = await axios.get(`/api/locations/pincodes/${res.data.district}`, {
+              headers: { Authorization: `Bearer ${jwt3}` },
+            });
+            setPincodes(Array.isArray(pinRes.data) ? pinRes.data : []);
+          } catch {
+            setPincodes([]);
+          }
+        }
+
+        dispatch(saveCheckoutAddress(finalAddress));
+      } else {
+        // ✅ Pincode NOT found - user needs to enter state/district manually
+        // But it's still deliverable!
+        dispatch(saveCheckoutAddress(updated));
+        // Don't auto-fill anything, let user type
+      }
+    } catch {
+      // ✅ Even on error, mark as deliverable
+      setPincodeStatus("deliverable");
+      dispatch(saveCheckoutAddress(updated));
+    }
+  };
+
   // ✅ NEW: Save Address to Database (without navigation)
   const handleSaveAddress = async () => {
     if (!cart.cartItems || cart.cartItems.length === 0) {
@@ -288,12 +290,12 @@ const CheckoutAddress = () => {
       await axios.post("/api/address", address, {
         headers: { Authorization: `Bearer ${jwt}` },
       });
-      
+
       setSaveMessage({ type: "success", text: "✅ Address saved successfully!" });
-      
+
       // Reload saved addresses list
       await loadSavedAddresses();
-      
+
       // Clear the form
       setAddress({
         firstName: "",
@@ -306,11 +308,10 @@ const CheckoutAddress = () => {
         mobile: "",
       });
       setPincodeStatus("");
-      
     } catch (err) {
-      setSaveMessage({ 
-        type: "error", 
-        text: "❌ Failed to save address. Please try again." 
+      setSaveMessage({
+        type: "error",
+        text: "❌ Failed to save address. Please try again.",
       });
     } finally {
       setIsSaving(false);
@@ -326,7 +327,7 @@ const CheckoutAddress = () => {
       navigate("/cart");
       return;
     }
-    
+
     dispatch(saveCheckoutAddress(address));
     navigate("/checkout/summary");
   };
@@ -337,28 +338,28 @@ const CheckoutAddress = () => {
     navigate("/checkout/summary");
   };
 
-  if (isLoading) return <div className="text-center mt-10">Checking login...</div>;
+  if (isLoading) return <div className="text-center mt-10 text-[#2C2C2C]">Checking login...</div>;
   if (!user) return null;
-  
+
   if (!isCartChecked || cart.loading) {
     return (
-      <div className="min-h-screen bg-gray-100 py-10 px-4 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F6F3EC] py-10 px-4 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-700 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading cart...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1F3D2B] mx-auto mb-4"></div>
+          <p className="text-[#3D3D3D]">Loading cart...</p>
         </div>
       </div>
     );
   }
-  
+
   if (!cart.cartItems || cart.cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-100 py-10 px-4 flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-xl shadow">
-          <p className="text-gray-600 mb-4 text-lg">Your cart is empty</p>
+      <div className="min-h-screen bg-[#F6F3EC] py-10 px-4 flex items-center justify-center">
+        <div className="text-center bg-[#F6F3EC] p-8 rounded-xl shadow border border-[#C6A15B]/20">
+          <p className="text-[#3D3D3D] mb-4 text-lg">Your cart is empty</p>
           <button
             onClick={() => navigate("/cart")}
-            className="bg-emerald-700 text-white py-2 px-6 rounded-md hover:bg-emerald-800"
+            className="bg-[#1F3D2B] text-white py-2 px-6 rounded-md hover:bg-[#162d1f]"
           >
             Go to Cart
           </button>
@@ -368,10 +369,10 @@ const CheckoutAddress = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-10 px-4">
-      <div className="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow">
-        <h1 className="text-2xl font-bold text-emerald-800 mb-6">Select Delivery Address</h1>
-        
+    <div className="min-h-screen bg-[#F6F3EC] py-10 px-4">
+      <div className="max-w-6xl mx-auto bg-[#F6F3EC] p-6 rounded-xl shadow border border-[#C6A15B]/20">
+        <h1 className="text-2xl font-bold text-[#1F3D2B] mb-6">Select Delivery Address</h1>
+
         {error && (
           <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
             {error}
@@ -380,115 +381,127 @@ const CheckoutAddress = () => {
 
         {/* ✅ NEW: Save feedback message */}
         {saveMessage && (
-          <div className={`p-3 rounded mb-4 ${
-            saveMessage.type === "success" 
-              ? "bg-green-100 text-green-700" 
-              : "bg-red-100 text-red-700"
-          }`}>
+          <div
+            className={`p-3 rounded mb-4 ${
+              saveMessage.type === "success"
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
             {saveMessage.text}
           </div>
         )}
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Saved Addresses */}
           <div className="lg:col-span-1 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800">Saved Addresses</h3>
-            
+            <h3 className="text-lg font-semibold text-[#2C2C2C]">Saved Addresses</h3>
+
             {savedAddresses.length === 0 && (
-              <p className="text-gray-500 text-sm">No saved addresses</p>
+              <p className="text-[#3D3D3D] text-sm">No saved addresses</p>
             )}
-            
-{savedAddresses.map((addr) => {
-  const selected = selectedSavedAddressId === addr.id;
-  return (
-    <div
-      key={addr.id}
-      className={`relative p-4 border rounded-lg transition cursor-pointer group ${
-        selected ? "border-emerald-600 bg-emerald-50" : "hover:border-emerald-500"
-      }`}
-      onClick={() => selectSavedAddress(addr)}
-    >
-      {selected && (
-        <div className="absolute -top-2 -right-2 bg-emerald-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow">
-          ✓
-        </div>
-      )}
 
-      <p className="font-medium text-gray-900">
-        {addr.firstName} {addr.lastName}
-      </p>
-      <p className="text-gray-700">{addr.streetAddress}</p>
-      <p className="text-gray-700">
-        {addr.city}, {addr.district}
-      </p>
-      <p className="text-gray-700">
-        {addr.state} - {addr.zipCode}
-      </p>
-      <p className="text-sm text-gray-500 mt-1">📞 {addr.mobile}</p>
+            {savedAddresses.map((addr) => {
+              const selected = selectedSavedAddressId === addr.id;
+              return (
+                <div
+                  key={addr.id}
+                  className={`relative p-4 border rounded-lg transition cursor-pointer group ${
+                    selected
+                      ? "border-[#1F3D2B] bg-[#1F3D2B]/5"
+                      : "border-[#C6A15B]/30 hover:border-[#1F3D2B]"
+                  }`}
+                  onClick={() => selectSavedAddress(addr)}
+                >
+                  {selected && (
+                    <div className="absolute -top-2 -right-2 bg-[#1F3D2B] text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow">
+                      ✓
+                    </div>
+                  )}
 
-      <div className="flex gap-2 mt-3">
-        {/* ✅ Deliver button */}
-        <button
-          className="flex-1 bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700"
-          onClick={(e) => {
-            e.stopPropagation();
-            selectSavedAddress(addr);
-          }}
-        >
-          Deliver to this address
-        </button>
+                  <p className="font-medium text-[#2C2C2C]">
+                    {addr.firstName} {addr.lastName}
+                  </p>
+                  <p className="text-[#3D3D3D]">{addr.streetAddress}</p>
+                  <p className="text-[#3D3D3D]">
+                    {addr.city}, {addr.district}
+                  </p>
+                  <p className="text-[#3D3D3D]">
+                    {addr.state} - {addr.zipCode}
+                  </p>
+                  <p className="text-sm text-[#555555] mt-1">📞 {addr.mobile}</p>
 
-        {/* 🗑️ Delete button */}
-        <button
-          className="flex-1 bg-red-500 text-white py-2 rounded-md hover:bg-red-600"
-          onClick={async (e) => {
-            e.stopPropagation();
-            if (!window.confirm("Are you sure you want to delete this address?")) return;
+                  <div className="flex gap-2 mt-3">
+                    {/* ✅ Deliver button */}
+                    <button
+                      className="flex-1 bg-[#1F3D2B] text-white py-2 rounded-md hover:bg-[#162d1f] text-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectSavedAddress(addr);
+                      }}
+                    >
+                      Deliver to this address
+                    </button>
 
-            try {
-              const jwt = localStorage.getItem("jwt");
-              await axios.delete(`/api/address/${addr.id}`, {
-                headers: { Authorization: `Bearer ${jwt}` },
-              });
-              await loadSavedAddresses();
-              alert("✅ Address deleted successfully");
-            } catch (error) {
-              console.error("Failed to delete address:", error);
-              alert("❌ Failed to delete address. Please try again.");
-            }
-          }}
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  );
-})}
-</div>
+                    {/* 🗑️ Delete button */}
+                    <button
+                      className="flex-1 bg-red-500 text-white py-2 rounded-md hover:bg-red-600 text-sm"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (
+                          !window.confirm(
+                            "Are you sure you want to delete this address?"
+                          )
+                        )
+                          return;
 
-<div className="lg:col-span-2">
-  <h3 className="text-lg font-semibold text-gray-800 mb-4">
-    Add New Address
-  </h3>
+                        try {
+                          const jwt = localStorage.getItem("jwt");
+                          await axios.delete(`/api/address/${addr.id}`, {
+                            headers: { Authorization: `Bearer ${jwt}` },
+                          });
+                          await loadSavedAddresses();
+                          alert("✅ Address deleted successfully");
+                        } catch (error) {
+                          console.error("Failed to delete address:", error);
+                          alert("❌ Failed to delete address. Please try again.");
+                        }
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-  {loadingStates ? (
-    <div className="text-center py-10">Loading form...</div>
-  ) : (
-    <DeliveryForm
-      address={address}
-      handleFieldChange={handleFieldChange}
-      states={states}
-      districts={districts}
-      pincodes={pincodes}
-      pincodeStatus={pincodeStatus}
-      onStateChange={onStateChange}
-      onDistrictChange={onDistrictChange}
-      handlePincodeInput={handlePincodeInput}
-      onContinue={handleContinue}
-      onSaveAddress={handleSaveAddress}
-      isSaving={isSaving}
-    />
-  )}
-        </div>
+          {/* New Address Form */}
+          <div className="lg:col-span-2">
+            <h3 className="text-lg font-semibold text-[#2C2C2C] mb-4">
+              Add New Address
+            </h3>
+
+            {loadingStates ? (
+              <div className="text-center py-10 text-[#3D3D3D]">Loading form...</div>
+            ) : (
+              <DeliveryForm
+                address={address}
+                handleFieldChange={handleFieldChange}
+                states={states}
+                districts={districts}
+                pincodes={pincodes}
+                pincodeStatus={pincodeStatus}
+                onStateChange={onStateChange}
+                onDistrictChange={onDistrictChange}
+                handlePincodeInput={handlePincodeInput}
+                onContinue={handleContinue}
+                onSaveAddress={handleSaveAddress}
+                isSaving={isSaving}
+              />
+            )}
+          </div>
 
         </div>
       </div>

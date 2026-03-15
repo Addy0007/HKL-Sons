@@ -9,3 +9,7 @@ export const UPDATE_PRODUCT_FAILURE = 'UPDATE_PRODUCT_FAILURE';
 export const DELETE_PRODUCT_REQUEST = 'DELETE_PRODUCT_REQUEST';
 export const DELETE_PRODUCT_SUCCESS = 'DELETE_PRODUCT_SUCCESS';
 export const DELETE_PRODUCT_FAILURE = 'DELETE_PRODUCT_FAILURE';
+
+// ── Edit product selection ──────────────────────────────────────────────────
+export const SET_SELECTED_PRODUCT   = 'SET_SELECTED_PRODUCT';
+export const CLEAR_SELECTED_PRODUCT = 'CLEAR_SELECTED_PRODUCT';

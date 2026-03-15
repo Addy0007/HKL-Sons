@@ -90,11 +90,11 @@ export default function SignIn() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8"
-      style={{ backgroundColor: "#FFFEC2" }}
+      style={{ backgroundColor: "#D8C7A3" }}
     >
       <div className="w-full max-w-md">
 
-        {/* ✅ Logo replacing the HKL text box */}
+        {/* Logo */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <img
@@ -105,10 +105,10 @@ export default function SignIn() {
             />
           </div>
 
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <h2 className="text-3xl font-bold text-[#2C2C2C] mb-2">
             {isSignIn ? "Welcome back" : "Create account"}
           </h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-[#3D3D3D]">
             {isSignIn ? "Sign in to continue" : "Join HKL Sons today"}
           </p>
         </div>
@@ -121,27 +121,27 @@ export default function SignIn() {
         )}
 
         {/* Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
+        <div className="bg-[#F6F3EC] rounded-2xl shadow-xl p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             {!isSignIn && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <InputField
                     id="firstName" name="firstName" label="First Name"
-                    icon={<User className="h-5 w-5 text-gray-400" />}
+                    icon={<User className="h-5 w-5 text-[#C6A15B]" />}
                     value={formData.firstName} onChange={handleInputChange}
                     error={errors.firstName} placeholder="John"
                   />
                   <InputField
                     id="lastName" name="lastName" label="Last Name"
-                    icon={<User className="h-5 w-5 text-gray-400" />}
+                    icon={<User className="h-5 w-5 text-[#C6A15B]" />}
                     value={formData.lastName} onChange={handleInputChange}
                     error={errors.lastName} placeholder="Doe"
                   />
                 </div>
                 <InputField
                   id="mobile" name="mobile" label="Mobile Number"
-                  icon={<Phone className="h-5 w-5 text-gray-400" />}
+                  icon={<Phone className="h-5 w-5 text-[#C6A15B]" />}
                   value={formData.mobile} onChange={handleInputChange}
                   error={errors.mobile} placeholder="9876543210"
                 />
@@ -150,34 +150,35 @@ export default function SignIn() {
 
             <InputField
               id="email" name="email" label="Email" type="email"
-              icon={<Mail className="h-5 w-5 text-gray-400" />}
+              icon={<Mail className="h-5 w-5 text-[#C6A15B]" />}
               value={formData.email} onChange={handleInputChange}
               error={errors.email} placeholder="you@example.com"
             />
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[#2C2C2C] mb-2">
                 Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className="h-5 w-5 text-[#C6A15B]" />
                 </div>
                 <input
-                  id="password" name="password"
+                  id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={handleInputChange}
                   className={`block w-full pl-10 pr-10 py-2.5 border ${
-                    errors.password ? "border-red-500" : "border-gray-300"
-                  } rounded-lg focus:ring-2 focus:ring-[#3D8D7A] outline-none`}
+                    errors.password ? "border-red-500" : "border-[#C6A15B]/30"
+                  } rounded-lg bg-[#F6F3EC] text-[#2C2C2C] focus:ring-2 focus:ring-[#1F3D2B] outline-none`}
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#C6A15B] hover:text-[#a8843d]"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -194,7 +195,7 @@ export default function SignIn() {
                   type="button"
                   onClick={() => navigate("/forgot-password")}
                   className="text-sm hover:underline"
-                  style={{ color: "#3D8D7A" }}
+                  style={{ color: "#1F3D2B" }}
                 >
                   Forgot password?
                 </button>
@@ -208,7 +209,7 @@ export default function SignIn() {
               className={`w-full py-2.5 rounded-lg text-white font-semibold shadow-lg transition ${
                 isLoading ? "opacity-60" : "hover:opacity-90"
               }`}
-              style={{ backgroundColor: "#3D8D7A" }}
+              style={{ backgroundColor: "#1F3D2B" }}
             >
               {isLoading ? "Processing…" : isSignIn ? "Sign In" : "Create Account"}
             </button>
@@ -223,13 +224,13 @@ export default function SignIn() {
 
           {/* Toggle */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[#3D3D3D]">
               {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
               <button
                 type="button"
                 onClick={toggleMode}
                 className="font-semibold hover:underline"
-                style={{ color: "#3D8D7A" }}
+                style={{ color: "#1F3D2B" }}
               >
                 {isSignIn ? "Sign Up" : "Sign In"}
               </button>
@@ -243,7 +244,7 @@ export default function SignIn() {
             type="button"
             onClick={() => navigate("/")}
             className="text-sm hover:underline"
-            style={{ color: "#3D8D7A" }}
+            style={{ color: "#1F3D2B" }}
           >
             ← Back to home
           </button>
@@ -258,7 +259,7 @@ export default function SignIn() {
 function InputField({ id, name, label, type = "text", icon, value, onChange, error, placeholder }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label className="block text-sm font-medium text-[#2C2C2C] mb-2">
         {label}
       </label>
       <div className="relative">
@@ -266,11 +267,15 @@ function InputField({ id, name, label, type = "text", icon, value, onChange, err
           {icon}
         </div>
         <input
-          id={id} name={name} type={type} value={value}
-          onChange={onChange} placeholder={placeholder}
+          id={id}
+          name={name}
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
           className={`w-full pl-10 pr-3 py-2.5 border ${
-            error ? "border-red-500" : "border-gray-300"
-          } rounded-lg focus:ring-2 focus:ring-[#3D8D7A] outline-none`}
+            error ? "border-red-500" : "border-[#C6A15B]/30"
+          } rounded-lg bg-[#F6F3EC] text-[#2C2C2C] focus:ring-2 focus:ring-[#1F3D2B] outline-none`}
         />
       </div>
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}

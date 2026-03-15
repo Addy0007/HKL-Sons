@@ -211,59 +211,6 @@ const Footer = () => {
           >
             © 2025 <strong>HKL SONS ESTD 1902</strong>. All rights reserved.
           </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: "rgba(255,255,255,0.75)",
-              mb: 0.75,
-              fontSize: { xs: "0.8rem", sm: "0.875rem" },
-            }}
-          >
-            Made with ❤️ by Me.
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: "rgba(255,255,255,0.75)",
-              fontSize: { xs: "0.75rem", sm: "0.8rem" },
-              lineHeight: 1.6,
-            }}
-          >
-            Icons by{" "}
-            <Link
-              href="https://www.freepik.com"
-              color="inherit"
-              underline="hover"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                fontWeight: 500,
-                transition: "all 0.2s ease",
-                "&:hover": {
-                  color: "rgba(255,255,255,0.95)",
-                },
-              }}
-            >
-              Freepik
-            </Link>{" "}
-            from{" "}
-            <Link
-              href="https://www.flaticon.com/"
-              color="inherit"
-              underline="hover"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                fontWeight: 500,
-                transition: "all 0.2s ease",
-                "&:hover": {
-                  color: "rgba(255,255,255,0.95)",
-                },
-              }}
-            >
-              Flaticon
-            </Link>
-          </Typography>
         </Box>
       </Container>
     </Box>

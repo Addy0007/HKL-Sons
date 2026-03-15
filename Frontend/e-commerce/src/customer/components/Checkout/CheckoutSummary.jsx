@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { getCart } from "../../../State/Cart/Action"; // Import your getCart action
+import { getCart } from "../../../State/Cart/Action";
 import OrderSummary from "./OrderSummary";
 
 const CheckoutSummary = () => {
@@ -29,10 +29,10 @@ const CheckoutSummary = () => {
   // ✅ Show loading while cart is being fetched
   if (cart.loading) {
     return (
-      <div className="min-h-screen bg-gray-100 py-10 px-4 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F6F3EC] py-10 px-4 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-700 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your cart...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1F3D2B] mx-auto mb-4"></div>
+          <p className="text-[#3D3D3D]">Loading your cart...</p>
         </div>
       </div>
     );
@@ -41,12 +41,12 @@ const CheckoutSummary = () => {
   // ✅ Redirect to cart if still empty after loading
   if (!cart.loading && (!cart.cartItems || cart.cartItems.length === 0)) {
     return (
-      <div className="min-h-screen bg-gray-100 py-10 px-4 flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-xl shadow">
-          <p className="text-gray-600 mb-4 text-lg">Your cart is empty</p>
+      <div className="min-h-screen bg-[#F6F3EC] py-10 px-4 flex items-center justify-center">
+        <div className="text-center bg-[#F6F3EC] p-8 rounded-xl shadow border border-[#C6A15B]/20">
+          <p className="text-[#3D3D3D] mb-4 text-lg">Your cart is empty</p>
           <button
             onClick={() => navigate("/cart")}
-            className="bg-emerald-700 text-white py-2 px-6 rounded-md hover:bg-emerald-800"
+            className="bg-[#1F3D2B] text-white py-2 px-6 rounded-md hover:bg-[#162d1f]"
           >
             Go to Cart
           </button>

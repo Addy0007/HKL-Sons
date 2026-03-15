@@ -10,7 +10,6 @@ import { useCategories } from "../../../hooks/useCategories";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
-/* ✅ Format for UI only */
 const formatLabel = (text) => {
   if (!text) return "";
   return text
@@ -46,9 +45,13 @@ export default function MobileNav({
       <DialogBackdrop className="fixed inset-0 bg-black/30" />
 
       <div className="fixed inset-0 flex">
-        <DialogPanel className="relative mr-16 flex w-full max-w-xs flex-col bg-white shadow-xl">
+        <DialogPanel className="relative mr-16 flex w-full max-w-xs flex-col bg-[#F6F3EC] shadow-xl">
 
-          <div className="bg-gradient-to-r from-teal-700 to-teal-600 px-6 py-6">
+          {/* Header */}
+          <div
+            className="px-6 py-6"
+            style={{ background: "linear-gradient(to right, #162d1f, #1F3D2B)" }}
+          >
             <button
               onClick={() => setOpen(false)}
               className="absolute top-4 right-4 p-2 text-white/80 hover:text-white"
@@ -58,12 +61,12 @@ export default function MobileNav({
 
             {jwt && user ? (
               <div className="flex items-center gap-3 mt-2">
-                <div className="w-12 h-12 bg-white text-teal-700 rounded-full flex items-center justify-center font-semibold text-lg">
+                <div className="w-12 h-12 bg-[#F6F3EC] text-[#1F3D2B] rounded-full flex items-center justify-center font-semibold text-lg">
                   {getInitial(user)}
                 </div>
                 <div>
                   <p className="text-white font-semibold">{getUserName()}</p>
-                  <p className="text-teal-100 text-sm">{user?.email}</p>
+                  <p className="text-[#D8C7A3] text-sm">{user?.email}</p>
                 </div>
               </div>
             ) : (
@@ -71,7 +74,7 @@ export default function MobileNav({
                 <UserCircleIcon className="w-12 h-12 text-white" />
                 <div>
                   <p className="text-white font-semibold">Welcome!</p>
-                  <p className="text-teal-100 text-sm">Sign in to continue</p>
+                  <p className="text-[#D8C7A3] text-sm">Sign in to continue</p>
                 </div>
               </div>
             )}
@@ -81,26 +84,26 @@ export default function MobileNav({
 
             <div className="py-2">
               {categories.map((category) => (
-                <div key={category.slug} className="border-b border-gray-100">
+                <div key={category.slug} className="border-b border-[#C6A15B]/20">
                   <button
                     onClick={() => toggleCategory(category.slug)}
-                    className="flex items-center justify-between w-full px-6 py-4 text-left hover:bg-gray-50"
+                    className="flex items-center justify-between w-full px-6 py-4 text-left hover:bg-[#C6A15B]/10"
                   >
-                    <span className="text-base font-semibold text-gray-900">
+                    <span className="text-base font-semibold text-[#2C2C2C]">
                       {formatLabel(category.name)}
                     </span>
                     <ChevronRightIcon
-                      className={`h-5 w-5 text-gray-400 transition-transform ${
+                      className={`h-5 w-5 text-[#C6A15B] transition-transform ${
                         expandedCategory === category.slug ? "rotate-90" : ""
                       }`}
                     />
                   </button>
 
                   {expandedCategory === category.slug && (
-                    <div className="bg-gray-50 px-6 py-3">
+                    <div className="bg-[#EDE9E0] px-6 py-3">
                       {category.children?.map((section) => (
                         <div key={section.slug} className="mb-4">
-                          <p className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                          <p className="text-xs font-semibold text-[#C6A15B] uppercase mb-2">
                             {formatLabel(section.name)}
                           </p>
                           <ul className="space-y-2">
@@ -117,7 +120,7 @@ export default function MobileNav({
                                     setOpen(false);
                                     setExpandedCategory(null);
                                   }}
-                                  className="text-sm text-gray-700 hover:text-teal-700 block w-full text-left py-1.5"
+                                  className="text-sm text-[#3D3D3D] hover:text-[#1F3D2B] block w-full text-left py-1.5"
                                 >
                                   {formatLabel(item.name)}
                                 </button>
@@ -136,14 +139,14 @@ export default function MobileNav({
               <>
                 <button
                   onClick={() => { navigate("/profile"); setOpen(false); }}
-                  className="block w-full text-left px-6 py-4 hover:bg-gray-50"
+                  className="block w-full text-left px-6 py-4 hover:bg-[#C6A15B]/10 text-[#2C2C2C] border-b border-[#C6A15B]/20"
                 >
                   My Profile
                 </button>
 
                 <button
                   onClick={() => { navigate("/account/order"); setOpen(false); }}
-                  className="block w-full text-left px-6 py-4 hover:bg-gray-50"
+                  className="block w-full text-left px-6 py-4 hover:bg-[#C6A15B]/10 text-[#2C2C2C] border-b border-[#C6A15B]/20"
                 >
                   My Orders
                 </button>
@@ -159,14 +162,15 @@ export default function MobileNav({
               <div className="px-6 py-4 space-y-3">
                 <button
                   onClick={() => { navigate("/login"); setOpen(false); }}
-                  className="w-full py-3 bg-teal-700 text-white rounded-lg"
+                  className="w-full py-3 text-white rounded-lg font-medium hover:opacity-90 transition"
+                  style={{ backgroundColor: "#1F3D2B" }}
                 >
                   Sign In
                 </button>
 
                 <button
                   onClick={() => { navigate("/signup"); setOpen(false); }}
-                  className="w-full py-3 border-2 border-teal-700 text-teal-700 rounded-lg"
+                  className="w-full py-3 border-2 border-[#C6A15B] text-[#C6A15B] rounded-lg font-medium hover:bg-[#C6A15B]/10 transition"
                 >
                   Create Account
                 </button>

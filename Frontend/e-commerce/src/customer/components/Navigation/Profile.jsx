@@ -19,12 +19,12 @@ const fullName = (u) =>
 // ─── SectionCard ─────────────────────────────────────────────────────────────
 function SectionCard({ title, icon: Icon, children }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/60">
-        <div className="p-2 bg-teal-50 rounded-lg">
-          <Icon size={18} className="text-teal-700" />
+    <div className="bg-[#F6F3EC] rounded-2xl border border-[#C6A15B]/30 shadow-sm overflow-hidden">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-[#C6A15B]/20 bg-[#EDE9E0]">
+        <div className="p-2 bg-[#C6A15B]/10 rounded-lg">
+          <Icon size={18} className="text-[#C6A15B]" />
         </div>
-        <h2 className="font-semibold text-gray-900 text-sm sm:text-base">{title}</h2>
+        <h2 className="font-semibold text-[#2C2C2C] text-sm sm:text-base">{title}</h2>
       </div>
       <div className="p-6">{children}</div>
     </div>
@@ -34,13 +34,15 @@ function SectionCard({ title, icon: Icon, children }) {
 function Field({ label, value, editing, name, onChange, type = "text", readOnly = false }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-[#C6A15B] mb-1">{label}</label>
       {editing && !readOnly ? (
-        <input type={type} name={name} value={value ?? ""} onChange={onChange}
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
+        <input
+          type={type} name={name} value={value ?? ""} onChange={onChange}
+          className="w-full px-3 py-2 rounded-lg border border-[#C6A15B]/40 text-sm text-[#2C2C2C] bg-[#F6F3EC] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B] focus:border-[#1F3D2B]"
+        />
       ) : (
-        <p className="text-sm text-gray-800 py-2 px-3 bg-gray-50 rounded-lg min-h-[36px]">
-          {value || <span className="text-gray-400 italic">Not set</span>}
+        <p className="text-sm text-[#2C2C2C] py-2 px-3 bg-[#EDE9E0] rounded-lg min-h-[36px]">
+          {value || <span className="text-[#3D3D3D] italic">Not set</span>}
         </p>
       )}
     </div>
@@ -95,46 +97,58 @@ function PersonalInfo({ user, onSave }) {
       </div>
 
       {msg && (
-        <p className={`mt-4 text-sm px-3 py-2 rounded-lg font-medium ${msg.type === "success" ? "bg-teal-50 text-teal-700 border border-teal-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+        <p className={`mt-4 text-sm px-3 py-2 rounded-lg font-medium ${
+          msg.type === "success"
+            ? "bg-green-50 text-green-700 border border-green-200"
+            : "bg-red-50 text-red-700 border border-red-200"
+        }`}>
           {msg.text}
         </p>
       )}
 
       <div className="mt-5 flex items-center gap-3">
         {!editing ? (
-          <button onClick={() => setEditing(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium transition-colors">
+          <button
+            onClick={() => setEditing(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors hover:opacity-90"
+            style={{ backgroundColor: "#1F3D2B" }}
+          >
             <Edit2 size={14} /> Edit Profile
           </button>
         ) : (
           <>
-            <button onClick={handleSave} disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium transition-colors disabled:opacity-60">
-              {saving ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check size={14} />}
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors disabled:opacity-60 hover:opacity-90"
+              style={{ backgroundColor: "#1F3D2B" }}
+            >
+              {saving
+                ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                : <Check size={14} />}
               Save Changes
             </button>
-            <button onClick={() => { setEditing(false); setMsg(null); }}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors">
+            <button
+              onClick={() => { setEditing(false); setMsg(null); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#C6A15B]/40 hover:bg-[#C6A15B]/10 text-[#2C2C2C] text-sm font-medium transition-colors"
+            >
               <X size={14} /> Cancel
             </button>
           </>
         )}
       </div>
 
-      <p className="mt-4 text-xs text-gray-400">
+      <p className="mt-4 text-xs text-[#3D3D3D]">
         Member since{" "}
-        {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-IN", { month: "long", year: "numeric" }) : "—"}
+        {user?.createdAt
+          ? new Date(user.createdAt).toLocaleDateString("en-IN", { month: "long", year: "numeric" })
+          : "—"}
       </p>
     </SectionCard>
   );
 }
 
 // ─── SAVED ADDRESSES ──────────────────────────────────────────────────────────
-// Reuses same endpoints as CheckoutAddress.jsx:
-//   GET    /api/address        → list (active=true only)
-//   POST   /api/address        → create (matches AddressController schema)
-//   DELETE /api/address/{id}   → soft delete
-
 function SavedAddresses() {
   const [addresses, setAddresses] = useState([]);
   const [loadingAddr, setLoadingAddr] = useState(true);
@@ -143,15 +157,21 @@ function SavedAddresses() {
   const [deleting, setDeleting] = useState(null);
   const [msg, setMsg] = useState(null);
 
-  const emptyForm = { firstName: "", lastName: "", streetAddress: "", city: "", district: "", state: "", zipCode: "", mobile: "" };
+  const emptyForm = {
+    firstName: "", lastName: "", streetAddress: "",
+    city: "", district: "", state: "", zipCode: "", mobile: "",
+  };
   const [form, setForm] = useState(emptyForm);
 
   const loadAddresses = async () => {
     try {
       const { data } = await api.get("/api/address");
       setAddresses(Array.isArray(data) ? data.filter((a) => a.active !== false) : []);
-    } catch { setAddresses([]); }
-    finally { setLoadingAddr(false); }
+    } catch {
+      setAddresses([]);
+    } finally {
+      setLoadingAddr(false);
+    }
   };
 
   useEffect(() => { loadAddresses(); }, []);
@@ -174,7 +194,9 @@ function SavedAddresses() {
       setTimeout(() => setMsg(null), 3000);
     } catch {
       setMsg({ type: "error", text: "Failed to save address. Please try again." });
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -185,7 +207,9 @@ function SavedAddresses() {
       await loadAddresses();
     } catch {
       setMsg({ type: "error", text: "Failed to delete address." });
-    } finally { setDeleting(null); }
+    } finally {
+      setDeleting(null);
+    }
   };
 
   const formFields = [
@@ -202,33 +226,45 @@ function SavedAddresses() {
   return (
     <SectionCard title="Saved Addresses" icon={MapPin}>
       {msg && (
-        <p className={`mb-4 text-sm px-3 py-2 rounded-lg font-medium ${msg.type === "success" ? "bg-teal-50 text-teal-700 border border-teal-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+        <p className={`mb-4 text-sm px-3 py-2 rounded-lg font-medium ${
+          msg.type === "success"
+            ? "bg-green-50 text-green-700 border border-green-200"
+            : "bg-red-50 text-red-700 border border-red-200"
+        }`}>
           {msg.text}
         </p>
       )}
 
       {loadingAddr ? (
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span className="h-4 w-4 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
+        <div className="flex items-center gap-2 text-sm text-[#3D3D3D]">
+          <span className="h-4 w-4 border-2 border-[#C6A15B] border-t-transparent rounded-full animate-spin" />
           Loading addresses...
         </div>
       ) : (
         <>
           {addresses.length === 0 && !showForm && (
-            <p className="text-sm text-gray-500 italic mb-4">No saved addresses yet.</p>
+            <p className="text-sm text-[#3D3D3D] italic mb-4">No saved addresses yet.</p>
           )}
 
           <div className="space-y-3 mb-4">
             {addresses.map((addr) => (
-              <div key={addr.id} className="flex items-start justify-between p-4 rounded-xl border border-gray-200 bg-gray-50/60">
-                <div className="text-sm text-gray-700 leading-relaxed">
-                  <p className="font-semibold text-gray-900">{addr.firstName} {addr.lastName}</p>
+              <div
+                key={addr.id}
+                className="flex items-start justify-between p-4 rounded-xl border border-[#C6A15B]/20 bg-[#EDE9E0]"
+              >
+                <div className="text-sm text-[#2C2C2C] leading-relaxed">
+                  <p className="font-semibold">{addr.firstName} {addr.lastName}</p>
                   <p>{addr.streetAddress}</p>
                   <p>{addr.city}{addr.district ? `, ${addr.district}` : ""}, {addr.state} — {addr.zipCode}</p>
-                  {addr.mobile && <p className="text-gray-500 text-xs mt-1">📞 {addr.mobile}</p>}
+                  {addr.mobile && (
+                    <p className="text-[#3D3D3D] text-xs mt-1">📞 {addr.mobile}</p>
+                  )}
                 </div>
-                <button onClick={() => handleDelete(addr.id)} disabled={deleting === addr.id}
-                  className="ml-4 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40 flex-shrink-0">
+                <button
+                  onClick={() => handleDelete(addr.id)}
+                  disabled={deleting === addr.id}
+                  className="ml-4 p-2 text-[#C6A15B] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40 flex-shrink-0"
+                >
                   {deleting === addr.id
                     ? <span className="h-4 w-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin block" />
                     : <Trash2 size={16} />}
@@ -238,32 +274,46 @@ function SavedAddresses() {
           </div>
 
           {showForm ? (
-            <div className="border border-teal-200 bg-teal-50/40 rounded-xl p-4 space-y-3">
-              <p className="text-sm font-semibold text-teal-800">New Address</p>
+            <div className="border border-[#C6A15B]/30 bg-[#C6A15B]/5 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-semibold text-[#2C2C2C]">New Address</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {formFields.map(({ name, label, span }) => (
                   <div key={name} className={span ? "sm:col-span-2" : ""}>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
-                    <input name={name} value={form[name]} onChange={handleChange}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    <label className="block text-xs font-medium text-[#C6A15B] mb-1">{label}</label>
+                    <input
+                      name={name}
+                      value={form[name]}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 rounded-lg border border-[#C6A15B]/40 text-sm text-[#2C2C2C] bg-[#F6F3EC] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B]"
+                    />
                   </div>
                 ))}
               </div>
               <div className="flex gap-3 pt-1">
-                <button onClick={handleAdd} disabled={saving}
-                  className="flex items-center gap-2 px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60">
-                  {saving ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check size={14} />}
+                <button
+                  onClick={handleAdd}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60 hover:opacity-90"
+                  style={{ backgroundColor: "#1F3D2B" }}
+                >
+                  {saving
+                    ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    : <Check size={14} />}
                   Save Address
                 </button>
-                <button onClick={() => { setShowForm(false); setForm(emptyForm); setMsg(null); }}
-                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+                <button
+                  onClick={() => { setShowForm(false); setForm(emptyForm); setMsg(null); }}
+                  className="flex items-center gap-2 px-4 py-2 border border-[#C6A15B]/40 hover:bg-[#C6A15B]/10 text-[#2C2C2C] rounded-lg text-sm font-medium transition-colors"
+                >
                   <X size={14} /> Cancel
                 </button>
               </div>
             </div>
           ) : (
-            <button onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-teal-300 hover:border-teal-500 hover:bg-teal-50 text-teal-700 text-sm font-medium transition-colors">
+            <button
+              onClick={() => setShowForm(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-[#C6A15B]/50 hover:border-[#C6A15B] hover:bg-[#C6A15B]/10 text-[#C6A15B] text-sm font-medium transition-colors"
+            >
               <Plus size={16} /> Add New Address
             </button>
           )}
@@ -302,7 +352,9 @@ function ChangePassword() {
       setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err) {
       setMsg({ type: "error", text: err?.response?.data?.message || "Failed. Check your current password." });
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const pwFields = [
@@ -316,13 +368,21 @@ function ChangePassword() {
       <div className="max-w-sm space-y-4">
         {pwFields.map(({ name, label, showKey }) => (
           <div key={name}>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+            <label className="block text-xs font-medium text-[#C6A15B] mb-1">{label}</label>
             <div className="relative">
-              <input type={show[showKey] ? "text" : "password"} name={name} value={form[name]}
-                onChange={handleChange} placeholder="••••••••"
-                className="w-full px-3 py-2 pr-10 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
-              <button type="button" onClick={() => setShow((s) => ({ ...s, [showKey]: !s[showKey] }))}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <input
+                type={show[showKey] ? "text" : "password"}
+                name={name}
+                value={form[name]}
+                onChange={handleChange}
+                placeholder="••••••••"
+                className="w-full px-3 py-2 pr-10 rounded-lg border border-[#C6A15B]/40 text-sm text-[#2C2C2C] bg-[#F6F3EC] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B] focus:border-[#1F3D2B]"
+              />
+              <button
+                type="button"
+                onClick={() => setShow((s) => ({ ...s, [showKey]: !s[showKey] }))}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#C6A15B] hover:text-[#a8843d]"
+              >
                 {show[showKey] ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
@@ -330,18 +390,29 @@ function ChangePassword() {
         ))}
 
         {msg && (
-          <p className={`text-sm px-3 py-2 rounded-lg font-medium ${msg.type === "success" ? "bg-teal-50 text-teal-700 border border-teal-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+          <p className={`text-sm px-3 py-2 rounded-lg font-medium ${
+            msg.type === "success"
+              ? "bg-green-50 text-green-700 border border-green-200"
+              : "bg-red-50 text-red-700 border border-red-200"
+          }`}>
             {msg.text}
           </p>
         )}
 
-        <button onClick={handleSubmit}
+        <button
+          onClick={handleSubmit}
           disabled={saving || !form.currentPassword || !form.newPassword || !form.confirmPassword}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60">
-          {saving ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Lock size={14} />}
+          className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60 hover:opacity-90"
+          style={{ backgroundColor: "#1F3D2B" }}
+        >
+          {saving
+            ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            : <Lock size={14} />}
           Update Password
         </button>
-        <p className="text-xs text-gray-400">Use at least 6 characters. Mix letters and numbers for security.</p>
+        <p className="text-xs text-[#3D3D3D]">
+          Use at least 6 characters. Mix letters and numbers for security.
+        </p>
       </div>
     </SectionCard>
   );
@@ -354,21 +425,26 @@ function OrderStats({ orders, loading }) {
   const total = orders?.length ?? 0;
   const delivered = orders?.filter((o) => o.orderStatus === "DELIVERED").length ?? 0;
   const cancelled = orders?.filter((o) => o.orderStatus === "CANCELLED").length ?? 0;
-  const totalSpent = orders?.filter((o) => o.orderStatus === "DELIVERED")
+  const totalSpent = orders
+    ?.filter((o) => o.orderStatus === "DELIVERED")
     .reduce((sum, o) => sum + (o.totalDiscountedPrice ?? o.totalPrice ?? 0), 0) ?? 0;
 
   const stats = [
     { label: "Total Orders", value: total, icon: ShoppingBag, color: "bg-blue-50 text-blue-600" },
     { label: "Delivered", value: delivered, icon: Package, color: "bg-green-50 text-green-600" },
     { label: "Cancelled", value: cancelled, icon: X, color: "bg-red-50 text-red-600" },
-    { label: "Total Spent", value: `₹${totalSpent.toLocaleString("en-IN")}`, icon: IndianRupee, color: "bg-teal-50 text-teal-600" },
+    { label: "Total Spent", value: `₹${totalSpent.toLocaleString("en-IN")}`, icon: IndianRupee, color: "bg-[#C6A15B]/10 text-[#C6A15B]" },
   ];
 
   const statusBadge = {
-    DELIVERED: "bg-green-100 text-green-700", CANCELLED: "bg-red-100 text-red-700",
-    SHIPPED: "bg-blue-100 text-blue-700", OUT_FOR_DELIVERY: "bg-emerald-100 text-emerald-700",
-    CONFIRMED: "bg-purple-100 text-purple-700", PLACED: "bg-gray-100 text-gray-700",
-    PENDING: "bg-yellow-100 text-yellow-700", RETURNED: "bg-orange-100 text-orange-700",
+    DELIVERED: "bg-green-100 text-green-700",
+    CANCELLED: "bg-red-100 text-red-700",
+    SHIPPED: "bg-blue-100 text-blue-700",
+    OUT_FOR_DELIVERY: "bg-[#1F3D2B]/10 text-[#1F3D2B]",
+    CONFIRMED: "bg-purple-100 text-purple-700",
+    PLACED: "bg-[#EDE9E0] text-[#2C2C2C]",
+    PENDING: "bg-yellow-100 text-yellow-700",
+    RETURNED: "bg-orange-100 text-orange-700",
   };
 
   const recent = orders?.slice(0, 3) ?? [];
@@ -376,63 +452,81 @@ function OrderStats({ orders, loading }) {
   return (
     <SectionCard title="Order Statistics" icon={ShoppingBag}>
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span className="h-4 w-4 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
+        <div className="flex items-center gap-2 text-sm text-[#3D3D3D]">
+          <span className="h-4 w-4 border-2 border-[#C6A15B] border-t-transparent rounded-full animate-spin" />
           Loading orders...
         </div>
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             {stats.map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="rounded-xl border border-gray-100 bg-gray-50/60 p-4 flex flex-col gap-2">
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${color}`}><Icon size={18} /></div>
-                <p className="text-xl font-bold text-gray-900">{value}</p>
-                <p className="text-xs text-gray-500">{label}</p>
+              <div
+                key={label}
+                className="rounded-xl border border-[#C6A15B]/20 bg-[#EDE9E0] p-4 flex flex-col gap-2"
+              >
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${color}`}>
+                  <Icon size={18} />
+                </div>
+                <p className="text-xl font-bold text-[#2C2C2C]">{value}</p>
+                <p className="text-xs text-[#3D3D3D]">{label}</p>
               </div>
             ))}
           </div>
 
           {recent.length > 0 && (
             <>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Recent Orders</h3>
+              <h3 className="text-sm font-semibold text-[#2C2C2C] mb-3">Recent Orders</h3>
               <div className="space-y-2">
                 {recent.map((order) => (
-                  <button key={order.id} onClick={() => navigate(`/account/order/${order.id}`)}
-                    className="w-full flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-teal-200 hover:bg-teal-50/30 transition-colors text-left group">
+                  <button
+                    key={order.id}
+                    onClick={() => navigate(`/account/order/${order.id}`)}
+                    className="w-full flex items-center justify-between p-3 rounded-xl border border-[#C6A15B]/20 hover:border-[#C6A15B]/50 hover:bg-[#C6A15B]/5 transition-colors text-left group"
+                  >
                     <div>
-                      <p className="text-sm font-medium text-gray-800">
+                      <p className="text-sm font-medium text-[#2C2C2C]">
                         #{order.id}
                         {order.orderItems?.[0]?.productName && (
-                          <span className="text-gray-500 font-normal ml-2 text-xs">
+                          <span className="text-[#3D3D3D] font-normal ml-2 text-xs">
                             — {order.orderItems[0].productName}
                             {order.orderItems.length > 1 && ` +${order.orderItems.length - 1} more`}
                           </span>
                         )}
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                      <p className="text-xs text-[#3D3D3D] mt-0.5 flex items-center gap-1">
                         <Calendar size={11} />
-                        {order.orderDate ? new Date(order.orderDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                        {order.orderDate
+                          ? new Date(order.orderDate).toLocaleDateString("en-IN", {
+                              day: "2-digit", month: "short", year: "numeric",
+                            })
+                          : "—"}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusBadge[order.orderStatus] ?? "bg-gray-100 text-gray-600"}`}>
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        statusBadge[order.orderStatus] ?? "bg-[#EDE9E0] text-[#2C2C2C]"
+                      }`}>
                         {order.orderStatus?.replaceAll("_", " ")}
                       </span>
-                      <span className="text-sm font-semibold text-gray-800">
+                      <span className="text-sm font-semibold text-[#2C2C2C]">
                         ₹{order.totalDiscountedPrice ?? order.totalPrice}
                       </span>
-                      <ChevronRight size={16} className="text-gray-400 group-hover:text-teal-600 transition-colors" />
+                      <ChevronRight size={16} className="text-[#C6A15B] group-hover:text-[#a8843d] transition-colors" />
                     </div>
                   </button>
                 ))}
               </div>
-              <button onClick={() => navigate("/account/order")}
-                className="mt-4 text-sm text-teal-700 hover:text-teal-900 font-medium flex items-center gap-1 transition-colors">
+              <button
+                onClick={() => navigate("/account/order")}
+                className="mt-4 text-sm text-[#C6A15B] hover:text-[#a8843d] font-medium flex items-center gap-1 transition-colors"
+              >
                 View all orders <ChevronRight size={14} />
               </button>
             </>
           )}
-          {recent.length === 0 && <p className="text-sm text-gray-500 italic">No orders placed yet.</p>}
+          {recent.length === 0 && (
+            <p className="text-sm text-[#3D3D3D] italic">No orders placed yet.</p>
+          )}
         </>
       )}
     </SectionCard>
@@ -464,35 +558,44 @@ export default function Profile() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-700" />
+      <div className="min-h-screen flex items-center justify-center bg-[#F6F3EC]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#C6A15B]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F6F3EC]">
       {/* Hero */}
-      <div className="bg-gradient-to-r from-teal-800 to-teal-600 px-4 sm:px-6 lg:px-8 py-10">
+      <div
+        className="px-4 sm:px-6 lg:px-8 py-10"
+        style={{ background: "linear-gradient(to right, #162d1f, #1F3D2B)" }}
+      >
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center sm:items-end gap-5">
-          <div className="w-20 h-20 rounded-2xl bg-[#FFFEC2] text-teal-800 flex items-center justify-center text-3xl font-bold shadow-lg flex-shrink-0">
+          <div className="w-20 h-20 rounded-2xl bg-[#F6F3EC] text-[#1F3D2B] flex items-center justify-center text-3xl font-bold shadow-lg flex-shrink-0">
             {initials(user)}
           </div>
           <div className="text-center sm:text-left">
             <h1 className="text-2xl font-bold text-white">{fullName(user)}</h1>
-            <p className="text-teal-200 text-sm mt-0.5">{user.email}</p>
-            {user.mobile && <p className="text-teal-300 text-xs mt-0.5">📞 {user.mobile}</p>}
+            <p className="text-[#D8C7A3] text-sm mt-0.5">{user.email}</p>
+            {user.mobile && (
+              <p className="text-[#C6A15B] text-xs mt-0.5">📞 {user.mobile}</p>
+            )}
           </div>
           <div className="sm:ml-auto flex gap-2">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 text-center border border-white/20">
               <p className="text-xl font-bold text-white">{orders.length}</p>
-              <p className="text-teal-200 text-xs">Orders</p>
+              <p className="text-[#D8C7A3] text-xs">Orders</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 text-center border border-white/20">
               <p className="text-lg font-bold text-white">
-                {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" }) : "—"}
+                {user?.createdAt
+                  ? new Date(user.createdAt).toLocaleDateString("en-IN", {
+                      month: "short", year: "numeric",
+                    })
+                  : "—"}
               </p>
-              <p className="text-teal-200 text-xs">Member Since</p>
+              <p className="text-[#D8C7A3] text-xs">Member Since</p>
             </div>
           </div>
         </div>

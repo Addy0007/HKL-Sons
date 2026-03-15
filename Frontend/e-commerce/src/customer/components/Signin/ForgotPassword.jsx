@@ -35,11 +35,11 @@ export default function ForgotPassword() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ backgroundColor: "#FFFEC2" }}
+      style={{ backgroundColor: "#D8C7A3" }}
     >
       <div className="w-full max-w-md">
 
-        {/* ✅ Logo */}
+        {/* Logo */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <img
@@ -49,13 +49,13 @@ export default function ForgotPassword() {
               onClick={() => navigate("/")}
             />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">Forgot Password</h2>
-          <p className="text-gray-600 text-sm">
+          <h2 className="text-2xl font-bold text-[#2C2C2C] mb-1">Forgot Password</h2>
+          <p className="text-[#3D3D3D] text-sm">
             Enter your email and we'll send you a reset link.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-[#F6F3EC] rounded-2xl shadow-xl p-8">
           {message && (
             <p className="bg-green-100 text-green-700 p-3 rounded-lg mb-4 text-center text-sm">
               {message}
@@ -70,14 +70,14 @@ export default function ForgotPassword() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[#2C2C2C] mb-2">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                <Mail className="absolute left-3 top-2.5 h-5 w-5 text-[#C6A15B]" />
                 <input
                   type="email"
-                  className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3D8D7A] outline-none"
+                  className="w-full pl-10 pr-3 py-2.5 border border-[#C6A15B]/30 rounded-lg bg-[#F6F3EC] text-[#2C2C2C] focus:ring-2 focus:ring-[#1F3D2B] outline-none"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -91,7 +91,7 @@ export default function ForgotPassword() {
               className={`w-full py-2.5 text-white font-semibold rounded-lg shadow transition ${
                 loading ? "opacity-60 cursor-not-allowed" : "hover:opacity-90"
               }`}
-              style={{ backgroundColor: "#3D8D7A" }}
+              style={{ backgroundColor: "#1F3D2B" }}
             >
               {loading ? (
                 <div className="flex items-center justify-center gap-2">
@@ -104,7 +104,7 @@ export default function ForgotPassword() {
             </button>
           </form>
 
-          <p className="text-xs text-center text-gray-500 mt-4">
+          <p className="text-xs text-center text-[#555555] mt-4">
             Didn't receive the email? Check your spam folder.
           </p>
 
@@ -112,7 +112,7 @@ export default function ForgotPassword() {
             <button
               onClick={() => navigate("/login")}
               className="text-sm hover:underline"
-              style={{ color: "#3D8D7A" }}
+              style={{ color: "#1F3D2B" }}
             >
               ← Back to Sign In
             </button>

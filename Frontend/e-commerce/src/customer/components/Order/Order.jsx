@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import OrderCard from "./OrderCard";
-import api from "../../../Config/apiConfig"
+import api from "../../../Config/apiConfig";
 
 const ORDER_STATUS_OPTIONS = [
   { label: "Pending", value: "PENDING" },
@@ -51,14 +51,14 @@ const Order = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F6F3EC]">
       <div className="flex flex-col lg:flex-row">
-        
+
         {/* Mobile Filter Toggle Button */}
-        <div className="lg:hidden bg-white border-b border-gray-200 p-4 sticky top-0 z-10">
+        <div className="lg:hidden bg-[#F6F3EC] border-b border-[#C6A15B]/20 p-4 sticky top-0 z-10">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="w-full flex items-center justify-between px-4 py-2 bg-gray-900 text-white rounded-lg font-medium"
+            className="w-full flex items-center justify-between px-4 py-2 bg-[#1F3D2B] text-white rounded-lg font-medium"
           >
             <span>Filters</span>
             <svg
@@ -83,17 +83,17 @@ const Order = () => {
         <aside
           className={`${
             showFilters ? "block" : "hidden"
-          } lg:block lg:w-64 lg:min-h-screen bg-white border-r border-gray-200 lg:sticky lg:top-0 lg:h-screen overflow-y-auto`}
+          } lg:block lg:w-64 lg:min-h-screen bg-[#F6F3EC] border-r border-[#C6A15B]/20 lg:sticky lg:top-0 lg:h-screen overflow-y-auto`}
         >
           <div className="p-6">
-            
+
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Filters</h2>
+              <h2 className="text-xl font-bold text-[#2C2C2C]">Filters</h2>
 
               {selectedFilters.length > 0 && (
                 <button
                   onClick={() => setSelectedFilters([])}
-                  className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                  className="text-xs text-[#1F3D2B] hover:text-[#162d1f] font-medium"
                 >
                   Clear all
                 </button>
@@ -103,7 +103,7 @@ const Order = () => {
             {/* Status Filters */}
             <div className="space-y-6">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-4 text-sm uppercase tracking-wide">
+                <h3 className="font-semibold text-[#2C2C2C] mb-4 text-sm uppercase tracking-wide">
                   Order Status
                 </h3>
 
@@ -118,9 +118,9 @@ const Order = () => {
                         value={option.value}
                         checked={selectedFilters.includes(option.value)}
                         onChange={(e) => handleFilterChange(e.target.value)}
-                        className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500 focus:ring-2"
+                        className="w-4 h-4 text-[#1F3D2B] border-[#C6A15B]/40 rounded focus:ring-[#1F3D2B] focus:ring-2"
                       />
-                      <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900">
+                      <span className="ml-3 text-sm text-[#3D3D3D] group-hover:text-[#2C2C2C]">
                         {option.label}
                       </span>
                     </label>
@@ -128,6 +128,7 @@ const Order = () => {
                 </div>
               </div>
             </div>
+
           </div>
         </aside>
 
@@ -137,10 +138,10 @@ const Order = () => {
 
             {/* Heading */}
             <div className="mb-6">
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl lg:text-3xl font-bold text-[#2C2C2C] mb-2">
                 My Orders
               </h1>
-              <p className="text-gray-600">
+              <p className="text-[#3D3D3D]">
                 {filteredOrders.length}{" "}
                 {filteredOrders.length === 1 ? "order" : "orders"} found
               </p>
@@ -148,14 +149,14 @@ const Order = () => {
 
             {/* Loading State */}
             {loading && (
-              <div className="text-center py-10 text-gray-500 text-lg">
+              <div className="text-center py-10 text-[#3D3D3D] text-lg">
                 Loading orders...
               </div>
             )}
 
             {/* No Orders */}
             {!loading && filteredOrders.length === 0 && (
-              <div className="text-center py-10 text-gray-500 text-lg">
+              <div className="text-center py-10 text-[#3D3D3D] text-lg">
                 No orders found.
               </div>
             )}
@@ -166,8 +167,10 @@ const Order = () => {
                 <OrderCard key={order.id} order={order} />
               ))}
             </div>
+
           </div>
         </main>
+
       </div>
     </div>
   );

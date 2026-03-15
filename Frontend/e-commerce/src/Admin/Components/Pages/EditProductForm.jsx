@@ -1,1049 +1,828 @@
 import React, { useState, useEffect } from "react";
 import {
-  Grid,
-  TextField,
-  Button,
-  MenuItem,
-  Typography,
-  Box,
-  Alert,
-  Snackbar,
-  CircularProgress,
-  Divider,
-  Card,
-  CardContent,
-  IconButton,
-  InputAdornment,
-  Autocomplete,
-  Paper,
-  Switch,
-  FormControlLabel,
-  Chip,
+  Grid, TextField, Button, Typography, Box, Alert, Snackbar,
+  CircularProgress, Divider, Card, CardContent, IconButton,
+  InputAdornment, Autocomplete, Paper, Switch, FormControlLabel,
 } from "@mui/material";
-import { Add, Delete, CloudUpload, Image as ImageIcon, ArrowBack } from "@mui/icons-material";
+import {
+  Add, Delete, CloudUpload, Image as ImageIcon,
+  AddCircleOutline, ArrowBack,
+} from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { updateProduct } from "../../../State/Admin/Action";
 import { api } from "../../../Config/apiConfig";
-import { navigation } from "../../../customer/components/Navigation/NavigationConfig";
 
-// 🔥 CLOUDINARY CONFIGURATION
+// ─── CLOUDINARY ───────────────────────────────────────────────────────────────
 const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dilhn8hzs/image/upload";
 const CLOUDINARY_UPLOAD_PRESET = "ecommerce_products";
 
-const COLORS = [
-  "Red", "Blue", "Green", "Yellow", "Black", "White", 
-  "Pink", "Purple", "Orange", "Brown", "Gray", "Multi",
-];
+const COLORS = ["Red","Blue","Green","Yellow","Black","White","Pink","Purple","Orange","Brown","Gray","Multi"];
+const SIZES  = ["XS","S","M","L","XL","XXL","Free Size","UK 6","UK 7","UK 8","UK 9","UK 10"];
 
-const SIZES = [
-  "XS", "S", "M", "L", "XL", "XXL", "Free Size",
-  "UK 6", "UK 7", "UK 8", "UK 9", "UK 10",
-];
+// ─── Helper: flatten category tree → arrays by level ─────────────────────────
+function flatByLevel(tree) {
+  const level1 = [], level2 = [], level3 = [];
+  tree.forEach((l1) => {
+    level1.push({ id: l1.slug, name: l1.name, dbId: l1.id });
+    (l1.children || []).forEach((l2) => {
+      level2.push({ id: l2.slug, name: l2.name, dbId: l2.id, parentSlug: l1.slug });
+      (l2.children || []).forEach((l3) => {
+        level3.push({ id: l3.slug, name: l3.name, dbId: l3.id, parentSlug: l2.slug });
+      });
+    });
+  });
+  return { level1, level2, level3 };
+}
 
+// ─── Add category to backend ──────────────────────────────────────────────────
+async function addCategoryToBackend(name, level, parentDbId) {
+  const slug = name.toLowerCase().replace(/\s+/g, "-");
+  const payload = { name: slug, level, parentCategoryId: parentDbId ?? null };
+  const { data } = await api.post("/api/categories", payload);
+  return data;
+}
+
+// ─── Walk up parentCategory chain → extract names/slugs by level ─────────────
+// ProductDTO: category: { id, name, slug, level, parentCategory: { ... } }
+function extractCategorySlugs(categoryDTO) {
+  if (!categoryDTO) return { topSlug: "", secSlug: "", thirdSlug: "" };
+  const chain = [];
+  let current = categoryDTO;
+  while (current) {
+    chain.unshift(current);
+    current = current.parentCategory;
+  }
+  return {
+    topSlug:   chain[0]?.name || chain[0]?.slug || "",
+    secSlug:   chain[1]?.name || chain[1]?.slug || "",
+    thirdSlug: chain[2]?.name || chain[2]?.slug || "",
+  };
+}
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 const EditProductForm = () => {
-  const { productId } = useParams();
-  const navigate = useNavigate();
+  const dispatch      = useDispatch();
+  const navigate      = useNavigate();
+  const { productId } = useParams(); // ← /admin/products/edit/:productId
 
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  // ── Redux: only needed for the update action's loading/error ─────────────────
+  const { loading, error } = useSelector((s) => s.adminProduct);
 
+  // ── Fetch product by URL param ───────────────────────────────────────────────
+  const [selectedProduct, setSelectedProduct]         = useState(null);
+  const [productFetchLoading, setProductFetchLoading] = useState(true);
+
+  // ── Category state ───────────────────────────────────────────────────────────
+  const [cats, setCats]                   = useState({ level1: [], level2: [], level3: [] });
+  const [catLoading, setCatLoading]       = useState(true);
+  const [categoriesReady, setCategoriesReady] = useState(false);
+
+  const [selL1, setSelL1] = useState(null);
+  const [selL2, setSelL2] = useState(null);
+  const [selL3, setSelL3] = useState(null);
+
+  const [addingL1, setAddingL1] = useState(false);
+  const [addingL2, setAddingL2] = useState(false);
+  const [addingL3, setAddingL3] = useState(false);
+  const [newL1, setNewL1] = useState("");
+  const [newL2, setNewL2] = useState("");
+  const [newL3, setNewL3] = useState("");
+  const [addingCat, setAddingCat] = useState(false);
+
+  // ── Product form state ───────────────────────────────────────────────────────
   const [productData, setProductData] = useState({
-    imageUrl: "",
-    additionalImages: ["", "", ""],
-    brand: "",
-    title: "",
-    color: "",
-    description: "",
-    highlights: [""],
-    material: "",
-    careInstructions: "",
-    countryOfOrigin: "India",
-    manufacturer: "",
-    price: "",
-    discountedPrice: "",
-    discountPercent: "",
-    quantity: "",
-    topLevelCategory: "",
-    secondLevelCategory: "",
-    thirdLevelCategory: "",
-    sizes: [],
-    isFeatured: false,
-    featuredOrder: 0,
+    imageUrl: "", additionalImages: ["", "", ""],
+    brand: "", title: "", color: "", description: "",
+    highlights: [""], material: "", careInstructions: "",
+    countryOfOrigin: "India", manufacturer: "",
+    price: "", discountedPrice: "", discountPercent: "",
+    quantity: "", sizes: [],
+    isFeatured: false, featuredOrder: 0,
   });
 
   const [imagePreviews, setImagePreviews] = useState({
-    mainImage: "",
-    additionalImages: ["", "", ""],
+    mainImage: "", additionalImages: ["", "", ""],
   });
-
   const [uploadingStates, setUploadingStates] = useState({
-    mainImage: false,
-    additionalImage0: false,
-    additionalImage1: false,
-    additionalImage2: false,
+    mainImage: false, additionalImage0: false, additionalImage1: false, additionalImage2: false,
   });
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  const showSnack = (message, severity = "success") =>
+    setSnackbar({ open: true, message, severity });
 
-  // Fetch product data
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        setLoading(true);
-        const { data } = await api.get(`/api/products/${productId}`);
-        console.log("📦 Fetched product:", data);
-
-        // Extract category hierarchy
-        let topLevel = "";
-        let secondLevel = "";
-        let thirdLevel = "";
-
-        if (data.category) {
-          const buildPath = (cat) => {
-            const path = [];
-            let current = cat;
-            while (current) {
-              path.unshift(current.name);
-              current = current.parentCategory;
-            }
-            return path;
-          };
-
-          const categoryPath = buildPath(data.category);
-          if (categoryPath.length >= 1) topLevel = categoryPath[0];
-          if (categoryPath.length >= 2) secondLevel = categoryPath[1];
-          if (categoryPath.length >= 3) thirdLevel = categoryPath[2];
-        }
-
-        // Parse highlights
-        const highlightsArray = data.highlights
-          ? data.highlights.split(",").map((h) => h.trim())
-          : [""];
-
-        // Get additional images (assuming you have an images array in response)
-        const additionalImgs = data.images && data.images.length > 1
-          ? [
-              data.images[1] || "",
-              data.images[2] || "",
-              data.images[3] || "",
-            ]
-          : ["", "", ""];
-
-        setProductData({
-          imageUrl: data.imageUrl || "",
-          additionalImages: additionalImgs,
-          brand: data.brand || "",
-          title: data.title || "",
-          color: data.color || "",
-          description: data.description || "",
-          highlights: highlightsArray,
-          material: data.material || "",
-          careInstructions: data.careInstructions || "",
-          countryOfOrigin: data.countryOfOrigin || "India",
-          manufacturer: data.manufacturer || "",
-          price: data.price || "",
-          discountedPrice: data.discountedPrice || "",
-          discountPercent: data.discountPercent || "",
-          quantity: data.quantity || "",
-          topLevelCategory: topLevel,
-          secondLevelCategory: secondLevel,
-          thirdLevelCategory: thirdLevel,
-          sizes: data.sizes || [],
-          isFeatured: data.isFeatured || false,
-          featuredOrder: data.featuredOrder || 0,
-        });
-
-        // Set image previews
-        setImagePreviews({
-          mainImage: data.imageUrl || "",
-          additionalImages: additionalImgs,
-        });
-
-      } catch (error) {
-        console.error("❌ Error fetching product:", error);
-        setSnackbar({
-          open: true,
-          message: "Failed to load product details",
-          severity: "error",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (productId) {
-      fetchProduct();
+  // ── Fetch categories from backend (same as CreateProductForm) ────────────────
+  const fetchCategories = async () => {
+    setCatLoading(true);
+    try {
+      const { data } = await api.get("/api/categories/tree");
+      const flat = flatByLevel(data);
+      setCats(flat);
+      return flat;
+    } catch (e) {
+      console.error("Failed to load categories", e);
+      showSnack("Failed to load categories", "error");
+      return null;
+    } finally {
+      setCatLoading(false);
+      setCategoriesReady(true);
     }
+  };
+
+  // ── Fetch product by ID from URL ─────────────────────────────────────────────
+  const fetchProduct = async () => {
+    if (!productId) return;
+    setProductFetchLoading(true);
+    try {
+      const { data } = await api.get(`/api/products/${productId}`);
+      console.log("📦 Fetched product for edit:", data);
+      setSelectedProduct(data);
+    } catch (e) {
+      console.error("Failed to fetch product", e);
+      showSnack("Failed to load product details", "error");
+    } finally {
+      setProductFetchLoading(false);
+    }
+  };
+
+  // ── Kick off both fetches in parallel on mount ───────────────────────────────
+  useEffect(() => {
+    fetchCategories();
+    fetchProduct();
   }, [productId]);
 
-  // Upload to Cloudinary
+  // ── Pre-fill form once BOTH product AND categories are ready ─────────────────
+  useEffect(() => {
+    if (!selectedProduct || !categoriesReady) return;
+
+    const p = selectedProduct;
+
+    // Highlights: comma-separated string → array
+    const highlightsArray = p.highlights
+      ? p.highlights.split(",").map((h) => h.trim()).filter(Boolean)
+      : [""];
+
+    // Sizes: Set<Size> → [{name, quantity}]
+    const sizesArray = Array.isArray(p.sizes)
+      ? p.sizes.map((s) => ({ name: s.name || "", quantity: s.quantity ?? 0 }))
+      : [];
+
+    // Additional images: DTO has `images` list (index 0 = main, 1-3 = extras)
+    // Also fallback to `additionalImages` field if present
+    const addImgs = ["", "", ""];
+    if (Array.isArray(p.images) && p.images.length > 1) {
+      for (let i = 0; i < 3; i++) addImgs[i] = p.images[i + 1] || "";
+    }
+    if (Array.isArray(p.additionalImages)) {
+      p.additionalImages.forEach((url, i) => { if (i < 3) addImgs[i] = url || ""; });
+    }
+
+    setProductData({
+      imageUrl:         p.imageUrl || "",
+      additionalImages: addImgs,
+      brand:            p.brand || "",
+      title:            p.title || "",
+      color:            p.color || "",
+      description:      p.description || "",
+      highlights:       highlightsArray.length > 0 ? highlightsArray : [""],
+      material:         p.material || "",
+      careInstructions: p.careInstructions || "",
+      countryOfOrigin:  p.countryOfOrigin || "India",
+      manufacturer:     p.manufacturer || "",
+      price:            p.price ?? "",
+      discountedPrice:  p.discountedPrice ?? "",
+      discountPercent:  p.discountPercent ?? "",
+      quantity:         p.quantity ?? "",
+      sizes:            sizesArray,
+      isFeatured:       p.isFeatured || false,
+      featuredOrder:    p.featuredOrder || 0,
+    });
+
+    setImagePreviews({
+      mainImage: p.imageUrl || "",
+      additionalImages: addImgs,
+    });
+
+    // ── Auto-select category dropdowns ────────────────────────────────────────
+    const { topSlug, secSlug, thirdSlug } = extractCategorySlugs(p.category);
+    console.log("🗂 Category slugs:", { topSlug, secSlug, thirdSlug });
+
+    if (topSlug) {
+      const foundL1 = cats.level1.find(
+        (c) => c.id === topSlug || c.name === topSlug || c.name.toLowerCase() === topSlug.toLowerCase()
+      );
+      if (foundL1) {
+        setSelL1(foundL1);
+        if (secSlug) {
+          const foundL2 = cats.level2.find(
+            (c) => c.parentSlug === foundL1.id &&
+              (c.id === secSlug || c.name === secSlug || c.name.toLowerCase() === secSlug.toLowerCase())
+          );
+          if (foundL2) {
+            setSelL2(foundL2);
+            if (thirdSlug) {
+              const foundL3 = cats.level3.find(
+                (c) => c.parentSlug === foundL2.id &&
+                  (c.id === thirdSlug || c.name === thirdSlug || c.name.toLowerCase() === thirdSlug.toLowerCase())
+              );
+              if (foundL3) setSelL3(foundL3);
+            }
+          }
+        }
+      } else {
+        console.warn("⚠️ Could not match top-level category slug:", topSlug);
+        console.warn("   Available level1 options:", cats.level1.map((c) => c.id));
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProduct, categoriesReady]);
+
+  // ── Dependent dropdowns ──────────────────────────────────────────────────────
+  const filteredL2 = selL1 ? cats.level2.filter((c) => c.parentSlug === selL1.id) : [];
+  const filteredL3 = selL2 ? cats.level3.filter((c) => c.parentSlug === selL2.id) : [];
+
+  // ── Add new category handlers ────────────────────────────────────────────────
+  const handleAddL1 = async () => {
+    if (!newL1.trim()) return;
+    setAddingCat(true);
+    try {
+      await addCategoryToBackend(newL1.trim(), 1, null);
+      await fetchCategories();
+      setNewL1(""); setAddingL1(false);
+      showSnack("Category added!");
+    } catch { showSnack("Failed to add category", "error"); }
+    finally { setAddingCat(false); }
+  };
+
+  const handleAddL2 = async () => {
+    if (!newL2.trim() || !selL1) return;
+    setAddingCat(true);
+    try {
+      await addCategoryToBackend(newL2.trim(), 2, selL1.dbId);
+      await fetchCategories();
+      setNewL2(""); setAddingL2(false);
+      showSnack("Sub-category added!");
+    } catch { showSnack("Failed to add sub-category", "error"); }
+    finally { setAddingCat(false); }
+  };
+
+  const handleAddL3 = async () => {
+    if (!newL3.trim() || !selL2) return;
+    setAddingCat(true);
+    try {
+      await addCategoryToBackend(newL3.trim(), 3, selL2.dbId);
+      await fetchCategories();
+      setNewL3(""); setAddingL3(false);
+      showSnack("Item category added!");
+    } catch { showSnack("Failed to add item category", "error"); }
+    finally { setAddingCat(false); }
+  };
+
+  // ── Image upload ─────────────────────────────────────────────────────────────
   const uploadToCloudinary = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
     formData.append("folder", "products");
-
-    const response = await fetch(CLOUDINARY_URL, {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) throw new Error("Upload failed");
-    const data = await response.json();
-    return data.secure_url;
+    const res = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
+    if (!res.ok) throw new Error("Upload failed");
+    return (await res.json()).secure_url;
   };
 
-  // Handle main image change
+  const validateImageFile = (file) => {
+    if (!file.type.startsWith("image/")) { showSnack("Please select a valid image file", "error"); return false; }
+    if (file.size > 5 * 1024 * 1024)    { showSnack("Image size should be less than 5MB", "error"); return false; }
+    return true;
+  };
+
   const handleMainImageChange = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setSnackbar({
-        open: true,
-        message: "Please select a valid image file",
-        severity: "error",
-      });
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setSnackbar({
-        open: true,
-        message: "Image size should be less than 5MB",
-        severity: "error",
-      });
-      return;
-    }
-
+    if (!file || !validateImageFile(file)) return;
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreviews((prev) => ({ ...prev, mainImage: reader.result }));
-    };
+    reader.onloadend = () => setImagePreviews((p) => ({ ...p, mainImage: reader.result }));
     reader.readAsDataURL(file);
-
-    setUploadingStates((prev) => ({ ...prev, mainImage: true }));
+    setUploadingStates((s) => ({ ...s, mainImage: true }));
     try {
-      const imageUrl = await uploadToCloudinary(file);
-      setProductData((prev) => ({ ...prev, imageUrl }));
-      setSnackbar({
-        open: true,
-        message: "Main image uploaded successfully!",
-        severity: "success",
-      });
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: "Failed to upload main image",
-        severity: "error",
-      });
-    } finally {
-      setUploadingStates((prev) => ({ ...prev, mainImage: false }));
-    }
+      const url = await uploadToCloudinary(file);
+      setProductData((p) => ({ ...p, imageUrl: url }));
+      showSnack("Main image uploaded!");
+    } catch { showSnack("Failed to upload main image", "error"); }
+    finally { setUploadingStates((s) => ({ ...s, mainImage: false })); }
   };
 
-  // Handle additional image change
   const handleAdditionalImageChange = async (index, e) => {
     const file = e.target.files[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setSnackbar({
-        open: true,
-        message: "Please select a valid image file",
-        severity: "error",
-      });
-      return;
-    }
-
+    if (!file || !validateImageFile(file)) return;
     const reader = new FileReader();
     reader.onloadend = () => {
-      const newPreviews = [...imagePreviews.additionalImages];
-      newPreviews[index] = reader.result;
-      setImagePreviews((prev) => ({
-        ...prev,
-        additionalImages: newPreviews,
-      }));
+      const arr = [...imagePreviews.additionalImages]; arr[index] = reader.result;
+      setImagePreviews((p) => ({ ...p, additionalImages: arr }));
     };
     reader.readAsDataURL(file);
-
-    const uploadKey = `additionalImage${index}`;
-    setUploadingStates((prev) => ({ ...prev, [uploadKey]: true }));
+    const key = `additionalImage${index}`;
+    setUploadingStates((s) => ({ ...s, [key]: true }));
     try {
-      const imageUrl = await uploadToCloudinary(file);
-      const newImages = [...productData.additionalImages];
-      newImages[index] = imageUrl;
-      setProductData((prev) => ({ ...prev, additionalImages: newImages }));
-      setSnackbar({
-        open: true,
-        message: `Additional image ${index + 1} uploaded successfully!`,
-        severity: "success",
-      });
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: `Failed to upload additional image ${index + 1}`,
-        severity: "error",
-      });
-    } finally {
-      setUploadingStates((prev) => ({ ...prev, [uploadKey]: false }));
-    }
+      const url = await uploadToCloudinary(file);
+      const arr = [...productData.additionalImages]; arr[index] = url;
+      setProductData((p) => ({ ...p, additionalImages: arr }));
+      showSnack(`Image ${index + 2} uploaded!`);
+    } catch { showSnack(`Failed to upload image ${index + 2}`, "error"); }
+    finally { setUploadingStates((s) => ({ ...s, [key]: false })); }
   };
 
   const removeMainImage = () => {
-    setProductData((prev) => ({ ...prev, imageUrl: "" }));
-    setImagePreviews((prev) => ({ ...prev, mainImage: "" }));
+    setProductData((p) => ({ ...p, imageUrl: "" }));
+    setImagePreviews((p) => ({ ...p, mainImage: "" }));
   };
 
   const removeAdditionalImage = (index) => {
-    const newImages = [...productData.additionalImages];
-    newImages[index] = "";
-    setProductData((prev) => ({ ...prev, additionalImages: newImages }));
-
-    const newPreviews = [...imagePreviews.additionalImages];
-    newPreviews[index] = "";
-    setImagePreviews((prev) => ({ ...prev, additionalImages: newPreviews }));
+    const imgs = [...productData.additionalImages]; imgs[index] = "";
+    const prev = [...imagePreviews.additionalImages]; prev[index] = "";
+    setProductData((p) => ({ ...p, additionalImages: imgs }));
+    setImagePreviews((p) => ({ ...p, additionalImages: prev }));
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setProductData((prev) => ({ ...prev, [name]: value }));
+  // ── Form helpers ─────────────────────────────────────────────────────────────
+  const handleChange          = (e) => setProductData((p) => ({ ...p, [e.target.name]: e.target.value }));
+  const addHighlight          = () => setProductData((p) => ({ ...p, highlights: [...p.highlights, ""] }));
+  const removeHighlight       = (i) => setProductData((p) => ({ ...p, highlights: p.highlights.filter((_, idx) => idx !== i) }));
+  const handleHighlightChange = (i, v) => {
+    const arr = [...productData.highlights]; arr[i] = v;
+    setProductData((p) => ({ ...p, highlights: arr }));
   };
-
+  const addSize    = () => setProductData((p) => ({ ...p, sizes: [...p.sizes, { name: "", quantity: 0 }] }));
+  const removeSize = (i) => setProductData((p) => ({ ...p, sizes: p.sizes.filter((_, idx) => idx !== i) }));
+  const handleSizeChange = (i, field, value) => {
+    const arr = [...productData.sizes]; arr[i][field] = value;
+    setProductData((p) => ({ ...p, sizes: arr }));
+  };
   const handleFeaturedToggle = (e) => {
     const isFeatured = e.target.checked;
-    setProductData((prev) => ({
-      ...prev,
-      isFeatured,
-      featuredOrder: isFeatured ? prev.featuredOrder || 1 : 0,
-    }));
+    setProductData((p) => ({ ...p, isFeatured, featuredOrder: isFeatured ? p.featuredOrder || 1 : 0 }));
   };
 
-  const addHighlight = () => {
-    setProductData((prev) => ({
-      ...prev,
-      highlights: [...prev.highlights, ""],
-    }));
-  };
+  // ── Redux error ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (error) showSnack(`Failed to update product: ${error}`, "error");
+  }, [error]);
 
-  const removeHighlight = (index) => {
-    setProductData((prev) => ({
-      ...prev,
-      highlights: prev.highlights.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleHighlightChange = (index, value) => {
-    const newHighlights = [...productData.highlights];
-    newHighlights[index] = value;
-    setProductData((prev) => ({ ...prev, highlights: newHighlights }));
-  };
-
-  const addSize = () => {
-    setProductData((prev) => ({
-      ...prev,
-      sizes: [...prev.sizes, { name: "", quantity: 0 }],
-    }));
-  };
-
-  const removeSize = (index) => {
-    setProductData((prev) => ({
-      ...prev,
-      sizes: prev.sizes.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleSizeChange = (index, field, value) => {
-    const newSizes = [...productData.sizes];
-    newSizes[index][field] = value;
-    setProductData((prev) => ({ ...prev, sizes: newSizes }));
-  };
-
+  // ── Submit ────────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!productData.imageUrl) {
-      setSnackbar({
-        open: true,
-        message: "Please upload a main product image",
-        severity: "error",
-      });
-      return;
-    }
-
-    const highlightsString = productData.highlights
-      .filter((h) => h.trim() !== "")
-      .join(", ");
-
-    const filteredImages = productData.additionalImages.filter((img) => img.trim() !== "");
-
-    const sizesSet = productData.sizes
-      .filter((s) => s.name && s.quantity >= 0)
-      .map((s) => ({ name: s.name, quantity: parseInt(s.quantity) || 0 }));
+    if (!productData.imageUrl)       { showSnack("Please upload a main product image", "error"); return; }
+    if (!selL1 || !selL2 || !selL3) { showSnack("Please select all 3 category levels", "error"); return; }
 
     const submitData = {
-      imageUrl: productData.imageUrl,
-      brand: productData.brand,
-      title: productData.title,
-      color: productData.color,
-      discountedPrice: parseInt(productData.discountedPrice) || 0,
-      price: parseInt(productData.price) || 0,
-      discountPercent: parseInt(productData.discountPercent) || 0,
-      size: sizesSet,
-      quantity: parseInt(productData.quantity) || 0,
-      topLevelCategory: productData.topLevelCategory,
-      secondLevelCategory: productData.secondLevelCategory,
-      thirdLevelCategory: productData.thirdLevelCategory,
-      description: productData.description,
-      highlights: highlightsString,
-      additionalImages: filteredImages,
-      material: productData.material,
-      careInstructions: productData.careInstructions,
-      countryOfOrigin: productData.countryOfOrigin,
-      manufacturer: productData.manufacturer,
-      isFeatured: productData.isFeatured,
-      featuredOrder: parseInt(productData.featuredOrder) || 0,
+      imageUrl:            productData.imageUrl,
+      brand:               productData.brand,
+      title:               productData.title,
+      color:               productData.color,
+      discountedPrice:     parseInt(productData.discountedPrice) || 0,
+      price:               parseInt(productData.price) || 0,
+      discountPercent:     parseInt(productData.discountPercent) || 0,
+      size: productData.sizes
+        .filter((s) => s.name && s.quantity >= 0)
+        .map((s) => ({ name: s.name, quantity: parseInt(s.quantity) || 0 })),
+      quantity:            parseInt(productData.quantity) || 0,
+      topLevelCategory:    selL1.id,
+      secondLevelCategory: selL2.id,
+      thirdLevelCategory:  selL3.id,
+      description:         productData.description,
+      highlights:          productData.highlights.filter((h) => h.trim()).join(", "),
+      additionalImages:    productData.additionalImages.filter((img) => img.trim()),
+      material:            productData.material,
+      careInstructions:    productData.careInstructions,
+      countryOfOrigin:     productData.countryOfOrigin,
+      manufacturer:        productData.manufacturer,
+      isFeatured:          productData.isFeatured,
+      featuredOrder:       parseInt(productData.featuredOrder) || 0,
     };
 
     console.log("📝 UPDATING PRODUCT:", submitData);
 
-    setSubmitting(true);
     try {
-      const { data } = await api.put(`/api/admin/products/${productId}`, submitData);
-      console.log("✅ Product updated:", data);
-
-      setSnackbar({
-        open: true,
-        message: "Product updated successfully!",
-        severity: "success",
-      });
-
-      // Navigate back after 1.5 seconds
-      setTimeout(() => {
-        navigate("/admin/products");
-      }, 1500);
-    } catch (error) {
-      console.error("❌ Update error:", error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.message || "Failed to update product",
-        severity: "error",
-      });
-    } finally {
-      setSubmitting(false);
+      await dispatch(updateProduct(productId, submitData));
+      showSnack("Product updated successfully! ✅");
+      setTimeout(() => navigate("/admin/products"), 1500);
+    } catch (err) {
+      console.error("Submit error:", err);
     }
   };
 
-  // Dependent dropdowns logic
-  const selectedTopCategory = navigation?.categories?.find(
-    (cat) => cat.id === productData.topLevelCategory
+  // ── Tip box ───────────────────────────────────────────────────────────────────
+  const TipBox = ({ children }) => (
+    <Box sx={{ mt: 0.5, mb: 1, px: 1.5, py: 1, bgcolor: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 1.5 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6 }}>{children}</Typography>
+    </Box>
   );
-  const secondLevelOptions = selectedTopCategory?.sections || [];
-  const selectedSecondLevel = secondLevelOptions.find(
-    (section) => section.id === productData.secondLevelCategory
-  );
-  const thirdLevelOptions = selectedSecondLevel?.items || [];
 
-  if (loading) {
+  // ── Loading screen while fetching product ────────────────────────────────────
+  if (productFetchLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-        <CircularProgress size={60} />
+      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="60vh" gap={2}>
+        <CircularProgress size={48} />
+        <Typography variant="body2" color="text.secondary">Loading product #{productId}...</Typography>
       </Box>
     );
   }
 
+  // ── Guard: product not found ──────────────────────────────────────────────────
+  if (!selectedProduct) {
+    return (
+      <Box maxWidth="900px" mx="auto" py={6} px={2} textAlign="center">
+        <Typography variant="h6" color="text.secondary" mb={3}>
+          Product #{productId} not found.
+        </Typography>
+        <Button variant="outlined" startIcon={<ArrowBack />} onClick={() => navigate("/admin/products")}>
+          Go Back to Products
+        </Button>
+      </Box>
+    );
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <Box maxWidth="900px" mx="auto" py={3} px={2}>
-      <Box display="flex" alignItems="center" mb={3}>
-        <IconButton onClick={() => navigate("/admin/products")} sx={{ mr: 2 }}>
+
+      {/* Header */}
+      <Box display="flex" alignItems="center" gap={2} mb={3}>
+        <IconButton onClick={() => navigate("/admin/products")} sx={{ border: "1px solid #e0e0e0" }}>
           <ArrowBack />
         </IconButton>
-        <div>
-          <Typography variant="h4" fontWeight={700}>
-            Edit Product
-          </Typography>
+        <Box>
+          <Typography variant="h4" fontWeight={700}>Edit Product</Typography>
           <Typography variant="body2" color="text.secondary">
-            ID: {productId}
+            ID: #{selectedProduct.id} — {selectedProduct.title}
           </Typography>
-        </div>
+        </Box>
       </Box>
 
       <Card elevation={2} sx={{ borderRadius: 3 }}>
         <CardContent sx={{ p: 4 }}>
           <form onSubmit={handleSubmit}>
-            
-            {/* 🌟 FEATURED SECTION */}
-            <Box
-              sx={{
-                p: 3,
-                mb: 3,
-                borderRadius: 2,
-                backgroundColor: productData.isFeatured ? "#e8f5e9" : "#f5f5f5",
-                border: productData.isFeatured ? "2px solid #4caf50" : "1px solid #e0e0e0",
-              }}
-            >
+
+            {/* ── FEATURED ── */}
+            <Box sx={{
+              p: 3, mb: 3, borderRadius: 2,
+              backgroundColor: productData.isFeatured ? "#e8f5e9" : "#f5f5f5",
+              border: productData.isFeatured ? "2px solid #4caf50" : "1px solid #e0e0e0",
+            }}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography variant="h6" fontWeight={600}>
-                    ⭐ Featured Product
-                  </Typography>
+                  <Typography variant="h6" fontWeight={600}>⭐ Featured Product</Typography>
                   <Typography variant="body2" color="text.secondary">
                     Featured products appear in the homepage carousel
                   </Typography>
                 </Box>
                 <FormControlLabel
-                  control={
-                    <Switch
-                      checked={productData.isFeatured}
-                      onChange={handleFeaturedToggle}
-                      color="success"
-                    />
-                  }
+                  control={<Switch checked={productData.isFeatured} onChange={handleFeaturedToggle} color="success" />}
                   label={productData.isFeatured ? "Featured" : "Not Featured"}
                 />
               </Box>
-
               {productData.isFeatured && (
                 <Box mt={2}>
-                  <TextField
-                    type="number"
-                    label="Display Order"
-                    name="featuredOrder"
-                    value={productData.featuredOrder}
-                    onChange={handleChange}
-                    inputProps={{ min: 1 }}
-                    size="small"
-                    helperText="Lower numbers appear first in carousel (e.g., 1, 2, 3...)"
-                    sx={{ maxWidth: 200 }}
-                  />
+                  <TextField type="number" label="Display Order" name="featuredOrder"
+                    value={productData.featuredOrder} onChange={handleChange}
+                    inputProps={{ min: 1 }} size="small"
+                    helperText="Lower numbers appear first (e.g., 1, 2, 3...)"
+                    sx={{ maxWidth: 200 }} />
                 </Box>
               )}
             </Box>
 
-            {/* MEDIA SECTION */}
-            <Typography variant="h6" fontWeight={600} mb={1}>
-              📸 Product Media
-            </Typography>
+            {/* ── IMAGES ── */}
+            <Typography variant="h6" fontWeight={600} mb={1}>📸 Product Media</Typography>
             <Divider sx={{ mb: 2 }} />
 
-            {/* Main Image */}
             <Box mb={3}>
-              <Typography variant="subtitle2" color="text.secondary" mb={1}>
-                Main Product Image *
-              </Typography>
-
-              {imagePreviews.mainImage ? (
-                <Paper elevation={2} sx={{ p: 2, position: "relative", borderRadius: 2 }}>
-                  <Box
-                    sx={{
-                      position: "relative",
-                      width: "100%",
-                      height: 200,
-                      borderRadius: 2,
-                      overflow: "hidden",
-                      backgroundColor: "#f5f5f5",
-                    }}
-                  >
-                    <img
-                      src={imagePreviews.mainImage}
-                      alt="Main product"
-                      style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                    />
+              <Typography variant="subtitle2" color="text.secondary" mb={1}>Main Product Image *</Typography>
+              {!imagePreviews.mainImage ? (
+                <Button component="label" variant="outlined"
+                  startIcon={uploadingStates.mainImage ? <CircularProgress size={20} /> : <CloudUpload />}
+                  disabled={uploadingStates.mainImage} fullWidth
+                  sx={{ py: 3, borderStyle: "dashed", borderWidth: 2 }}>
+                  {uploadingStates.mainImage ? "Uploading..." : "Click to Upload Main Image"}
+                  <input type="file" hidden accept="image/png,image/jpeg,image/jpg" onChange={handleMainImageChange} />
+                </Button>
+              ) : (
+                <Paper elevation={2} sx={{ p: 2, borderRadius: 2 }}>
+                  <Box sx={{ width: "100%", height: 200, borderRadius: 2, overflow: "hidden", backgroundColor: "#f5f5f5" }}>
+                    <img src={imagePreviews.mainImage} alt="Main"
+                      style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                   </Box>
                   <Box display="flex" justifyContent="space-between" mt={2}>
-                    <Button
-                      component="label"
-                      size="small"
-                      variant="outlined"
-                      startIcon={<CloudUpload />}
-                      disabled={uploadingStates.mainImage}
-                    >
-                      {uploadingStates.mainImage ? "Uploading..." : "Change Image"}
-                      <input
-                        type="file"
-                        hidden
-                        accept="image/png, image/jpeg, image/jpg"
-                        onChange={handleMainImageChange}
-                      />
-                    </Button>
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={removeMainImage}
-                      startIcon={<Delete />}
-                    >
-                      Remove
-                    </Button>
+                    <Box display="flex" gap={1} alignItems="center">
+                      <Typography variant="caption" color="success.main">✓ Main image ready</Typography>
+                      <Button component="label" size="small" variant="outlined"
+                        startIcon={<CloudUpload />} disabled={uploadingStates.mainImage}>
+                        {uploadingStates.mainImage ? "Uploading..." : "Change"}
+                        <input type="file" hidden accept="image/png,image/jpeg,image/jpg" onChange={handleMainImageChange} />
+                      </Button>
+                    </Box>
+                    <Button size="small" color="error" onClick={removeMainImage} startIcon={<Delete />}>Remove</Button>
                   </Box>
                 </Paper>
-              ) : (
-                <Button
-                  component="label"
-                  variant="outlined"
-                  startIcon={<CloudUpload />}
-                  disabled={uploadingStates.mainImage}
-                  fullWidth
-                  sx={{ py: 3, borderStyle: "dashed", borderWidth: 2 }}
-                >
-                  {uploadingStates.mainImage ? "Uploading..." : "Upload Main Image"}
-                  <input
-                    type="file"
-                    hidden
-                    accept="image/png, image/jpeg, image/jpg"
-                    onChange={handleMainImageChange}
-                  />
-                </Button>
               )}
             </Box>
 
-            {/* Additional Images */}
-            <Typography variant="subtitle2" color="text.secondary" mb={1}>
-              Additional Images (Optional)
-            </Typography>
-            <Grid container spacing={2}>
+            <Typography variant="subtitle2" color="text.secondary" mb={1}>Additional Images (Optional — max 3)</Typography>
+            <Grid container spacing={2} mb={3}>
               {[0, 1, 2].map((index) => (
                 <Grid item xs={12} sm={4} key={index}>
-                  {imagePreviews.additionalImages[index] ? (
+                  {!imagePreviews.additionalImages[index] ? (
+                    <Button component="label" variant="outlined" fullWidth
+                      startIcon={uploadingStates[`additionalImage${index}`] ? <CircularProgress size={16} /> : <ImageIcon />}
+                      disabled={uploadingStates[`additionalImage${index}`]}
+                      sx={{ py: 2, borderStyle: "dashed", fontSize: "0.875rem" }}>
+                      {uploadingStates[`additionalImage${index}`] ? "Uploading..." : `Image ${index + 2}`}
+                      <input type="file" hidden accept="image/png,image/jpeg,image/jpg"
+                        onChange={(e) => handleAdditionalImageChange(index, e)} />
+                    </Button>
+                  ) : (
                     <Paper elevation={1} sx={{ p: 1, position: "relative" }}>
-                      <Box
-                        sx={{
-                          width: "100%",
-                          height: 120,
-                          borderRadius: 1,
-                          overflow: "hidden",
-                          backgroundColor: "#f5f5f5",
-                        }}
-                      >
-                        <img
-                          src={imagePreviews.additionalImages[index]}
-                          alt={`Additional ${index + 1}`}
-                          style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                        />
+                      <Box sx={{ width: "100%", height: 120, borderRadius: 1, overflow: "hidden", backgroundColor: "#f5f5f5" }}>
+                        <img src={imagePreviews.additionalImages[index]} alt={`Additional ${index + 1}`}
+                          style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                       </Box>
                       <Box display="flex" gap={1} mt={1}>
-                        <Button
-                          component="label"
-                          size="small"
-                          variant="outlined"
-                          fullWidth
-                          disabled={uploadingStates[`additionalImage${index}`]}
-                        >
+                        <Button component="label" size="small" variant="outlined" fullWidth
+                          disabled={uploadingStates[`additionalImage${index}`]}>
                           {uploadingStates[`additionalImage${index}`] ? "..." : "Change"}
-                          <input
-                            type="file"
-                            hidden
-                            accept="image/png, image/jpeg, image/jpg"
-                            onChange={(e) => handleAdditionalImageChange(index, e)}
-                          />
+                          <input type="file" hidden accept="image/png,image/jpeg,image/jpg"
+                            onChange={(e) => handleAdditionalImageChange(index, e)} />
                         </Button>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => removeAdditionalImage(index)}
-                        >
+                        <IconButton size="small" color="error" onClick={() => removeAdditionalImage(index)}>
                           <Delete fontSize="small" />
                         </IconButton>
                       </Box>
                     </Paper>
-                  ) : (
-                    <Button
-                      component="label"
-                      variant="outlined"
-                      startIcon={<ImageIcon />}
-                      disabled={uploadingStates[`additionalImage${index}`]}
-                      fullWidth
-                      sx={{ py: 2, borderStyle: "dashed" }}
-                    >
-                      {uploadingStates[`additionalImage${index}`] ? "Uploading..." : `Image ${index + 2}`}
-                      <input
-                        type="file"
-                        hidden
-                        accept="image/png, image/jpeg, image/jpg"
-                        onChange={(e) => handleAdditionalImageChange(index, e)}
-                      />
-                    </Button>
                   )}
                 </Grid>
               ))}
             </Grid>
 
-            {/* BASIC INFO */}
-            <Typography variant="h6" fontWeight={600} mt={4} mb={1}>
-              📝 Basic Information
-            </Typography>
+            {/* ── CATEGORIES ── */}
+            <Typography variant="h6" fontWeight={600} mb={1}>📂 Categories</Typography>
             <Divider sx={{ mb: 2 }} />
 
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Brand"
-                  name="brand"
-                  value={productData.brand}
-                  onChange={handleChange}
-                  required
-                />
-              </Grid>
+            {catLoading ? (
+              <Box display="flex" alignItems="center" gap={2} mb={3}>
+                <CircularProgress size={20} />
+                <Typography variant="body2">Loading categories from database...</Typography>
+              </Box>
+            ) : (
+              <Grid container spacing={2} mb={2}>
 
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Title"
-                  name="title"
-                  value={productData.title}
-                  onChange={handleChange}
-                  required
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <Autocomplete
-                  freeSolo
-                  options={COLORS}
-                  value={productData.color}
-                  onChange={(e, newValue) => {
-                    setProductData((prev) => ({ ...prev, color: newValue || "" }));
-                  }}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Color" name="color" required />
+                {/* LEVEL 1 */}
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
+                    Level 1 — Top Category
+                  </Typography>
+                  <Autocomplete options={cats.level1} getOptionLabel={(o) => o.name} value={selL1}
+                    onChange={(_, v) => { setSelL1(v); setSelL2(null); setSelL3(null); }}
+                    isOptionEqualToValue={(opt, val) => opt.id === val?.id}
+                    renderOption={(props, option) => (
+                      <li {...props} key={option.dbId}><Typography variant="body2">{option.name}</Typography></li>
+                    )}
+                    renderInput={(params) => <TextField {...params} label="e.g. Men, Women, Hemp" required size="small" />}
+                  />
+                  {!addingL1 ? (
+                    <Button size="small" startIcon={<AddCircleOutline fontSize="small" />} onClick={() => setAddingL1(true)}
+                      sx={{ mt: 1, fontSize: "0.75rem", color: "teal" }}>Add new top category</Button>
+                  ) : (
+                    <Box display="flex" gap={1} mt={1}>
+                      <TextField size="small" value={newL1} onChange={(e) => setNewL1(e.target.value)}
+                        placeholder="e.g. Kids" autoFocus sx={{ flex: 1 }}
+                        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddL1())} />
+                      <Button size="small" variant="contained" onClick={handleAddL1} disabled={addingCat}
+                        sx={{ minWidth: 0, px: 1.5, backgroundColor: "teal" }}>
+                        {addingCat ? <CircularProgress size={14} color="inherit" /> : "Add"}
+                      </Button>
+                      <Button size="small" onClick={() => { setAddingL1(false); setNewL1(""); }}>✕</Button>
+                    </Box>
                   )}
-                />
-              </Grid>
+                </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Total Quantity"
-                  name="quantity"
-                  inputProps={{ min: 0 }}
-                  value={productData.quantity}
-                  onChange={handleChange}
-                  required
-                />
-              </Grid>
-            </Grid>
-
-            {/* PRICING */}
-            <Typography variant="h6" fontWeight={600} mt={4} mb={1}>
-              💰 Pricing Details
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Original Price"
-                  name="price"
-                  value={productData.price}
-                  onChange={handleChange}
-                  required
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Discounted Price"
-                  name="discountedPrice"
-                  value={productData.discountedPrice}
-                  onChange={handleChange}
-                  required
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Discount Percentage"
-                  name="discountPercent"
-                  value={productData.discountPercent}
-                  onChange={handleChange}
-                  required
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                  }}
-                />
-              </Grid>
-            </Grid>
-
-            {/* CATEGORIES */}
-            <Typography variant="h6" fontWeight={600} mt={4} mb={1}>
-              📂 Categories
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  select
-                  fullWidth
-                  label="Top Level Category"
-                  name="topLevelCategory"
-                  value={productData.topLevelCategory}
-                  onChange={(e) => {
-                    setProductData((prev) => ({
-                      ...prev,
-                      topLevelCategory: e.target.value,
-                      secondLevelCategory: "",
-                      thirdLevelCategory: "",
-                    }));
-                  }}
-                  required
-                >
-                  {navigation?.categories?.map((cat) => (
-                    <MenuItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </MenuItem>
+                {/* LEVEL 2 */}
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
+                    Level 2 — Section
+                  </Typography>
+                  <Autocomplete options={filteredL2} getOptionLabel={(o) => o.name} value={selL2}
+                    onChange={(_, v) => { setSelL2(v); setSelL3(null); }} disabled={!selL1}
+                    isOptionEqualToValue={(opt, val) => opt.id === val?.id}
+                    renderOption={(props, option) => (
+                      <li {...props} key={option.dbId}><Typography variant="body2">{option.name}</Typography></li>
+                    )}
+                    renderInput={(params) => (
+                      <TextField {...params} label={selL1 ? "e.g. Clothing, Bags" : "Select Level 1 first"} required size="small" />
+                    )}
+                  />
+                  {selL1 && (!addingL2 ? (
+                    <Button size="small" startIcon={<AddCircleOutline fontSize="small" />} onClick={() => setAddingL2(true)}
+                      sx={{ mt: 1, fontSize: "0.75rem", color: "teal" }}>Add new section</Button>
+                  ) : (
+                    <Box display="flex" gap={1} mt={1}>
+                      <TextField size="small" value={newL2} onChange={(e) => setNewL2(e.target.value)}
+                        placeholder={`Under ${selL1.name}`} autoFocus sx={{ flex: 1 }}
+                        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddL2())} />
+                      <Button size="small" variant="contained" onClick={handleAddL2} disabled={addingCat}
+                        sx={{ minWidth: 0, px: 1.5, backgroundColor: "teal" }}>
+                        {addingCat ? <CircularProgress size={14} color="inherit" /> : "Add"}
+                      </Button>
+                      <Button size="small" onClick={() => { setAddingL2(false); setNewL2(""); }}>✕</Button>
+                    </Box>
                   ))}
-                </TextField>
-              </Grid>
+                </Grid>
 
-              <Grid item xs={12} sm={4}>
-                <Autocomplete
-                  freeSolo
-                  options={secondLevelOptions.map((s) => s.id)}
-                  getOptionLabel={(option) => {
-                    const section = secondLevelOptions.find((s) => s.id === option);
-                    return section ? section.name : option;
-                  }}
-                  value={productData.secondLevelCategory}
-                  onChange={(e, newValue) => {
-                    setProductData((prev) => ({
-                      ...prev,
-                      secondLevelCategory: newValue || "",
-                      thirdLevelCategory: "",
-                    }));
-                  }}
-                  disabled={!productData.topLevelCategory}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Second Level Category" required />
-                  )}
-                />
-              </Grid>
+                {/* LEVEL 3 */}
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
+                    Level 3 — Item
+                  </Typography>
+                  <Autocomplete options={filteredL3} getOptionLabel={(o) => o.name} value={selL3}
+                    onChange={(_, v) => setSelL3(v)} disabled={!selL2}
+                    isOptionEqualToValue={(opt, val) => opt.id === val?.id}
+                    renderOption={(props, option) => (
+                      <li {...props} key={option.dbId}><Typography variant="body2">{option.name}</Typography></li>
+                    )}
+                    renderInput={(params) => (
+                      <TextField {...params} label={selL2 ? "e.g. Jeans, Pouches" : "Select Level 2 first"} required size="small" />
+                    )}
+                  />
+                  {selL2 && (!addingL3 ? (
+                    <Button size="small" startIcon={<AddCircleOutline fontSize="small" />} onClick={() => setAddingL3(true)}
+                      sx={{ mt: 1, fontSize: "0.75rem", color: "teal" }}>Add new item</Button>
+                  ) : (
+                    <Box display="flex" gap={1} mt={1}>
+                      <TextField size="small" value={newL3} onChange={(e) => setNewL3(e.target.value)}
+                        placeholder={`Under ${selL2.name}`} autoFocus sx={{ flex: 1 }}
+                        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddL3())} />
+                      <Button size="small" variant="contained" onClick={handleAddL3} disabled={addingCat}
+                        sx={{ minWidth: 0, px: 1.5, backgroundColor: "teal" }}>
+                        {addingCat ? <CircularProgress size={14} color="inherit" /> : "Add"}
+                      </Button>
+                      <Button size="small" onClick={() => { setAddingL3(false); setNewL3(""); }}>✕</Button>
+                    </Box>
+                  ))}
+                </Grid>
 
-              <Grid item xs={12} sm={4}>
-                <Autocomplete
-                  freeSolo
-                  options={thirdLevelOptions.map((i) => i.id)}
-                  getOptionLabel={(option) => {
-                    const item = thirdLevelOptions.find((i) => i.id === option);
-                    return item ? item.name : option;
-                  }}
-                  value={productData.thirdLevelCategory}
-                  onChange={(e, newValue) => {
-                    setProductData((prev) => ({
-                      ...prev,
-                      thirdLevelCategory: newValue || "",
-                    }));
-                  }}
-                  disabled={!productData.secondLevelCategory}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Third Level Category" required />
-                  )}
-                />
+              </Grid>
+            )}
+
+            {/* Selected path breadcrumb */}
+            {(selL1 || selL2 || selL3) && (
+              <Box mb={3} p={1.5} bgcolor="#f0fdf4" borderRadius={2} border="1px solid #bbf7d0">
+                <Typography variant="caption" color="text.secondary">Selected path: </Typography>
+                <Typography variant="caption" fontWeight={600} color="green">
+                  {[selL1?.name, selL2?.name, selL3?.name].filter(Boolean).join(" → ")}
+                </Typography>
+              </Box>
+            )}
+
+            {/* ── BASIC INFO ── */}
+            <Typography variant="h6" fontWeight={600} mb={1}>📝 Basic Information</Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField fullWidth label="Brand" name="brand" value={productData.brand} onChange={handleChange} required />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField fullWidth label="Title" name="title" value={productData.title} onChange={handleChange} required />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Autocomplete freeSolo options={COLORS} value={productData.color}
+                  onChange={(_, v) => setProductData((p) => ({ ...p, color: v || "" }))}
+                  renderInput={(params) => <TextField {...params} label="Color" required />} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField fullWidth type="number" label="Total Quantity" name="quantity"
+                  inputProps={{ min: 0 }} value={productData.quantity} onChange={handleChange} required />
               </Grid>
             </Grid>
 
-            {/* DESCRIPTION */}
-            <Typography variant="h6" fontWeight={600} mt={4} mb={1}>
-              📄 Description & Details
-            </Typography>
+            {/* ── PRICING ── */}
+            <Typography variant="h6" fontWeight={600} mt={4} mb={1}>💰 Pricing Details</Typography>
             <Divider sx={{ mb: 2 }} />
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={4}>
+                <TextField fullWidth type="number" label="Original Price" name="price" value={productData.price}
+                  onChange={handleChange} required
+                  InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }} />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField fullWidth type="number" label="Discounted Price" name="discountedPrice"
+                  value={productData.discountedPrice} onChange={handleChange} required
+                  InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }} />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField fullWidth type="number" label="Discount %" name="discountPercent"
+                  value={productData.discountPercent} onChange={handleChange} required
+                  InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }} />
+              </Grid>
+            </Grid>
 
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              label="Product Description"
-              name="description"
-              value={productData.description}
-              onChange={handleChange}
-              required
-              margin="normal"
-            />
+            {/* ── DESCRIPTION & DETAILS ── */}
+            <Typography variant="h6" fontWeight={600} mt={4} mb={1}>📄 Description & Details</Typography>
+            <Divider sx={{ mb: 2 }} />
+            <TextField fullWidth multiline rows={5} label="Product Description" name="description"
+              value={productData.description} onChange={handleChange} required margin="normal"
+              placeholder="e.g. Stay cozy while making a bold style statement..." />
 
-            {/* HIGHLIGHTS */}
-            <Typography variant="subtitle2" mt={2} mb={1}>
-              Product Highlights
-            </Typography>
-            {productData.highlights.map((highlight, index) => (
-              <Box key={index} display="flex" gap={1} mb={1}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  value={highlight}
-                  onChange={(e) => handleHighlightChange(index, e.target.value)}
-                  placeholder="e.g., Premium quality fabric"
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start">✓</InputAdornment>,
-                  }}
-                />
+            <Typography variant="subtitle2" mt={2} mb={1}>Product Highlights</Typography>
+            {productData.highlights.map((h, i) => (
+              <Box key={i} display="flex" gap={1} mb={1}>
+                <TextField fullWidth size="small" value={h}
+                  onChange={(e) => handleHighlightChange(i, e.target.value)}
+                  placeholder="e.g. Unique tribal-inspired geometric design"
+                  InputProps={{ startAdornment: <InputAdornment position="start">✓</InputAdornment> }} />
                 {productData.highlights.length > 1 && (
-                  <IconButton color="error" onClick={() => removeHighlight(index)} size="small">
-                    <Delete />
-                  </IconButton>
+                  <IconButton color="error" onClick={() => removeHighlight(i)} size="small"><Delete /></IconButton>
                 )}
               </Box>
             ))}
-            <Button
-              startIcon={<Add />}
-              onClick={addHighlight}
-              variant="outlined"
-              size="small"
-              sx={{ mt: 1 }}
-            >
+            <Button startIcon={<Add />} onClick={addHighlight} variant="outlined" size="small" sx={{ mt: 1 }}>
               Add Highlight
             </Button>
 
-            {/* EXTRA DETAILS */}
+            {/* ── MATERIAL & CARE ── */}
             <Grid container spacing={2} mt={2}>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Material"
-                  name="material"
-                  value={productData.material}
-                  onChange={handleChange}
-                />
+                <TextField fullWidth multiline rows={5} label="Material" name="material"
+                  value={productData.material} onChange={handleChange}
+                  placeholder={"• Premium Cotton Blend Fabric\n• Soft Brushed Inner Lining\n• 60% Cotton, 40% Polyester"}
+                  helperText="Use • to separate points (each • becomes a bullet on the product page)" />
               </Grid>
-
               <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Country of Origin"
-                  name="countryOfOrigin"
-                  value={productData.countryOfOrigin}
-                  onChange={handleChange}
-                />
+                <TextField fullWidth multiline rows={5} label="Care Instructions" name="careInstructions"
+                  value={productData.careInstructions} onChange={handleChange}
+                  placeholder={"• Machine wash cold\n• Do not bleach\n• Tumble dry low"}
+                  helperText="Use • to separate points (each • becomes a bullet on the product page)" />
               </Grid>
-
               <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Manufacturer"
-                  name="manufacturer"
-                  value={productData.manufacturer}
-                  onChange={handleChange}
-                />
+                <TextField fullWidth label="Country of Origin" name="countryOfOrigin"
+                  value={productData.countryOfOrigin} onChange={handleChange} />
               </Grid>
-
               <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Care Instructions"
-                  name="careInstructions"
-                  value={productData.careInstructions}
-                  onChange={handleChange}
-                />
+                <TextField fullWidth label="Manufacturer" name="manufacturer"
+                  value={productData.manufacturer} onChange={handleChange}
+                  placeholder="e.g. HKL Textiles Pvt. Ltd." />
               </Grid>
             </Grid>
 
-            {/* SIZES */}
-            <Typography variant="h6" fontWeight={600} mt={4} mb={1}>
-              📏 Size Variants
-            </Typography>
+            <TipBox>
+              💡 <strong>Tip:</strong> Start each Material/Care point with <strong>•</strong>.
+              Each bullet displays as a separate line on the product page.
+            </TipBox>
+
+            {/* ── SIZES ── */}
+            <Typography variant="h6" fontWeight={600} mt={4} mb={1}>📏 Size Variants</Typography>
             <Divider sx={{ mb: 2 }} />
-
-            {productData.sizes.map((size, index) => (
-              <Grid container spacing={2} key={index} mb={2} alignItems="center">
+            {productData.sizes.map((size, i) => (
+              <Grid container spacing={2} key={i} mb={2} alignItems="center">
                 <Grid item xs={5}>
-                  <Autocomplete
-                    freeSolo
-                    options={SIZES}
-                    value={size.name}
-                    onChange={(e, newValue) =>
-                      handleSizeChange(index, "name", newValue || "")
-                    }
-                    renderInput={(params) => (
-                      <TextField {...params} label="Size Name" required size="small" />
-                    )}
-                  />
+                  <Autocomplete freeSolo options={SIZES} value={size.name}
+                    onChange={(_, v) => handleSizeChange(i, "name", v || "")}
+                    renderInput={(params) => <TextField {...params} label="Size" required size="small" />} />
                 </Grid>
-
                 <Grid item xs={5}>
-                  <TextField
-                    fullWidth
-                    type="number"
-                    label="Quantity"
-                    inputProps={{ min: 0 }}
-                    value={size.quantity}
-                    onChange={(e) => handleSizeChange(index, "quantity", e.target.value)}
-                    required
-                    size="small"
-                  />
+                  <TextField fullWidth type="number" label="Quantity" inputProps={{ min: 0 }}
+                    value={size.quantity} onChange={(e) => handleSizeChange(i, "quantity", e.target.value)}
+                    required size="small" />
                 </Grid>
-
                 <Grid item xs={2}>
-                  <IconButton color="error" onClick={() => removeSize(index)} size="small">
-                    <Delete />
-                  </IconButton>
+                  <IconButton color="error" onClick={() => removeSize(i)} size="small"><Delete /></IconButton>
                 </Grid>
               </Grid>
             ))}
-
-            <Button
-              startIcon={<Add />}
-              onClick={addSize}
-              variant="outlined"
-              size="small"
-              sx={{ mt: 1 }}
-            >
+            <Button startIcon={<Add />} onClick={addSize} variant="outlined" size="small" sx={{ mt: 1 }}>
               Add Size
             </Button>
 
-            {/* SUBMIT BUTTONS */}
+            {/* ── SUBMIT ── */}
             <Box display="flex" gap={2} mt={4}>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => navigate("/admin/products")}
-                disabled={submitting}
-                sx={{ flex: 1 }}
-              >
+              <Button variant="outlined" size="large" onClick={() => navigate("/admin/products")}
+                disabled={loading} sx={{ flex: 1 }}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                size="large"
-                disabled={submitting || Object.values(uploadingStates).some((s) => s)}
+              <Button type="submit" variant="contained" color="primary" size="large"
                 sx={{ flex: 2, py: 1.5, fontSize: "16px", fontWeight: 600 }}
-              >
-                {submitting ? (
-                  <>
-                    <CircularProgress size={24} sx={{ mr: 2, color: "white" }} />
-                    Updating...
-                  </>
-                ) : (
-                  "💾 Update Product"
-                )}
+                disabled={loading || Object.values(uploadingStates).some(Boolean) || addingCat}>
+                {loading
+                  ? <><CircularProgress size={24} sx={{ mr: 2, color: "white" }} />Updating Product...</>
+                  : "💾 Update Product"
+                }
               </Button>
             </Box>
+
           </form>
         </CardContent>
       </Card>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={5000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
+      <Snackbar open={snackbar.open} autoHideDuration={5000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}>
         <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
       </Snackbar>
     </Box>
