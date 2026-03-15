@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import DeliveryForm from "./DeliveryForm";
-import axios from "axios";
+import { api } from "../../../Config/apiConfig"; // ✅ use api instance, not axios
 import { saveCheckoutAddress } from "../../../State/Checkout/Action";
 import { getCart } from "../../../State/Cart/Action";
 import { CLEAR_CHECKOUT_ADDRESS } from "../../../State/Checkout/ActionType";
@@ -32,7 +32,6 @@ const CheckoutAddress = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isCartChecked, setIsCartChecked] = useState(false);
 
-  // ✅ NEW: State for save feedback
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
 
@@ -65,13 +64,10 @@ const CheckoutAddress = () => {
     }
   }, [isLoading, isCartChecked, cart.loading, cart.cartItems, navigate]);
 
-  // ✅ MODIFIED: Reload saved addresses function
+  // ✅ Load saved addresses using api instance (has baseURL + JWT interceptor)
   const loadSavedAddresses = async () => {
     try {
-      const jwt = localStorage.getItem("jwt");
-      const res = await axios.get("/api/address", {
-        headers: { Authorization: `Bearer ${jwt}` },
-      });
+      const res = await api.get("/api/address");
       setSavedAddresses(
         Array.isArray(res.data)
           ? res.data.filter((addr) => addr.active !== false)
@@ -86,14 +82,12 @@ const CheckoutAddress = () => {
     if (user) loadSavedAddresses();
   }, [user]);
 
+  // ✅ Fetch states using api instance
   useEffect(() => {
     const fetchStates = async () => {
       try {
         setLoadingStates(true);
-        const jwt = localStorage.getItem("jwt");
-        const res = await axios.get("/api/locations/states", {
-          headers: { Authorization: `Bearer ${jwt}` },
-        });
+        const res = await api.get("/api/locations/states");
         if (Array.isArray(res.data)) {
           setStates(res.data);
           setError(null);
@@ -111,6 +105,7 @@ const CheckoutAddress = () => {
     fetchStates();
   }, []);
 
+  // ✅ Restore saved address (uses api instance)
   useEffect(() => {
     const restore = async () => {
       if (!savedAddress || isInitialized || loadingStates) return;
@@ -118,11 +113,9 @@ const CheckoutAddress = () => {
       setAddress(savedAddress);
 
       try {
-        const jwt = localStorage.getItem("jwt");
         if (savedAddress.state) {
-          const distRes = await axios.get(
-            `/api/locations/districts/${savedAddress.state}`,
-            { headers: { Authorization: `Bearer ${jwt}` } }
+          const distRes = await api.get(
+            `/api/locations/districts/${savedAddress.state}`
           );
           setDistricts(distRes.data || []);
         } else {
@@ -130,9 +123,8 @@ const CheckoutAddress = () => {
         }
 
         if (savedAddress.district) {
-          const pinRes = await axios.get(
-            `/api/locations/pincodes/${savedAddress.district}`,
-            { headers: { Authorization: `Bearer ${jwt}` } }
+          const pinRes = await api.get(
+            `/api/locations/pincodes/${savedAddress.district}`
           );
           setPincodes(pinRes.data || []);
         } else {
@@ -141,9 +133,8 @@ const CheckoutAddress = () => {
 
         if (savedAddress.zipCode && savedAddress.zipCode.length === 6) {
           try {
-            const lookup = await axios.get(
-              `/api/locations/lookup/${savedAddress.zipCode}`,
-              { headers: { Authorization: `Bearer ${jwt}` } }
+            const lookup = await api.get(
+              `/api/locations/lookup/${savedAddress.zipCode}`
             );
             setPincodeStatus(lookup.data?.deliverable ? "deliverable" : "not-deliverable");
           } catch {
@@ -165,6 +156,7 @@ const CheckoutAddress = () => {
     dispatch(saveCheckoutAddress(updated));
   };
 
+  // ✅ State change using api instance
   const onStateChange = async (stateName) => {
     const updated = { ...address, state: stateName, district: "", zipCode: "" };
     setAddress(updated);
@@ -176,16 +168,14 @@ const CheckoutAddress = () => {
     if (!stateName) return;
 
     try {
-      const jwt = localStorage.getItem("jwt");
-      const res = await axios.get(`/api/locations/districts/${stateName}`, {
-        headers: { Authorization: `Bearer ${jwt}` },
-      });
+      const res = await api.get(`/api/locations/districts/${stateName}`);
       setDistricts(Array.isArray(res.data) ? res.data : []);
     } catch {
       setDistricts([]);
     }
   };
 
+  // ✅ District change using api instance
   const onDistrictChange = async (districtName) => {
     const updated = { ...address, district: districtName, zipCode: "" };
     setAddress(updated);
@@ -196,16 +186,14 @@ const CheckoutAddress = () => {
     if (!districtName) return;
 
     try {
-      const jwt = localStorage.getItem("jwt");
-      const res = await axios.get(`/api/locations/pincodes/${districtName}`, {
-        headers: { Authorization: `Bearer ${jwt}` },
-      });
+      const res = await api.get(`/api/locations/pincodes/${districtName}`);
       setPincodes(Array.isArray(res.data) ? res.data : []);
     } catch {
       setPincodes([]);
     }
   };
 
+  // ✅ Pincode lookup using api instance
   const handlePincodeInput = async (pin) => {
     const updated = { ...address, zipCode: pin };
     setAddress(updated);
@@ -217,16 +205,11 @@ const CheckoutAddress = () => {
     }
 
     try {
-      const jwt = localStorage.getItem("jwt");
-      const res = await axios.get(`/api/locations/lookup/${pin}`, {
-        headers: { Authorization: `Bearer ${jwt}` },
-      });
+      const res = await api.get(`/api/locations/lookup/${pin}`);
 
-      // ✅ UPDATED: Always deliverable now!
       setPincodeStatus("deliverable");
 
       if (res.data.found) {
-        // Pincode exists - auto-fill state and district
         const finalAddress = {
           ...updated,
           state: res.data.state || updated.state,
@@ -234,26 +217,18 @@ const CheckoutAddress = () => {
         };
         setAddress(finalAddress);
 
-        // Load districts for the state
         if (res.data.state) {
           try {
-            const jwt2 = localStorage.getItem("jwt");
-            const distRes = await axios.get(`/api/locations/districts/${res.data.state}`, {
-              headers: { Authorization: `Bearer ${jwt2}` },
-            });
+            const distRes = await api.get(`/api/locations/districts/${res.data.state}`);
             setDistricts(Array.isArray(distRes.data) ? distRes.data : []);
           } catch {
             setDistricts([]);
           }
         }
 
-        // Load pincodes for the district
         if (res.data.district) {
           try {
-            const jwt3 = localStorage.getItem("jwt");
-            const pinRes = await axios.get(`/api/locations/pincodes/${res.data.district}`, {
-              headers: { Authorization: `Bearer ${jwt3}` },
-            });
+            const pinRes = await api.get(`/api/locations/pincodes/${res.data.district}`);
             setPincodes(Array.isArray(pinRes.data) ? pinRes.data : []);
           } catch {
             setPincodes([]);
@@ -262,19 +237,15 @@ const CheckoutAddress = () => {
 
         dispatch(saveCheckoutAddress(finalAddress));
       } else {
-        // ✅ Pincode NOT found - user needs to enter state/district manually
-        // But it's still deliverable!
         dispatch(saveCheckoutAddress(updated));
-        // Don't auto-fill anything, let user type
       }
     } catch {
-      // ✅ Even on error, mark as deliverable
       setPincodeStatus("deliverable");
       dispatch(saveCheckoutAddress(updated));
     }
   };
 
-  // ✅ NEW: Save Address to Database (without navigation)
+  // ✅ Save address using api instance
   const handleSaveAddress = async () => {
     if (!cart.cartItems || cart.cartItems.length === 0) {
       alert("Your cart is empty. Please add items before checkout.");
@@ -286,17 +257,9 @@ const CheckoutAddress = () => {
     setSaveMessage(null);
 
     try {
-      const jwt = localStorage.getItem("jwt");
-      await axios.post("/api/address", address, {
-        headers: { Authorization: `Bearer ${jwt}` },
-      });
-
+      await api.post("/api/address", address);
       setSaveMessage({ type: "success", text: "✅ Address saved successfully!" });
-
-      // Reload saved addresses list
       await loadSavedAddresses();
-
-      // Clear the form
       setAddress({
         firstName: "",
         lastName: "",
@@ -315,23 +278,21 @@ const CheckoutAddress = () => {
       });
     } finally {
       setIsSaving(false);
-      // Clear message after 3 seconds
       setTimeout(() => setSaveMessage(null), 3000);
     }
   };
 
-  // ✅ MODIFIED: Continue now just navigates (no saving)
   const handleContinue = async () => {
     if (!cart.cartItems || cart.cartItems.length === 0) {
       alert("Your cart is empty. Please add items before checkout.");
       navigate("/cart");
       return;
     }
-
     dispatch(saveCheckoutAddress(address));
     navigate("/checkout/summary");
   };
 
+  // ✅ Select saved address + delete using api instance
   const selectSavedAddress = (addr) => {
     setSelectedSavedAddressId(addr.id);
     dispatch(saveCheckoutAddress(addr));
@@ -374,12 +335,9 @@ const CheckoutAddress = () => {
         <h1 className="text-2xl font-bold text-[#1F3D2B] mb-6">Select Delivery Address</h1>
 
         {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-            {error}
-          </div>
+          <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>
         )}
 
-        {/* ✅ NEW: Save feedback message */}
         {saveMessage && (
           <div
             className={`p-3 rounded mb-4 ${
@@ -419,48 +377,27 @@ const CheckoutAddress = () => {
                       ✓
                     </div>
                   )}
-
-                  <p className="font-medium text-[#2C2C2C]">
-                    {addr.firstName} {addr.lastName}
-                  </p>
+                  <p className="font-medium text-[#2C2C2C]">{addr.firstName} {addr.lastName}</p>
                   <p className="text-[#3D3D3D]">{addr.streetAddress}</p>
-                  <p className="text-[#3D3D3D]">
-                    {addr.city}, {addr.district}
-                  </p>
-                  <p className="text-[#3D3D3D]">
-                    {addr.state} - {addr.zipCode}
-                  </p>
+                  <p className="text-[#3D3D3D]">{addr.city}, {addr.district}</p>
+                  <p className="text-[#3D3D3D]">{addr.state} - {addr.zipCode}</p>
                   <p className="text-sm text-[#555555] mt-1">📞 {addr.mobile}</p>
 
                   <div className="flex gap-2 mt-3">
-                    {/* ✅ Deliver button */}
                     <button
                       className="flex-1 bg-[#1F3D2B] text-white py-2 rounded-md hover:bg-[#162d1f] text-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        selectSavedAddress(addr);
-                      }}
+                      onClick={(e) => { e.stopPropagation(); selectSavedAddress(addr); }}
                     >
                       Deliver to this address
                     </button>
-
-                    {/* 🗑️ Delete button */}
                     <button
                       className="flex-1 bg-red-500 text-white py-2 rounded-md hover:bg-red-600 text-sm"
                       onClick={async (e) => {
                         e.stopPropagation();
-                        if (
-                          !window.confirm(
-                            "Are you sure you want to delete this address?"
-                          )
-                        )
-                          return;
-
+                        if (!window.confirm("Are you sure you want to delete this address?")) return;
                         try {
-                          const jwt = localStorage.getItem("jwt");
-                          await axios.delete(`/api/address/${addr.id}`, {
-                            headers: { Authorization: `Bearer ${jwt}` },
-                          });
+                          // ✅ api instance handles baseURL + JWT automatically
+                          await api.delete(`/api/address/${addr.id}`);
                           await loadSavedAddresses();
                           alert("✅ Address deleted successfully");
                         } catch (error) {
@@ -479,10 +416,7 @@ const CheckoutAddress = () => {
 
           {/* New Address Form */}
           <div className="lg:col-span-2">
-            <h3 className="text-lg font-semibold text-[#2C2C2C] mb-4">
-              Add New Address
-            </h3>
-
+            <h3 className="text-lg font-semibold text-[#2C2C2C] mb-4">Add New Address</h3>
             {loadingStates ? (
               <div className="text-center py-10 text-[#3D3D3D]">Loading form...</div>
             ) : (
