@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 
 import { createPendingOrder } from "../../../State/Order/Action";
 import { openRazorpayCheckout, placeOrderCOD } from "../../../State/Payment/Action";
+import { removeCartItem } from "../../../State/Cart/Action"; // ✅ import removeCartItem
 import { api } from "../../../Config/apiConfig";
 
 const OrderSummary = ({ address, onEdit }) => {
@@ -13,9 +14,7 @@ const OrderSummary = ({ address, onEdit }) => {
   const { cart, auth } = useSelector((state) => state);
   const [processing, setProcessing] = useState(false);
 
-  // ─── Payment method locked to COD for now (Razorpay coming soon) ───
-  const paymentMethod = "COD";
-  // const [paymentMethod, setPaymentMethod] = useState("RAZORPAY");
+  const [paymentMethod, setPaymentMethod] = useState("RAZORPAY");
 
   // Coupon state
   const [couponCode, setCouponCode] = useState("");
@@ -26,27 +25,24 @@ const OrderSummary = ({ address, onEdit }) => {
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [showCouponInput, setShowCouponInput] = useState(false);
 
-  // Available coupons for this user
+  // Available coupons
   const [availableCoupons, setAvailableCoupons] = useState([]);
   const [showAvailableCoupons, setShowAvailableCoupons] = useState(false);
 
-  // ✅ FIX #1: Use useMemo to stabilize selectedItems reference
   const selectedItems = useMemo(() => {
     return cart?.cartItems?.filter((item) => item.selected !== false) ?? [];
   }, [cart?.cartItems]);
 
-  // ✅ FIX #2: Calculate subtotal with useMemo
   const subtotal = useMemo(() => {
     return selectedItems.reduce((sum, item) => sum + (Number(item.discountedPrice) || 0), 0);
   }, [selectedItems]);
 
   useEffect(() => {
-    if (!selectedItems || selectedItems.length === 0) {
+    if (selectedItems.length === 0) {
       navigate("/cart", { replace: true });
     }
   }, [selectedItems, navigate]);
 
-  // Check if user is first-time buyer
   useEffect(() => {
     const checkFirstTimeUser = async () => {
       try {
@@ -56,13 +52,9 @@ const OrderSummary = ({ address, onEdit }) => {
         console.error("Error checking first-time user:", error);
       }
     };
-
-    if (auth.jwt) {
-      checkFirstTimeUser();
-    }
+    if (auth.jwt) checkFirstTimeUser();
   }, [auth.jwt]);
 
-  // ✅ FIX #3: Fetch available coupons
   useEffect(() => {
     const fetchAvailableCoupons = async () => {
       try {
@@ -72,53 +64,49 @@ const OrderSummary = ({ address, onEdit }) => {
         console.error("Error fetching coupons:", error);
       }
     };
-
-    if (auth.jwt && selectedItems.length > 0) {
-      fetchAvailableCoupons();
-    }
+    if (auth.jwt && selectedItems.length > 0) fetchAvailableCoupons();
   }, [auth.jwt, selectedItems.length, subtotal]);
 
-  // Price calculations
-  const shipping = subtotal > 500 ? 0 : 40;
-  const tax = subtotal * 0.18;
-  const totalBeforeCoupon = subtotal + shipping + tax;
+  // Price calculations — no tax, delivery is 10% of subtotal if order < ₹1000
+  const shipping = subtotal >= 1000 ? 0 : subtotal * 0.1;
+  const totalBeforeCoupon = subtotal + shipping;
   const total = totalBeforeCoupon - couponDiscount;
 
-  // ✅ FIX #4: Wrap handleApplyCoupon in useCallback
-  const handleApplyCoupon = useCallback(async () => {
-    if (!couponCode.trim()) {
-      setCouponError("Please enter a coupon code");
-      return;
-    }
-
-    setValidatingCoupon(true);
-    setCouponError("");
-
-    try {
-      const response = await api.post("/api/coupons/validate", {
-        couponCode: couponCode.trim(),
-        orderAmount: subtotal,
-      });
-
-      if (response.data.valid) {
-        setAppliedCoupon(response.data);
-        setCouponDiscount(response.data.discountAmount);
-        setCouponError("");
-        setShowCouponInput(false);
-      } else {
-        setCouponError(response.data.message || "Invalid coupon code");
+  const handleApplyCoupon = useCallback(
+    async (explicitCode) => {
+      const codeToApply = (explicitCode ?? couponCode).trim();
+      if (!codeToApply) {
+        setCouponError("Please enter a coupon code");
+        return;
+      }
+      setValidatingCoupon(true);
+      setCouponError("");
+      try {
+        const response = await api.post("/api/coupons/validate", {
+          couponCode: codeToApply,
+          orderAmount: subtotal,
+        });
+        if (response.data.valid) {
+          setAppliedCoupon(response.data);
+          setCouponDiscount(response.data.discountAmount);
+          setCouponError("");
+          setShowCouponInput(false);
+        } else {
+          setCouponError(response.data.message || "Invalid coupon code");
+          setAppliedCoupon(null);
+          setCouponDiscount(0);
+        }
+      } catch (error) {
+        console.error("Error applying coupon:", error);
+        setCouponError("Failed to apply coupon. Please try again.");
         setAppliedCoupon(null);
         setCouponDiscount(0);
+      } finally {
+        setValidatingCoupon(false);
       }
-    } catch (error) {
-      console.error("Error applying coupon:", error);
-      setCouponError("Failed to apply coupon. Please try again.");
-      setAppliedCoupon(null);
-      setCouponDiscount(0);
-    } finally {
-      setValidatingCoupon(false);
-    }
-  }, [couponCode, subtotal]);
+    },
+    [couponCode, subtotal]
+  );
 
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
@@ -131,20 +119,26 @@ const OrderSummary = ({ address, onEdit }) => {
     setCouponCode(coupon.code);
     setShowAvailableCoupons(false);
     setShowCouponInput(true);
-    setTimeout(() => handleApplyCoupon(), 100);
+    handleApplyCoupon(coupon.code);
   };
 
+  // ✅ Helper: remove all purchased items from cart
+  const clearPurchasedItems = useCallback(async () => {
+    const removalPromises = selectedItems.map((item) =>
+      dispatch(removeCartItem(item.id))
+    );
+    await Promise.all(removalPromises);
+  }, [selectedItems, dispatch]);
+
   const handlePlaceOrder = async () => {
-    if (!selectedItems || selectedItems.length === 0) {
+    if (selectedItems.length === 0) {
       alert("No selected items to checkout.");
       return navigate("/cart");
     }
-
     if (!address || !address.firstName) {
       alert("Please provide a delivery address.");
       return;
     }
-
     if (processing) return;
     setProcessing(true);
 
@@ -154,45 +148,43 @@ const OrderSummary = ({ address, onEdit }) => {
         couponCode: appliedCoupon ? appliedCoupon.couponCode : null,
       };
 
-      // ─── COD only for now ───────────────────────────────────────────
-      console.debug("Placing COD order...");
-      const result = await dispatch(placeOrderCOD(orderData));
-      if (result && result.id) {
-        navigate(`/account/order/${result.id}`);
-      } else {
-        alert("Failed to place order. Try again.");
+      // ── COD flow ─────────────────────────────────────────────────────
+      if (paymentMethod === "COD") {
+        const result = await dispatch(placeOrderCOD(orderData));
+        if (result && result.id) {
+          await clearPurchasedItems(); // ✅ Clear cart after successful COD order
+          navigate(`/account/order/${result.id}`);
+        } else {
+          alert("Failed to place COD order. Please try again.");
+        }
+        return;
       }
 
-      // ─── Razorpay flow — uncomment when bank account is ready ───────
-      // if (paymentMethod === "COD") {
-      //   const result = await dispatch(placeOrderCOD(orderData));
-      //   if (result && result.id) {
-      //     navigate(`/account/order/${result.id}`);
-      //   } else {
-      //     alert("Failed to place COD order. Try again.");
-      //   }
-      //   return;
-      // }
-      //
-      // const pendingOrder = await dispatch(createPendingOrder(orderData));
-      // if (!pendingOrder || !pendingOrder.id) {
-      //   alert("Unable to create order. Please try again.");
-      //   return;
-      // }
-      //
-      // const paymentResult = await dispatch(openRazorpayCheckout({
-      //   orderId: pendingOrder.id,
-      //   user: auth?.user,
-      //   address,
-      // }));
-      //
-      // if (paymentResult && paymentResult.success) {
-      //   const finalOrderId = paymentResult.orderId || pendingOrder.id;
-      //   navigate(`/account/order/${finalOrderId}`);
-      // } else {
-      //   alert("Payment was not completed. You can retry from Orders page.");
-      // }
-      // ───────────────────────────────────────────────────────────────
+      // ── Razorpay flow ─────────────────────────────────────────────────
+      if (paymentMethod === "RAZORPAY") {
+        const pendingOrder = await dispatch(createPendingOrder(orderData));
+        if (!pendingOrder || !pendingOrder.id) {
+          alert("Unable to create order. Please try again.");
+          return;
+        }
+
+        const paymentResult = await dispatch(
+          openRazorpayCheckout({
+            orderId: pendingOrder.id,
+            user: auth?.user,
+            address,
+          })
+        );
+
+        if (paymentResult && paymentResult.success) {
+          await clearPurchasedItems(); // ✅ Clear cart after successful Razorpay payment
+          const finalOrderId = paymentResult.orderId || pendingOrder.id;
+          navigate(`/account/order/${finalOrderId}`);
+        } else {
+          alert("Payment was not completed. You can retry from the Orders page.");
+        }
+        return;
+      }
 
     } catch (err) {
       console.error("Checkout error:", err);
@@ -202,7 +194,7 @@ const OrderSummary = ({ address, onEdit }) => {
     }
   };
 
-  if (!selectedItems || selectedItems.length === 0) return null;
+  if (selectedItems.length === 0) return null;
 
   return (
     <div className="min-h-screen bg-[#F6F3EC] py-10 px-4">
@@ -214,11 +206,7 @@ const OrderSummary = ({ address, onEdit }) => {
           <div className="mb-6 bg-gradient-to-r from-[#1F3D2B] to-[#2d5a3d] text-white rounded-xl p-5 shadow-lg">
             <div className="flex items-center gap-3">
               <div className="bg-[#F6F3EC] rounded-full p-2">
-                <svg
-                  className="w-6 h-6 text-[#1F3D2B]"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
+                <svg className="w-6 h-6 text-[#1F3D2B]" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
               </div>
@@ -257,12 +245,8 @@ const OrderSummary = ({ address, onEdit }) => {
                   {address.firstName} {address.lastName}
                 </p>
                 <p style={{ whiteSpace: "pre-line" }}>{address.streetAddress}</p>
-                <p>
-                  {address.city}, {address.district}
-                </p>
-                <p>
-                  {address.state} - {address.zipCode}
-                </p>
+                <p>{address.city}, {address.district}</p>
+                <p>{address.state} - {address.zipCode}</p>
                 <p className="pt-2">
                   <span className="font-medium text-[#2C2C2C]">Phone:</span> {address.mobile}
                 </p>
@@ -327,15 +311,17 @@ const OrderSummary = ({ address, onEdit }) => {
                     <span>₹{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Shipping</span>
+                    <span>Delivery Charges</span>
                     <span className={shipping === 0 ? "text-green-600" : ""}>
-                      {shipping === 0 ? "FREE" : `₹${shipping}`}
+                      {shipping === 0 ? "FREE" : `₹${shipping.toFixed(2)}`}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Tax (18% GST)</span>
-                    <span>₹{tax.toFixed(2)}</span>
-                  </div>
+                  {shipping === 0 && (
+                    <p className="text-xs text-green-600">🎉 Free delivery on orders above ₹1000!</p>
+                  )}
+                  {shipping > 0 && (
+                    <p className="text-xs text-[#888]">Add ₹{(1000 - subtotal).toFixed(2)} more for free delivery</p>
+                  )}
 
                   {appliedCoupon && (
                     <div className="flex justify-between text-green-600 font-medium">
@@ -381,7 +367,7 @@ const OrderSummary = ({ address, onEdit }) => {
                             className="flex-1 px-3 py-2 border border-[#C6A15B]/30 rounded-lg text-sm uppercase bg-[#F6F3EC] text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B]"
                           />
                           <button
-                            onClick={handleApplyCoupon}
+                            onClick={() => handleApplyCoupon()}
                             disabled={validatingCoupon}
                             className="px-4 py-2 bg-[#1F3D2B] text-white rounded-lg text-sm font-medium hover:bg-[#162d1f] disabled:bg-gray-400"
                           >
@@ -439,9 +425,7 @@ const OrderSummary = ({ address, onEdit }) => {
                                     <p className="font-mono text-sm font-bold text-[#1F3D2B]">
                                       {coupon.code}
                                     </p>
-                                    <p className="text-xs text-[#3D3D3D]">
-                                      {coupon.description}
-                                    </p>
+                                    <p className="text-xs text-[#3D3D3D]">{coupon.description}</p>
                                   </div>
                                   <div className="bg-[#1F3D2B]/10 text-[#1F3D2B] px-2 py-1 rounded text-xs font-bold">
                                     {coupon.discountPercentage}% OFF
@@ -466,9 +450,7 @@ const OrderSummary = ({ address, onEdit }) => {
                         <p className="font-mono text-sm font-bold text-green-700">
                           {appliedCoupon.couponCode}
                         </p>
-                        <p className="text-xs text-green-600 mt-1">
-                          Coupon applied successfully!
-                        </p>
+                        <p className="text-xs text-green-600 mt-1">Coupon applied successfully!</p>
                       </div>
                       <button
                         onClick={handleRemoveCoupon}
@@ -481,26 +463,18 @@ const OrderSummary = ({ address, onEdit }) => {
                 )}
               </div>
 
-              {/* Payment Method — COD only, Razorpay coming soon */}
+              {/* Payment Method */}
               <div className="border-t border-[#C6A15B]/20 pt-4">
                 <h3 className="text-sm font-medium text-[#2C2C2C] mb-3">Payment Method</h3>
 
-                <label className="flex items-center gap-3 p-3 border-2 border-[#1F3D2B] bg-[#1F3D2B]/5 rounded-lg cursor-default">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="COD"
-                    checked
-                    readOnly
-                  />
-                  <div>
-                    <div className="font-medium text-[#2C2C2C] text-sm">Cash on Delivery</div>
-                    <div className="text-xs text-[#555555]">Pay when your order arrives</div>
-                  </div>
-                </label>
-
-                {/* ─── Uncomment below when Razorpay bank account is ready ───────────
-                <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-[#1F3D2B]/5 mt-2">
+                {/* Razorpay */}
+                <label
+                  className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition mb-2 ${
+                    paymentMethod === "RAZORPAY"
+                      ? "border-[#1F3D2B] bg-[#1F3D2B]/5"
+                      : "border-[#C6A15B]/30 hover:bg-[#1F3D2B]/5"
+                  }`}
+                >
                   <input
                     type="radio"
                     name="paymentMethod"
@@ -508,21 +482,80 @@ const OrderSummary = ({ address, onEdit }) => {
                     checked={paymentMethod === "RAZORPAY"}
                     onChange={() => setPaymentMethod("RAZORPAY")}
                   />
-                  <div>
-                    <div className="font-medium text-[#2C2C2C] text-sm">Online Payment</div>
-                    <div className="text-xs text-[#555555]">UPI / Cards / Wallets / NetBanking</div>
+                  <div className="flex-1">
+                    <div className="font-medium text-[#2C2C2C] text-sm flex items-center gap-2">
+                      Online Payment
+                      <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-semibold tracking-wide">
+                        RECOMMENDED
+                      </span>
+                    </div>
+                    <div className="text-xs text-[#555555]">UPI · Cards · Wallets · NetBanking</div>
                   </div>
                 </label>
-                ─────────────────────────────────────────────────────────────────── */}
+
+                {/* Cash on Delivery */}
+                <label
+                  className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition ${
+                    paymentMethod === "COD"
+                      ? "border-[#1F3D2B] bg-[#1F3D2B]/5"
+                      : "border-[#C6A15B]/30 hover:bg-[#1F3D2B]/5"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="COD"
+                    checked={paymentMethod === "COD"}
+                    onChange={() => setPaymentMethod("COD")}
+                  />
+                  <div>
+                    <div className="font-medium text-[#2C2C2C] text-sm">Cash on Delivery</div>
+                    <div className="text-xs text-[#555555]">Pay when your order arrives</div>
+                  </div>
+                </label>
+
+                {paymentMethod === "COD" && (
+                  <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    ⚠️ COD orders may take longer to process. Online payment is faster &amp; safer.
+                  </p>
+                )}
               </div>
 
               {/* Place Order Button */}
               <button
                 onClick={handlePlaceOrder}
                 disabled={processing}
-                className="w-full bg-[#1F3D2B] text-white py-3 rounded-lg font-semibold hover:bg-[#162d1f] transition disabled:bg-gray-400"
+                className="w-full bg-[#1F3D2B] text-white py-3 rounded-lg font-semibold hover:bg-[#162d1f] transition disabled:bg-gray-400 flex items-center justify-center gap-2"
               >
-                {processing ? "Processing..." : "Place Order"}
+                {processing ? (
+                  <>
+                    <svg
+                      className="animate-spin h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8z"
+                      />
+                    </svg>
+                    Processing...
+                  </>
+                ) : paymentMethod === "RAZORPAY" ? (
+                  `Pay ₹${total.toFixed(2)} Online`
+                ) : (
+                  `Place Order · ₹${total.toFixed(2)}`
+                )}
               </button>
 
               <p className="text-center text-xs text-[#555555]">🔒 Secure Checkout</p>

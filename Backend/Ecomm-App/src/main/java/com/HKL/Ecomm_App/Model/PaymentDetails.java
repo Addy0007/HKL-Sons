@@ -1,5 +1,6 @@
 package com.HKL.Ecomm_App.Model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -19,7 +20,13 @@ public class PaymentDetails {
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
+    @Column(columnDefinition = "TEXT")
     private String paymentId;
+
+    @Column(columnDefinition = "TEXT")
     private String providerReferenceId;
+
+    @Column(columnDefinition = "TEXT")
     private String providerResponse;
+
 }

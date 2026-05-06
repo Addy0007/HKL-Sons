@@ -62,9 +62,10 @@ export const cartReducer = (state = initialState, action) => {
     case TOGGLE_CART_ITEM_SELECTION_FAILURE:
       return { ...state, loading: false, error: action.payload };
 
+    // ✅ Reset both cartItems AND cart so nothing reads stale data
     case CLEAR_CART:
       console.log("🗑️ CART CLEARED");
-      return { ...state, cartItems: [], loading: false };
+      return { ...initialState };
 
     default:
       return state;

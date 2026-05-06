@@ -12,4 +12,5 @@ public interface ReviewService {
 
     ReviewDTO createReview(ReviewRequest req, User user) throws ProductException;
     List<ReviewDTO> getAllReview(Long productId);
+    public boolean hasUserPurchasedProduct(User user, Long productId);
 }

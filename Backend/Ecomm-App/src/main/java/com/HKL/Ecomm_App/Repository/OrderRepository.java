@@ -1,6 +1,7 @@
 package com.HKL.Ecomm_App.Repository;
 
 import com.HKL.Ecomm_App.Model.Order;
+import com.HKL.Ecomm_App.Model.OrderStatus;
 import com.HKL.Ecomm_App.Model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -29,4 +30,18 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      */
     @Query("SELECT COUNT(o) FROM Order o WHERE o.user = :user")
     long countByUser(@Param("user") User user);
+
+    @Query("""
+        SELECT COUNT(o) > 0
+        FROM Order o
+        JOIN o.orderItems oi
+        WHERE o.user = :user
+          AND oi.product.id = :productId
+          AND o.orderStatus = :status
+    """)
+    boolean existsByUserAndProductAndStatus(
+            @Param("user")      User user,
+            @Param("productId") Long productId,
+            @Param("status") OrderStatus status
+    );
 }

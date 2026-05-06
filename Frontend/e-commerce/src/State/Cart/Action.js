@@ -51,6 +51,7 @@ export const getCart = () => async (dispatch, getState) => {
   }
 };
 
+// ---------- ADD ----------
 export const addItemToCart = (reqData) => async (dispatch, getState) => {
   dispatch({ type: ADD_ITEM_TO_CART_REQUEST });
 
@@ -121,7 +122,7 @@ export const updateCartItem = (cartItemId, quantity) => async (dispatch, getStat
   }
 };
 
-// ✅ NEW: Toggle Selection
+// ---------- TOGGLE SELECTION ----------
 export const toggleCartItemSelection = (cartItemId) => async (dispatch, getState) => {
   dispatch({ type: TOGGLE_CART_ITEM_SELECTION_REQUEST });
 
@@ -131,11 +132,9 @@ export const toggleCartItemSelection = (cartItemId) => async (dispatch, getState
     let guestCart = loadGuestCart();
     const item = guestCart.find((i) => i.id === cartItemId);
     if (item) {
-      // Toggle the selected state
       item.selected = item.selected === false ? true : false;
     }
     saveGuestCart(guestCart);
-
     dispatch({ type: TOGGLE_CART_ITEM_SELECTION_SUCCESS, payload: { cartItems: guestCart } });
     return;
   }
@@ -144,7 +143,6 @@ export const toggleCartItemSelection = (cartItemId) => async (dispatch, getState
     const { data } = await api.patch(`/api/cart-items/${cartItemId}/toggle-selection`);
     console.log("Toggle response:", data);
     dispatch({ type: TOGGLE_CART_ITEM_SELECTION_SUCCESS });
-    // Force refresh cart to get updated selection state
     await dispatch(getCart());
   } catch (error) {
     console.error("Toggle selection error:", error);
@@ -152,7 +150,41 @@ export const toggleCartItemSelection = (cartItemId) => async (dispatch, getState
   }
 };
 
-// ---------- CLEAR ----------
+// ---------- CLEAR CART (after successful order) ----------
+/**
+ * Clears all cart items after a successful payment.
+ *
+ * For authenticated users:
+ *   - The backend already calls cartService.clearSelectedItems() on payment success,
+ *     so we just dispatch CLEAR_CART to wipe Redux state immediately without
+ *     making redundant API calls.
+ *   - Then we re-fetch the cart to confirm the server state.
+ *
+ * For guests:
+ *   - Wipes localStorage guest cart.
+ */
+export const clearCart = () => async (dispatch, getState) => {
+  const { isAuthenticated } = getState().auth;
+
+  if (!isAuthenticated) {
+    localStorage.removeItem("guestCart");
+    dispatch({ type: CLEAR_CART });
+    return;
+  }
+
+  // Wipe Redux state immediately so the cart UI clears right away
+  dispatch({ type: CLEAR_CART });
+
+  // Re-fetch from backend to confirm server-side cart is empty
+  // (backend clears it via cartService.clearSelectedItems on payment success)
+  try {
+    await dispatch(getCart());
+  } catch (error) {
+    console.error("clearCart: failed to re-sync cart from server:", error);
+  }
+};
+
+// ---------- CLEAR LOCAL ONLY (guest logout etc.) ----------
 export const clearCartLocal = () => (dispatch) => {
   localStorage.removeItem("guestCart");
   dispatch({ type: CLEAR_CART });

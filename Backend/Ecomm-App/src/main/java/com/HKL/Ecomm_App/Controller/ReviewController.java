@@ -7,6 +7,7 @@ import com.HKL.Ecomm_App.Model.User;
 import com.HKL.Ecomm_App.Request.ReviewRequest;
 import com.HKL.Ecomm_App.Service.ReviewService;
 import com.HKL.Ecomm_App.Service.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,12 +33,17 @@ public class ReviewController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ReviewDTO> createReview(@RequestBody ReviewRequest reviewRequest)
+    public ResponseEntity<?> createReview(@RequestBody ReviewRequest reviewRequest)
             throws UserException, ProductException {
 
         User user = getLoggedUser();
-        ReviewDTO createdReview = reviewService.createReview(reviewRequest, user);
 
+        if (!reviewService.hasUserPurchasedProduct(user, reviewRequest.getProductId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("You can only review products you have purchased and received.");
+        }
+
+        ReviewDTO createdReview = reviewService.createReview(reviewRequest, user);
         return ResponseEntity.ok(createdReview);
     }
 

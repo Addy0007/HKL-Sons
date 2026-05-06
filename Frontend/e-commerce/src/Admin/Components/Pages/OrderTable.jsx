@@ -63,8 +63,29 @@ const OrderTable = () => {
     }
   };
 
+  const getCustomerName = (order) => {
+    const first = order.shippingAddress?.firstName;
+    const last = order.shippingAddress?.lastName;
+    if (first && last) return `${first} ${last}`;
+    if (order.user?.firstName && order.user?.lastName)
+      return `${order.user.firstName} ${order.user.lastName}`;
+    return "Guest";
+  };
+
+  const getCustomerPhone = (order) => {
+    return (
+      order.shippingAddress?.mobile ||
+      order.user?.mobile ||
+      "No contact"
+    );
+  };
+
   if (loading)
-    return <div className="text-center mt-10 text-lg font-semibold">Loading orders...</div>;
+    return (
+      <div className="text-center mt-10 text-lg font-semibold">
+        Loading orders...
+      </div>
+    );
 
   return (
     <div className="p-6">
@@ -88,12 +109,14 @@ const OrderTable = () => {
           <tbody>
             {orders?.map((order) => {
               const itemCount = order.orderItems?.length || 0;
-              const customerName = order.shippingAddress 
-                ? `${order.shippingAddress.firstName} ${order.shippingAddress.lastName}`
-                : "N/A";
+              const customerName = getCustomerName(order);
+              const customerPhone = getCustomerPhone(order);
 
               return (
-                <tr key={order.id} className="border-b hover:bg-gray-50 transition">
+                <tr
+                  key={order.id}
+                  className="border-b hover:bg-gray-50 transition"
+                >
                   {/* ORDER ID */}
                   <td className="p-3">
                     <div className="font-semibold text-blue-600">
@@ -103,10 +126,10 @@ const OrderTable = () => {
 
                   {/* CUSTOMER */}
                   <td className="p-3">
-                    <div className="font-medium text-gray-900">{customerName}</div>
-                    <div className="text-xs text-gray-500">
-                      {order.shippingAddress?.mobile}
+                    <div className="font-medium text-gray-900">
+                      {customerName}
                     </div>
+                    <div className="text-xs text-gray-500">{customerPhone}</div>
                   </td>
 
                   {/* ITEMS - EXPANDABLE */}
@@ -143,7 +166,10 @@ const OrderTable = () => {
                   {/* TOTAL PRICE */}
                   <td className="p-3">
                     <div className="font-bold text-lg text-gray-900">
-                      ₹{order.totalDiscountedPrice?.toLocaleString() || order.totalPrice?.toLocaleString() || 0}
+                      ₹
+                      {order.totalDiscountedPrice?.toLocaleString() ||
+                        order.totalPrice?.toLocaleString() ||
+                        0}
                     </div>
                     {order.discount > 0 && (
                       <div className="text-xs text-green-600">
@@ -166,12 +192,15 @@ const OrderTable = () => {
                   {/* DATE */}
                   <td className="p-3">
                     <div className="text-sm text-gray-600">
-                      {order.orderDate 
-                        ? new Date(order.orderDate).toLocaleDateString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })
+                      {order.orderDate
+                        ? new Date(order.orderDate).toLocaleDateString(
+                            "en-IN",
+                            {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            }
+                          )
                         : "N/A"}
                     </div>
                   </td>
@@ -182,7 +211,9 @@ const OrderTable = () => {
                       <span className="text-gray-400 text-xs">No Action</span>
                     ) : (
                       <select
-                        onChange={(e) => handleStatusChange(order, e.target.value)}
+                        onChange={(e) =>
+                          handleStatusChange(order, e.target.value)
+                        }
                         className="border px-2 py-1 rounded text-sm"
                       >
                         <option value="">Update...</option>
@@ -199,7 +230,11 @@ const OrderTable = () => {
                   <td className="p-3">
                     <button
                       onClick={() => {
-                        if (window.confirm(`Delete order ${order.orderId || order.id}?`)) {
+                        if (
+                          window.confirm(
+                            `Delete order ${order.orderId || order.id}?`
+                          )
+                        ) {
                           dispatch(deleteOrder(order.id));
                         }
                       }}
@@ -216,9 +251,7 @@ const OrderTable = () => {
       </div>
 
       {orders?.length === 0 && (
-        <div className="text-center py-10 text-gray-500">
-          No orders found
-        </div>
+        <div className="text-center py-10 text-gray-500">No orders found</div>
       )}
     </div>
   );

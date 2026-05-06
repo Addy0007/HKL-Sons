@@ -7,6 +7,7 @@ import com.HKL.Ecomm_App.Model.User;
 import com.HKL.Ecomm_App.Request.RatingRequest;
 import com.HKL.Ecomm_App.Service.RatingService;
 import com.HKL.Ecomm_App.Service.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,12 +33,17 @@ public class RatingController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<RatingDTO> createRating(@RequestBody RatingRequest ratingRequest)
+    public ResponseEntity<?> createRating(@RequestBody RatingRequest ratingRequest)
             throws UserException, ProductException {
 
         User user = getLoggedUser();
-        RatingDTO createdRating = ratingService.createRating(ratingRequest, user);
 
+        if (!ratingService.hasUserPurchasedProduct(user, ratingRequest.getProductId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("You can only rate products you have purchased and received.");
+        }
+
+        RatingDTO createdRating = ratingService.createRating(ratingRequest, user);
         return ResponseEntity.ok(createdRating);
     }
 

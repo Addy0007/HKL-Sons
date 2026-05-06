@@ -11,4 +11,5 @@ import java.util.List;
 public interface RatingService {
     RatingDTO createRating(RatingRequest req, User user) throws ProductException;
     List<RatingDTO> getProductRating(Long productId);
+    public boolean hasUserPurchasedProduct(User user, Long productId);
 }

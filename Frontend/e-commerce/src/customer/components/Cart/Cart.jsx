@@ -57,7 +57,8 @@ const Cart = () => {
   );
 
   const discount = subtotal - discountedTotal;
-  const delivery = discountedTotal > 499 ? 0 : 50;
+  // ✅ Free delivery above ₹1000, otherwise 10% of discounted total
+  const delivery = discountedTotal >= 1000 ? 0 : discountedTotal * 0.1;
   const grandTotal = discountedTotal + delivery;
 
   const allSelected = cartItems.length > 0 && cartItems.every(item => item.selected !== false);
@@ -103,7 +104,7 @@ const Cart = () => {
               <CartItem
                 key={item.id}
                 item={item}
-                onIncrease={() => handleIncrease(item)} // ✅ Use validated handler
+                onIncrease={() => handleIncrease(item)}
                 onDecrease={() => {
                   if (item.quantity > 1) {
                     dispatch(updateCartItem(item.id, item.quantity - 1));
@@ -137,26 +138,36 @@ const Cart = () => {
           <div className="space-y-3 text-sm text-gray-700">
             <div className="flex justify-between">
               <span>Total MRP</span>
-              <span>₹{subtotal}</span>
+              <span>₹{subtotal.toFixed(2)}</span>
             </div>
 
             <div className="flex justify-between">
               <span>Discount on MRP</span>
-              <span className="text-green-600">− ₹{discount}</span>
+              <span className="text-green-600">− ₹{discount.toFixed(2)}</span>
             </div>
 
             <div className="flex justify-between">
               <span>Delivery Charges</span>
-              <span className="text-blue-600">
-                {delivery === 0 ? "Free" : `₹${delivery}`}
+              <span className={delivery === 0 ? "text-green-600" : "text-blue-600"}>
+                {delivery === 0 ? "Free" : `₹${delivery.toFixed(2)}`}
               </span>
             </div>
+
+            {/* ✅ Helpful delivery threshold messages */}
+            {delivery === 0 && (
+              <p className="text-xs text-green-600">🎉 Free delivery on orders above ₹1000!</p>
+            )}
+            {delivery > 0 && (
+              <p className="text-xs text-gray-500">
+                Add ₹{(1000 - discountedTotal).toFixed(2)} more for free delivery
+              </p>
+            )}
 
             <hr className="border-gray-200 my-3" />
 
             <div className="flex justify-between text-base font-semibold text-gray-900">
               <span>Total Amount</span>
-              <span>₹{grandTotal}</span>
+              <span>₹{grandTotal.toFixed(2)}</span>
             </div>
           </div>
 
