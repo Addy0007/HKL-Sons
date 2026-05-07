@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
@@ -38,6 +38,8 @@ const OrderTable = () => {
   const dispatch = useDispatch();
   const { orders, loading } = useSelector((state) => state.adminOrder);
 
+  const [addressModal, setAddressModal] = useState(null);
+
   useEffect(() => {
     dispatch(getAllOrders());
   }, [dispatch]);
@@ -73,11 +75,7 @@ const OrderTable = () => {
   };
 
   const getCustomerPhone = (order) => {
-    return (
-      order.shippingAddress?.mobile ||
-      order.user?.mobile ||
-      "No contact"
-    );
+    return order.shippingAddress?.mobile || order.user?.mobile || "No contact";
   };
 
   if (loading)
@@ -101,6 +99,7 @@ const OrderTable = () => {
               <th className="p-3">Total Price</th>
               <th className="p-3">Status</th>
               <th className="p-3">Date</th>
+              <th className="p-3">Address</th>
               <th className="p-3">Update</th>
               <th className="p-3">Delete</th>
             </tr>
@@ -193,16 +192,32 @@ const OrderTable = () => {
                   <td className="p-3">
                     <div className="text-sm text-gray-600">
                       {order.orderDate
-                        ? new Date(order.orderDate).toLocaleDateString(
-                            "en-IN",
-                            {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            }
-                          )
+                        ? new Date(order.orderDate).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })
                         : "N/A"}
                     </div>
+                  </td>
+
+                  {/* SHIPPING ADDRESS BUTTON */}
+                  <td className="p-3">
+                    {order.shippingAddress ? (
+                      <button
+                        onClick={() =>
+                          setAddressModal({
+                            address: order.shippingAddress,
+                            orderId: order.orderId || `#${order.id}`,
+                          })
+                        }
+                        className="flex items-center gap-1 border border-gray-300 text-gray-600 px-3 py-1 rounded-md hover:bg-gray-100 transition text-xs font-medium whitespace-nowrap"
+                      >
+                        📍 Show Address
+                      </button>
+                    ) : (
+                      <span className="text-gray-400 text-xs">No address</span>
+                    )}
                   </td>
 
                   {/* UPDATE STATUS */}
@@ -252,6 +267,73 @@ const OrderTable = () => {
 
       {orders?.length === 0 && (
         <div className="text-center py-10 text-gray-500">No orders found</div>
+      )}
+
+      {/* ADDRESS MODAL */}
+      {addressModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setAddressModal(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 w-80 max-w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex justify-between items-start mb-5">
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base">
+                  Shipping Address
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {addressModal.orderId}
+                </p>
+              </div>
+              <button
+                onClick={() => setAddressModal(null)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none mt-[-2px]"
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Address Fields */}
+            <div className="space-y-0 divide-y divide-gray-100">
+              {[
+                [
+                  "Name",
+                  `${addressModal.address.firstName || ""} ${
+                    addressModal.address.lastName || ""
+                  }`.trim(),
+                ],
+                ["Street",   addressModal.address.streetAddress],
+                ["City",     addressModal.address.city],
+                ["District", addressModal.address.district],
+                ["State",    addressModal.address.state],
+                ["PIN",      addressModal.address.zipCode],
+                ["Phone",    addressModal.address.mobile],
+              ]
+                .filter(([, value]) => value)
+                .map(([label, value]) => (
+                  <div key={label} className="flex gap-3 py-2.5">
+                    <span className="text-gray-400 text-xs w-16 shrink-0 pt-0.5">
+                      {label}
+                    </span>
+                    <span className="text-gray-800 text-sm">{value}</span>
+                  </div>
+                ))}
+            </div>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setAddressModal(null)}
+              className="mt-5 w-full border border-gray-200 text-gray-600 py-2 rounded-md hover:bg-gray-50 transition text-sm"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

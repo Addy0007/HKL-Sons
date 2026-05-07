@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) => {
+const SearchableSelect = ({ value, onChange, options, placeholder, disabled, error }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -26,8 +26,15 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) =
         onFocus={() => setIsOpen(true)}
         placeholder={placeholder}
         disabled={disabled}
-        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B] disabled:bg-[#EDE9E0] disabled:cursor-not-allowed"
+        className={`border rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B] disabled:bg-[#EDE9E0] disabled:cursor-not-allowed ${
+          error ? "border-red-400 bg-red-50/30" : "border-[#C6A15B]/30"
+        }`}
       />
+      {error && (
+        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+          <span>⚠</span> {error}
+        </p>
+      )}
       {isOpen && !disabled && (
         <>
           <div
@@ -65,6 +72,7 @@ const SearchablePincodeSelect = ({
   placeholder,
   onManualInput,
   disabled,
+  error,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -96,8 +104,15 @@ const SearchablePincodeSelect = ({
         disabled={disabled}
         placeholder={placeholder}
         maxLength={6}
-        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B] disabled:bg-[#EDE9E0] disabled:cursor-not-allowed"
+        className={`border rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B] disabled:bg-[#EDE9E0] disabled:cursor-not-allowed ${
+          error ? "border-red-400 bg-red-50/30" : "border-[#C6A15B]/30"
+        }`}
       />
+      {error && (
+        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+          <span>⚠</span> {error}
+        </p>
+      )}
       {isOpen && !disabled && options.length > 0 && (
         <>
           <div
@@ -128,6 +143,47 @@ const SearchablePincodeSelect = ({
   );
 };
 
+// Validation rules for each field
+const validate = (address, pincodeStatus) => {
+  const errors = {};
+
+  if (!address.firstName?.trim())
+    errors.firstName = "First name is required";
+
+  if (!address.lastName?.trim())
+    errors.lastName = "Last name is required";
+
+  if (!address.streetAddress?.trim())
+    errors.streetAddress = "Street address is required";
+
+  if (!address.state?.trim())
+    errors.state = "Please select a state";
+
+  if (!address.district?.trim())
+    errors.district = "Please select a district";
+
+  if (!address.zipCode?.trim()) {
+    errors.zipCode = "PIN code is required";
+  } else if (address.zipCode.length !== 6) {
+    errors.zipCode = "PIN code must be 6 digits";
+  } else if (pincodeStatus === "not-deliverable") {
+    errors.zipCode = "Delivery not available at this PIN code";
+  } else if (pincodeStatus === "not-found") {
+    errors.zipCode = "Invalid PIN code";
+  }
+
+  if (!address.city?.trim())
+    errors.city = "City is required";
+
+  if (!address.mobile?.trim()) {
+    errors.mobile = "Phone number is required";
+  } else if (!/^\d{10}$/.test(address.mobile.trim())) {
+    errors.mobile = "Enter a valid 10-digit phone number";
+  }
+
+  return errors;
+};
+
 const DeliveryForm = ({
   address,
   handleFieldChange,
@@ -139,99 +195,185 @@ const DeliveryForm = ({
   onDistrictChange,
   handlePincodeInput,
   onContinue,
-  onSaveAddress, // ✅ NEW prop
-  isSaving, // ✅ NEW prop
+  onSaveAddress,
+  isSaving,
 }) => {
-  const isFormValid = () => {
-    return (
-      address.firstName &&
-      address.lastName &&
-      address.streetAddress &&
-      address.state &&
-      address.district &&
-      address.zipCode &&
-      address.city &&
-      address.mobile &&
-      pincodeStatus === "deliverable"
-    );
+  // Track which fields the user has interacted with
+  const [touched, setTouched] = useState({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+
+  const errors = validate(address, pincodeStatus);
+  const isFormValid = Object.keys(errors).length === 0;
+
+  const touch = (field) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  // Show error only if field was touched OR a submit was attempted
+  const fieldError = (field) =>
+    (touched[field] || submitAttempted) ? errors[field] : undefined;
+
+  const handleSubmit = (action) => {
+    setSubmitAttempted(true);
+    // Mark all fields touched so all errors show at once
+    setTouched({
+      firstName: true,
+      lastName: true,
+      streetAddress: true,
+      state: true,
+      district: true,
+      zipCode: true,
+      city: true,
+      mobile: true,
+    });
+    if (isFormValid) action();
   };
+
+  const inputClass = (field) =>
+    `border rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B] ${
+      fieldError(field)
+        ? "border-red-400 bg-red-50/30"
+        : "border-[#C6A15B]/30"
+    }`;
 
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-[#1F3D2B]">Delivery Address</h2>
 
-      <input
-        type="text"
-        value={address.firstName}
-        onChange={(e) => handleFieldChange("firstName", e.target.value)}
-        placeholder="First Name"
-        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B]"
-      />
+      {/* First Name */}
+      <div>
+        <input
+          type="text"
+          value={address.firstName}
+          onChange={(e) => handleFieldChange("firstName", e.target.value)}
+          onBlur={() => touch("firstName")}
+          placeholder="First Name *"
+          className={inputClass("firstName")}
+        />
+        {fieldError("firstName") && (
+          <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+            <span>⚠</span> {fieldError("firstName")}
+          </p>
+        )}
+      </div>
 
-      <input
-        type="text"
-        value={address.lastName}
-        onChange={(e) => handleFieldChange("lastName", e.target.value)}
-        placeholder="Last Name"
-        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B]"
-      />
+      {/* Last Name */}
+      <div>
+        <input
+          type="text"
+          value={address.lastName}
+          onChange={(e) => handleFieldChange("lastName", e.target.value)}
+          onBlur={() => touch("lastName")}
+          placeholder="Last Name *"
+          className={inputClass("lastName")}
+        />
+        {fieldError("lastName") && (
+          <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+            <span>⚠</span> {fieldError("lastName")}
+          </p>
+        )}
+      </div>
 
-      <textarea
-        value={address.streetAddress}
-        onChange={(e) => handleFieldChange("streetAddress", e.target.value)}
-        placeholder="House / Flat / Street Address"
-        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B] min-h-[80px]"
-      />
+      {/* Street Address */}
+      <div>
+        <textarea
+          value={address.streetAddress}
+          onChange={(e) => handleFieldChange("streetAddress", e.target.value)}
+          onBlur={() => touch("streetAddress")}
+          placeholder="House / Flat / Street Address *"
+          className={`${inputClass("streetAddress")} min-h-[80px]`}
+        />
+        {fieldError("streetAddress") && (
+          <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+            <span>⚠</span> {fieldError("streetAddress")}
+          </p>
+        )}
+      </div>
 
-      <SearchableSelect
-        value={address.state}
-        onChange={onStateChange}
-        options={states}
-        placeholder="Search state..."
-      />
+      {/* State */}
+      <div onBlur={() => touch("state")}>
+        <SearchableSelect
+          value={address.state}
+          onChange={(val) => { onStateChange(val); touch("state"); }}
+          options={states}
+          placeholder="Search state... *"
+          error={fieldError("state")}
+        />
+      </div>
 
-      <SearchableSelect
-        value={address.district}
-        onChange={onDistrictChange}
-        options={districts}
-        placeholder={address.state ? "Search district..." : "Select State First"}
-        disabled={!address.state}
-      />
+      {/* District */}
+      <div onBlur={() => touch("district")}>
+        <SearchableSelect
+          value={address.district}
+          onChange={(val) => { onDistrictChange(val); touch("district"); }}
+          options={districts}
+          placeholder={address.state ? "Search district... *" : "Select State First"}
+          disabled={!address.state}
+          error={fieldError("district")}
+        />
+      </div>
 
-      <SearchablePincodeSelect
-        value={address.zipCode}
-        onChange={handlePincodeInput}
-        options={pincodes}
-        placeholder="Enter PIN Code"
-        onManualInput={handlePincodeInput}
-      />
+      {/* PIN Code */}
+      <div onBlur={() => touch("zipCode")}>
+        <SearchablePincodeSelect
+          value={address.zipCode}
+          onChange={(val) => { handlePincodeInput(val); touch("zipCode"); }}
+          options={pincodes}
+          placeholder="Enter PIN Code *"
+          onManualInput={(val) => { handlePincodeInput(val); touch("zipCode"); }}
+          error={fieldError("zipCode")}
+        />
+      </div>
 
-      {pincodeStatus === "deliverable" && (
+      {pincodeStatus === "deliverable" && !fieldError("zipCode") && (
         <p className="text-[#1F3D2B] text-sm">✅ Delivery available</p>
       )}
 
-      <input
-        type="text"
-        value={address.city}
-        onChange={(e) => handleFieldChange("city", e.target.value)}
-        placeholder="City"
-        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B]"
-      />
+      {/* City */}
+      <div>
+        <input
+          type="text"
+          value={address.city}
+          onChange={(e) => handleFieldChange("city", e.target.value)}
+          onBlur={() => touch("city")}
+          placeholder="City *"
+          className={inputClass("city")}
+        />
+        {fieldError("city") && (
+          <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+            <span>⚠</span> {fieldError("city")}
+          </p>
+        )}
+      </div>
 
-      <input
-        type="tel"
-        value={address.mobile}
-        onChange={(e) => handleFieldChange("mobile", e.target.value)}
-        placeholder="Phone Number"
-        maxLength={10}
-        className="border border-[#C6A15B]/30 rounded-md p-3 w-full bg-[#F6F3EC] text-[#2C2C2C] placeholder-[#555555] focus:outline-none focus:ring-2 focus:ring-[#1F3D2B]"
-      />
+      {/* Mobile */}
+      <div>
+        <input
+          type="tel"
+          value={address.mobile}
+          onChange={(e) => handleFieldChange("mobile", e.target.value)}
+          onBlur={() => touch("mobile")}
+          placeholder="Phone Number * (10 digits)"
+          maxLength={10}
+          className={inputClass("mobile")}
+        />
+        {fieldError("mobile") && (
+          <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+            <span>⚠</span> {fieldError("mobile")}
+          </p>
+        )}
+      </div>
 
-      {/* ✅ NEW: Two-button layout */}
+      {/* Summary error count shown only after submit attempt */}
+      {submitAttempted && !isFormValid && (
+        <div className="bg-red-50 border border-red-200 text-red-600 rounded-md px-4 py-2 text-sm">
+          Please fill in all required fields correctly before continuing.
+        </div>
+      )}
+
+      {/* Buttons */}
       <div className="flex gap-3 justify-end pt-2">
         <button
-          disabled={!isFormValid() || isSaving}
-          onClick={onSaveAddress}
+          onClick={() => handleSubmit(onSaveAddress)}
+          disabled={isSaving}
           className="bg-[#1F3D2B] text-white py-2 px-6 rounded-md hover:bg-[#162d1f] disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center gap-2"
         >
           {isSaving ? (
@@ -249,12 +391,12 @@ const DeliveryForm = ({
                   r="10"
                   stroke="currentColor"
                   strokeWidth="4"
-                ></circle>
+                />
                 <path
                   className="opacity-75"
                   fill="currentColor"
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
+                />
               </svg>
               Saving...
             </>
@@ -264,8 +406,7 @@ const DeliveryForm = ({
         </button>
 
         <button
-          disabled={!isFormValid()}
-          onClick={onContinue}
+          onClick={() => handleSubmit(onContinue)}
           className="bg-[#1F3D2B] text-white py-2 px-6 rounded-md hover:bg-[#162d1f] disabled:bg-gray-400 disabled:cursor-not-allowed transition"
         >
           Continue to Summary →
