@@ -40,16 +40,13 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(@RequestBody OrderRequest orderRequest)
             throws UserException {
-
         User user = getLoggedUser();
-
         Order order;
         if (orderRequest.hasCoupon()) {
             order = orderService.createOrder(user, orderRequest.getAddress(), orderRequest.getCouponCode());
         } else {
             order = orderService.createOrder(user, orderRequest.getAddress());
         }
-
         return new ResponseEntity<>(OrderResponse.fromOrder(order), HttpStatus.CREATED);
     }
 

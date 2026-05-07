@@ -1,5 +1,6 @@
 package com.HKL.Ecomm_App.Service;
 
+import com.HKL.Ecomm_App.DTO.AddressDTO;
 import com.HKL.Ecomm_App.Exception.CouponException;
 import com.HKL.Ecomm_App.Exception.OrderException;
 import com.HKL.Ecomm_App.Exception.UserException;
@@ -17,6 +18,7 @@ import java.util.List;
 
 @Service
 public class OrderServiceImpl implements OrderService {
+
     private final CartService cartService;
     private final OrderRepository orderRepository;
     private final AddressRepository addressRepository;
@@ -48,23 +50,61 @@ public class OrderServiceImpl implements OrderService {
     }
 
     // ====================================================
-    // 🔥 ORDER ID GENERATOR
+    // 🔑 HELPERS
     // ====================================================
+
     private String generateOrderId(User user) {
         return "ORD-" + user.getId() + "-" + System.currentTimeMillis();
     }
 
+    /**
+     * Always creates a FRESH Address entity from the DTO.
+     * Never reuses an existing id — this is a point-in-time shipping snapshot.
+     * The user link is set so the row is associated, but the old saved-address
+     * row is never touched or merged.
+     */
+    private Address buildFreshAddress(AddressDTO dto, User user) {
+        Address address = new Address();
+        // ✅ No id set — JPA will INSERT, never UPDATE an existing row
+        address.setFirstName(dto.getFirstName());
+        address.setLastName(dto.getLastName());
+        address.setStreetAddress(dto.getStreetAddress());
+        address.setCity(dto.getCity());
+        address.setDistrict(dto.getDistrict());
+        address.setState(dto.getState());
+        address.setZipCode(dto.getZipCode());
+        address.setMobile(dto.getMobile());
+        address.setUser(user);
+        address.setActive(true);
+        return address;
+    }
+
+    // ====================================================
+    // 🔍 LOOKUPS / STATUS CHANGES
+    // ====================================================
+
     @Override
     @Transactional(readOnly = true)
     public Order findOrderById(Long orderId) throws OrderException {
-        Order order = orderRepository.findById(orderId)
+        return orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderException("Order not found with id: " + orderId));
-        return order;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Order> usersOrderHistory(Long userId) {
+        return orderRepository.findByUserId(userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Order> userOrderHistory(Long userId) {
         return orderRepository.findByUserId(userId);
     }
 
@@ -108,39 +148,24 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.save(order);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<Order> getAllOrders() {
-        return orderRepository.findAll();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Order> userOrderHistory(Long userId) {
-        return orderRepository.findByUserId(userId);
-    }
-
     // =====================================================================================
-    // 🟦 CREATE ORDER (Full cart checkout) - WITH COUPON SUPPORT
+    // 🟦 CREATE ORDER (full cart checkout)
     // =====================================================================================
+
     @Override
     @Transactional
-    public Order createOrder(User user, Address shippingAddress) throws UserException {
-        return createOrder(user, shippingAddress, null);
+    public Order createOrder(User user, AddressDTO addressDTO) throws UserException {
+        return createOrder(user, addressDTO, null);
     }
 
+    @Override
     @Transactional
-    public Order createOrder(User user, Address shippingAddress, String couponCode) throws UserException {
+    public Order createOrder(User user, AddressDTO addressDTO, String couponCode) throws UserException {
 
-        shippingAddress.setUser(user);
+        // ✅ Always save a brand-new address row — never merge an old one
+        Address shippingAddress = buildFreshAddress(addressDTO, user);
         Address savedAddress = addressRepository.save(shippingAddress);
         entityManager.flush();
-
-        if (!user.getAddress().contains(savedAddress)) {
-            user.getAddress().add(savedAddress);
-            userRepository.save(user);
-            entityManager.flush();
-        }
 
         Cart cart = cartService.findUserCart(user.getId());
 
@@ -149,7 +174,6 @@ public class OrderServiceImpl implements OrderService {
         }
 
         List<OrderItem> orderItems = new ArrayList<>();
-
         for (CartItem cartItem : new ArrayList<>(cart.getCartItems())) {
             OrderItem orderItem = new OrderItem();
             orderItem.setProduct(cartItem.getProduct());
@@ -167,41 +191,31 @@ public class OrderServiceImpl implements OrderService {
         createdOrder.setTotalDiscountedPrice(cart.getTotalDiscountedPrice());
         createdOrder.setDiscount(cart.getDiscount());
         createdOrder.setTotalItem(cart.getTotalItem());
-        createdOrder.setShippingAddress(savedAddress);
+        createdOrder.setShippingAddress(savedAddress);         // ✅ always set
         createdOrder.setOrderDate(LocalDateTime.now());
         createdOrder.setOrderStatus(OrderStatus.PENDING);
         createdOrder.getPaymentDetails().setStatus(PaymentStatus.PENDING);
         createdOrder.setCreatedAt(LocalDateTime.now());
-
-        // 🔥 Set ORDER ID
         createdOrder.setOrderId(generateOrderId(user));
 
-        // ✅ Check if this is user's first order
         boolean isFirstOrder = couponService.isFirstTimeUser(user);
         createdOrder.setIsFirstOrder(isFirstOrder);
 
-        // ✅ Apply coupon if provided
         double couponDiscount = 0.0;
         if (couponCode != null && !couponCode.trim().isEmpty()) {
             try {
-                double orderAmount = cart.getTotalDiscountedPrice();
-
                 CouponService.CouponValidationResult result =
-                        couponService.validateAndCalculateDiscount(couponCode, user, orderAmount);
-
+                        couponService.validateAndCalculateDiscount(couponCode, user, cart.getTotalDiscountedPrice());
                 if (result.isValid()) {
                     couponDiscount = result.getDiscountAmount();
                     createdOrder.setAppliedCoupon(result.getCoupon());
                     createdOrder.setCouponCode(couponCode.toUpperCase());
                     createdOrder.setCouponDiscount(couponDiscount);
-
-                    // Update total price with coupon discount
                     double finalPrice = createdOrder.getTotalDiscountedPrice() - couponDiscount;
                     createdOrder.setTotalDiscountedPrice(Math.max(0, finalPrice));
                 }
             } catch (CouponException e) {
                 System.err.println("Coupon validation failed: " + e.getMessage());
-                // Continue without coupon
             }
         }
 
@@ -213,14 +227,8 @@ public class OrderServiceImpl implements OrderService {
             orderItemRepository.save(item);
         }
 
-        // ✅ Record coupon usage if coupon was applied
         if (savedOrder.getAppliedCoupon() != null) {
-            couponService.applyCouponToOrder(
-                    savedOrder.getAppliedCoupon(),
-                    user,
-                    savedOrder,
-                    couponDiscount
-            );
+            couponService.applyCouponToOrder(savedOrder.getAppliedCoupon(), user, savedOrder, couponDiscount);
         }
 
         // Clear cart
@@ -232,36 +240,33 @@ public class OrderServiceImpl implements OrderService {
 
         Cart fresh = cartRepository.findById(cart.getId())
                 .orElseThrow(() -> new RuntimeException("Cart not found"));
-
         fresh.setTotalPrice(0);
         fresh.setTotalDiscountedPrice(0);
         fresh.setTotalItem(0);
         fresh.setDiscount(0);
-
         cartRepository.save(fresh);
 
         return savedOrder;
     }
 
     // =====================================================================================
-    // 🟩 CREATE PENDING ORDER (selected items checkout) - WITH COUPON SUPPORT
+    // 🟩 CREATE PENDING ORDER (selected items — used before Razorpay payment)
     // =====================================================================================
+
     @Override
     @Transactional
-    public Order createPendingOrder(User user, Address shippingAddress) throws UserException {
-        return createPendingOrder(user, shippingAddress, null);
+    public Order createPendingOrder(User user, AddressDTO addressDTO) throws UserException {
+        return createPendingOrder(user, addressDTO, null);
     }
 
+    @Override
     @Transactional
-    public Order createPendingOrder(User user, Address shippingAddress, String couponCode) throws UserException {
+    public Order createPendingOrder(User user, AddressDTO addressDTO, String couponCode) throws UserException {
 
-        shippingAddress.setUser(user);
+        // ✅ Fresh address snapshot — never touches the user's saved address rows
+        Address shippingAddress = buildFreshAddress(addressDTO, user);
         Address savedAddress = addressRepository.save(shippingAddress);
-
-        if (!user.getAddress().contains(savedAddress)) {
-            user.getAddress().add(savedAddress);
-            userRepository.save(user);
-        }
+        entityManager.flush();
 
         Cart cart = cartService.findUserCart(user.getId());
 
@@ -280,7 +285,6 @@ public class OrderServiceImpl implements OrderService {
         double discount = totalPrice - totalDiscounted;
 
         List<OrderItem> orderItems = new ArrayList<>();
-
         for (CartItem cartItem : selectedItems) {
             OrderItem orderItem = new OrderItem();
             orderItem.setProduct(cartItem.getProduct());
@@ -293,7 +297,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order order = new Order();
         order.setUser(user);
-        order.setShippingAddress(savedAddress);
+        order.setShippingAddress(savedAddress);                // ✅ always set
         order.setOrderItems(orderItems);
         order.setTotalPrice(totalPrice);
         order.setTotalDiscountedPrice(totalDiscounted);
@@ -302,70 +306,57 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderStatus(OrderStatus.PENDING);
         order.getPaymentDetails().setStatus(PaymentStatus.PENDING);
         order.setOrderDate(LocalDateTime.now());
-
-        // 🔥 Set ORDER ID
         order.setOrderId(generateOrderId(user));
 
-        // ✅ Check if this is user's first order
         boolean isFirstOrder = couponService.isFirstTimeUser(user);
         order.setIsFirstOrder(isFirstOrder);
 
-        // ✅ Apply coupon if provided
         double couponDiscount = 0.0;
         if (couponCode != null && !couponCode.trim().isEmpty()) {
             try {
-                double orderAmount = totalDiscounted;
-
                 CouponService.CouponValidationResult result =
-                        couponService.validateAndCalculateDiscount(couponCode, user, orderAmount);
-
+                        couponService.validateAndCalculateDiscount(couponCode, user, totalDiscounted);
                 if (result.isValid()) {
                     couponDiscount = result.getDiscountAmount();
                     order.setAppliedCoupon(result.getCoupon());
                     order.setCouponCode(couponCode.toUpperCase());
                     order.setCouponDiscount(couponDiscount);
-
-                    // Update total price with coupon discount
                     double finalPrice = order.getTotalDiscountedPrice() - couponDiscount;
                     order.setTotalDiscountedPrice(Math.max(0, finalPrice));
                 }
             } catch (CouponException e) {
                 System.err.println("Coupon validation failed: " + e.getMessage());
-                // Continue without coupon
             }
         }
 
         Order savedOrder = orderRepository.save(order);
+        entityManager.flush();
 
         for (OrderItem item : orderItems) {
             item.setOrder(savedOrder);
             orderItemRepository.save(item);
         }
 
-        // ✅ Record coupon usage if coupon was applied
         if (savedOrder.getAppliedCoupon() != null) {
-            couponService.applyCouponToOrder(
-                    savedOrder.getAppliedCoupon(),
-                    user,
-                    savedOrder,
-                    couponDiscount
-            );
+            couponService.applyCouponToOrder(savedOrder.getAppliedCoupon(), user, savedOrder, couponDiscount);
         }
 
         return savedOrder;
     }
 
     // =====================================================================================
-    // 🟧 CREATE ORDER (selected items only) - WITH COUPON SUPPORT
+    // 🟧 CREATE ORDER FROM SELECTED CART ITEMS (legacy / alternate flow)
     // =====================================================================================
+
     @Override
     @Transactional
-    public Order createOrderFromSelectedCartItems(User user, Address shippingAddress) throws UserException {
-        return createOrderFromSelectedCartItems(user, shippingAddress, null);
+    public Order createOrderFromSelectedCartItems(User user, AddressDTO addressDTO) throws UserException {
+        return createOrderFromSelectedCartItems(user, addressDTO, null);
     }
 
+    @Override
     @Transactional
-    public Order createOrderFromSelectedCartItems(User user, Address shippingAddress, String couponCode) throws UserException {
+    public Order createOrderFromSelectedCartItems(User user, AddressDTO addressDTO, String couponCode) throws UserException {
 
         Cart cart = cartService.findUserCart(user.getId());
 
@@ -386,9 +377,13 @@ public class OrderServiceImpl implements OrderService {
                 .mapToDouble(item -> item.getDiscountedPrice() * item.getQuantity())
                 .sum();
 
+        // ✅ Fresh address snapshot
+        Address shippingAddress = buildFreshAddress(addressDTO, user);
+        Address savedAddress = addressRepository.save(shippingAddress);
+
         Order order = new Order();
         order.setUser(user);
-        order.setShippingAddress(shippingAddress);
+        order.setShippingAddress(savedAddress);                // ✅ always set
         order.setOrderStatus(OrderStatus.PENDING);
         order.getPaymentDetails().setStatus(PaymentStatus.PENDING);
         order.setOrderDate(LocalDateTime.now());
@@ -396,36 +391,26 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalDiscountedPrice(totalDiscountedPrice);
         order.setDiscount(totalPrice - totalDiscountedPrice);
         order.setTotalItem(selectedItems.size());
-
-        // 🔥 Set ORDER ID
         order.setOrderId(generateOrderId(user));
 
-        // ✅ Check if this is user's first order
         boolean isFirstOrder = couponService.isFirstTimeUser(user);
         order.setIsFirstOrder(isFirstOrder);
 
-        // ✅ Apply coupon if provided
         double couponDiscount = 0.0;
         if (couponCode != null && !couponCode.trim().isEmpty()) {
             try {
-                double orderAmount = totalDiscountedPrice;
-
                 CouponService.CouponValidationResult result =
-                        couponService.validateAndCalculateDiscount(couponCode, user, orderAmount);
-
+                        couponService.validateAndCalculateDiscount(couponCode, user, totalDiscountedPrice);
                 if (result.isValid()) {
                     couponDiscount = result.getDiscountAmount();
                     order.setAppliedCoupon(result.getCoupon());
                     order.setCouponCode(couponCode.toUpperCase());
                     order.setCouponDiscount(couponDiscount);
-
-                    // Update total price with coupon discount
                     double finalPrice = order.getTotalDiscountedPrice() - couponDiscount;
                     order.setTotalDiscountedPrice(Math.max(0, finalPrice));
                 }
             } catch (CouponException e) {
                 System.err.println("Coupon validation failed: " + e.getMessage());
-                // Continue without coupon
             }
         }
 
@@ -442,14 +427,8 @@ public class OrderServiceImpl implements OrderService {
             orderItemService.saveOrderItem(orderItem);
         }
 
-        // ✅ Record coupon usage if coupon was applied
         if (savedOrder.getAppliedCoupon() != null) {
-            couponService.applyCouponToOrder(
-                    savedOrder.getAppliedCoupon(),
-                    user,
-                    savedOrder,
-                    couponDiscount
-            );
+            couponService.applyCouponToOrder(savedOrder.getAppliedCoupon(), user, savedOrder, couponDiscount);
         }
 
         return savedOrder;

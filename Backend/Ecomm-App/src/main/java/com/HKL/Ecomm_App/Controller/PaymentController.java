@@ -1,9 +1,11 @@
 package com.HKL.Ecomm_App.Controller;
 
+import com.HKL.Ecomm_App.DTO.AddressDTO;
 import com.HKL.Ecomm_App.Exception.OrderException;
 import com.HKL.Ecomm_App.Exception.UserException;
 import com.HKL.Ecomm_App.Model.*;
 import com.HKL.Ecomm_App.Repository.OrderRepository;
+import com.HKL.Ecomm_App.Request.OrderRequest;
 import com.HKL.Ecomm_App.Response.ApiResponse;
 import com.HKL.Ecomm_App.Service.CartService;
 import com.HKL.Ecomm_App.Service.OrderService;
@@ -226,21 +228,18 @@ public class PaymentController {
     // 🔹 COD Order
     // ─────────────────────────────────────────────────────────────────────────
     @PostMapping("/orders/cod")
-    public ResponseEntity<?> placeOrderCOD(@RequestBody Map<String, Object> requestBody) {
+    public ResponseEntity<?> placeOrderCOD(@RequestBody OrderRequest requestBody) {
         try {
             User user = getLoggedUser();
 
-            @SuppressWarnings("unchecked")
-            Map<String, Object> addressMap = (Map<String, Object>) requestBody.get("address");
-            Address address = mapToAddress(addressMap);
-
-            String couponCode = (String) requestBody.get("couponCode");
+            AddressDTO addressDTO = requestBody.getAddress();
+            String couponCode = requestBody.getCouponCode();
 
             Order order;
             if (couponCode != null && !couponCode.trim().isEmpty()) {
-                order = orderService.createPendingOrder(user, address, couponCode.trim());
+                order = orderService.createPendingOrder(user, addressDTO, couponCode.trim());
             } else {
-                order = orderService.createPendingOrder(user, address);
+                order = orderService.createPendingOrder(user, addressDTO);
             }
 
             order.setOrderStatus(OrderStatus.PLACED);

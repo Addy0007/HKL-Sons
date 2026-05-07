@@ -21,23 +21,48 @@ const statusColors = {
 
 const getNextStatuses = (current) => {
   switch (current) {
-    case "PENDING":
-      return ["CONFIRMED", "CANCELLED"];
-    case "PLACED":
-      return ["CONFIRMED", "CANCELLED"];
-    case "CONFIRMED":
-      return ["SHIPPED", "CANCELLED"];
-    case "SHIPPED":
-      return ["DELIVERED"];
-    default:
-      return [];
+    case "PENDING":   return ["CONFIRMED", "CANCELLED"];
+    case "PLACED":    return ["CONFIRMED", "CANCELLED"];
+    case "CONFIRMED": return ["SHIPPED", "CANCELLED"];
+    case "SHIPPED":   return ["DELIVERED"];
+    default:          return [];
   }
+};
+
+// Build the best possible address from whatever data is available on the order.
+// Priority: shippingAddress → user profile fields → nothing
+const resolveAddress = (order) => {
+  const sa   = order.shippingAddress || {};
+  const user = order.user || {};
+
+  const hasShipping = !!(
+    sa.firstName || sa.lastName || sa.streetAddress ||
+    sa.city || sa.state || sa.zipCode || sa.mobile
+  );
+
+  if (hasShipping) return { data: sa, source: "shipping" };
+
+  // Fall back to whatever the user object carries
+  const fallback = {
+    firstName:     user.firstName    || "",
+    lastName:      user.lastName     || "",
+    streetAddress: user.streetAddress || user.address || "",
+    city:          user.city         || "",
+    district:      user.district     || "",
+    state:         user.state        || "",
+    zipCode:       user.zipCode      || user.pincode || "",
+    mobile:        user.mobile       || user.phone   || "",
+  };
+
+  const hasFallback = !!(fallback.firstName || fallback.lastName || fallback.mobile);
+  if (hasFallback) return { data: fallback, source: "user" };
+
+  return { data: null, source: "none" };
 };
 
 const OrderTable = () => {
   const dispatch = useDispatch();
   const { orders, loading } = useSelector((state) => state.adminOrder);
-
   const [addressModal, setAddressModal] = useState(null);
 
   useEffect(() => {
@@ -46,37 +71,28 @@ const OrderTable = () => {
 
   const handleStatusChange = (order, nextStatus) => {
     if (!nextStatus) return;
-
     switch (nextStatus) {
-      case "CONFIRMED":
-        dispatch(confirmOrder(order.id));
-        break;
-      case "SHIPPED":
-        dispatch(shipOrder(order.id));
-        break;
-      case "DELIVERED":
-        dispatch(deliverOrder(order.id));
-        break;
-      case "CANCELLED":
-        dispatch(cancelOrder(order.id));
-        break;
-      default:
-        break;
+      case "CONFIRMED": dispatch(confirmOrder(order.id));  break;
+      case "SHIPPED":   dispatch(shipOrder(order.id));     break;
+      case "DELIVERED": dispatch(deliverOrder(order.id));  break;
+      case "CANCELLED": dispatch(cancelOrder(order.id));   break;
+      default: break;
     }
   };
 
   const getCustomerName = (order) => {
-    const first = order.shippingAddress?.firstName;
-    const last = order.shippingAddress?.lastName;
+    const first = order.shippingAddress?.firstName || order.user?.firstName;
+    const last  = order.shippingAddress?.lastName  || order.user?.lastName;
     if (first && last) return `${first} ${last}`;
-    if (order.user?.firstName && order.user?.lastName)
-      return `${order.user.firstName} ${order.user.lastName}`;
+    if (first) return first;
     return "Guest";
   };
 
-  const getCustomerPhone = (order) => {
-    return order.shippingAddress?.mobile || order.user?.mobile || "No contact";
-  };
+  const getCustomerPhone = (order) =>
+    order.shippingAddress?.mobile ||
+    order.user?.mobile ||
+    order.user?.phone ||
+    "No contact";
 
   if (loading)
     return (
@@ -108,14 +124,11 @@ const OrderTable = () => {
           <tbody>
             {orders?.map((order) => {
               const itemCount = order.orderItems?.length || 0;
-              const customerName = getCustomerName(order);
-              const customerPhone = getCustomerPhone(order);
+              const { data: resolvedAddress, source } = resolveAddress(order);
 
               return (
-                <tr
-                  key={order.id}
-                  className="border-b hover:bg-gray-50 transition"
-                >
+                <tr key={order.id} className="border-b hover:bg-gray-50 transition">
+
                   {/* ORDER ID */}
                   <td className="p-3">
                     <div className="font-semibold text-blue-600">
@@ -126,9 +139,11 @@ const OrderTable = () => {
                   {/* CUSTOMER */}
                   <td className="p-3">
                     <div className="font-medium text-gray-900">
-                      {customerName}
+                      {getCustomerName(order)}
                     </div>
-                    <div className="text-xs text-gray-500">{customerPhone}</div>
+                    <div className="text-xs text-gray-500">
+                      {getCustomerPhone(order)}
+                    </div>
                   </td>
 
                   {/* ITEMS - EXPANDABLE */}
@@ -165,10 +180,8 @@ const OrderTable = () => {
                   {/* TOTAL PRICE */}
                   <td className="p-3">
                     <div className="font-bold text-lg text-gray-900">
-                      ₹
-                      {order.totalDiscountedPrice?.toLocaleString() ||
-                        order.totalPrice?.toLocaleString() ||
-                        0}
+                      ₹{order.totalDiscountedPrice?.toLocaleString() ||
+                         order.totalPrice?.toLocaleString() || 0}
                     </div>
                     {order.discount > 0 && (
                       <div className="text-xs text-green-600">
@@ -201,14 +214,15 @@ const OrderTable = () => {
                     </div>
                   </td>
 
-                  {/* SHIPPING ADDRESS BUTTON */}
+                  {/* ADDRESS BUTTON */}
                   <td className="p-3">
-                    {order.shippingAddress ? (
+                    {source !== "none" ? (
                       <button
                         onClick={() =>
                           setAddressModal({
-                            address: order.shippingAddress,
+                            address: resolvedAddress,
                             orderId: order.orderId || `#${order.id}`,
+                            source,
                           })
                         }
                         className="flex items-center gap-1 border border-gray-300 text-gray-600 px-3 py-1 rounded-md hover:bg-gray-100 transition text-xs font-medium whitespace-nowrap"
@@ -216,7 +230,9 @@ const OrderTable = () => {
                         📍 Show Address
                       </button>
                     ) : (
-                      <span className="text-gray-400 text-xs">No address</span>
+                      <span className="text-gray-300 text-xs italic">
+                        Not available
+                      </span>
                     )}
                   </td>
 
@@ -226,16 +242,12 @@ const OrderTable = () => {
                       <span className="text-gray-400 text-xs">No Action</span>
                     ) : (
                       <select
-                        onChange={(e) =>
-                          handleStatusChange(order, e.target.value)
-                        }
+                        onChange={(e) => handleStatusChange(order, e.target.value)}
                         className="border px-2 py-1 rounded text-sm"
                       >
                         <option value="">Update...</option>
                         {getNextStatuses(order.orderStatus).map((next) => (
-                          <option key={next} value={next}>
-                            {next}
-                          </option>
+                          <option key={next} value={next}>{next}</option>
                         ))}
                       </select>
                     )}
@@ -245,11 +257,7 @@ const OrderTable = () => {
                   <td className="p-3">
                     <button
                       onClick={() => {
-                        if (
-                          window.confirm(
-                            `Delete order ${order.orderId || order.id}?`
-                          )
-                        ) {
+                        if (window.confirm(`Delete order ${order.orderId || order.id}?`)) {
                           dispatch(deleteOrder(order.id));
                         }
                       }}
@@ -269,7 +277,7 @@ const OrderTable = () => {
         <div className="text-center py-10 text-gray-500">No orders found</div>
       )}
 
-      {/* ADDRESS MODAL */}
+      {/* ── ADDRESS MODAL ── */}
       {addressModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
@@ -279,8 +287,8 @@ const OrderTable = () => {
             className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 w-80 max-w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="flex justify-between items-start mb-5">
+            {/* Modal header */}
+            <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="font-semibold text-gray-900 text-base">
                   Shipping Address
@@ -288,25 +296,26 @@ const OrderTable = () => {
                 <p className="text-xs text-gray-400 mt-0.5">
                   {addressModal.orderId}
                 </p>
+                {/* Warn admin when we're showing profile data, not true shipping address */}
+                {addressModal.source === "user" && (
+                  <span className="inline-block mt-1.5 text-xs bg-yellow-50 border border-yellow-200 text-yellow-700 px-2 py-0.5 rounded-full">
+                    ⚠ Showing user profile — no shipping address was saved for this order
+                  </span>
+                )}
               </div>
               <button
                 onClick={() => setAddressModal(null)}
-                className="text-gray-400 hover:text-gray-600 text-2xl leading-none mt-[-2px]"
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none ml-4 shrink-0"
                 aria-label="Close"
               >
                 &times;
               </button>
             </div>
 
-            {/* Address Fields */}
-            <div className="space-y-0 divide-y divide-gray-100">
+            {/* Address rows — only render rows that have a value */}
+            <div className="divide-y divide-gray-100">
               {[
-                [
-                  "Name",
-                  `${addressModal.address.firstName || ""} ${
-                    addressModal.address.lastName || ""
-                  }`.trim(),
-                ],
+                ["Name",     `${addressModal.address.firstName || ""} ${addressModal.address.lastName || ""}`.trim()],
                 ["Street",   addressModal.address.streetAddress],
                 ["City",     addressModal.address.city],
                 ["District", addressModal.address.district],
@@ -320,12 +329,13 @@ const OrderTable = () => {
                     <span className="text-gray-400 text-xs w-16 shrink-0 pt-0.5">
                       {label}
                     </span>
-                    <span className="text-gray-800 text-sm">{value}</span>
+                    <span className="text-gray-800 text-sm break-words flex-1">
+                      {value}
+                    </span>
                   </div>
                 ))}
             </div>
 
-            {/* Close Button */}
             <button
               onClick={() => setAddressModal(null)}
               className="mt-5 w-full border border-gray-200 text-gray-600 py-2 rounded-md hover:bg-gray-50 transition text-sm"

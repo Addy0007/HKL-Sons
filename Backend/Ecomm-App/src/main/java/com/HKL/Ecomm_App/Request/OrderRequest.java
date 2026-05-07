@@ -1,7 +1,6 @@
 package com.HKL.Ecomm_App.Request;
 
-
-import com.HKL.Ecomm_App.Model.Address;
+import com.HKL.Ecomm_App.DTO.AddressDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,8 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class OrderRequest {
 
-    private Address address;
-    private String couponCode; // Optional - can be null
+    private AddressDTO address;
+    private String couponCode;
 
     public boolean hasCoupon() {
         return couponCode != null && !couponCode.trim().isEmpty();
